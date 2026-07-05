@@ -1,0 +1,24 @@
+# Dependencias
+node_modules/
+
+# Next.js / build
+.next/
+out/
+dist/
+build/
+
+# Entorno (¡nunca subir secretos!)
+.env
+.env*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Artefactos generados
+ERP-Diagnostico-Wiki.zip
+
+# Sistema
+.DS_Store
+Thumbs.db

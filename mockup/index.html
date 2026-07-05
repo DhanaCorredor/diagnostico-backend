@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico — Gestión de Citas (Boceto)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand:   { DEFAULT: '#2a78d6', dark: '#184f95', light: '#cde2fb' },
+          aqua:    '#1baf7a',
+          ink:     { DEFAULT: '#0b0b0b', 2: '#52514e', muted: '#898781' },
+          surface: { DEFAULT: '#ffffff', plane: '#f4f6fa' },
+          line:    '#e6e8ee',
+          good:    '#0ca30c',
+          warn:    '#eda100',
+          crit:    '#d03b3b',
+        },
+        fontFamily: { sans: ['system-ui','-apple-system','Segoe UI','sans-serif'] },
+      }
+    }
+  }
+</script>
+<style>
+  body { background: #f4f6fa; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  [data-view] { display: none; }
+  [data-view].active { display: block; }
+  .navlink.active { background:#eef4fd; color:#184f95; font-weight:600; }
+  .navlink.active svg { color:#2a78d6; }
+</style>
+</head>
+<body class="font-sans text-ink antialiased">
+
+<!-- ============ PANTALLA DE LOGIN ============ -->
+<div id="login" class="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-[#eaf1fb] to-[#f4f6fa] px-4">
+  <div class="w-full max-w-sm rounded-2xl bg-white p-8 shadow-xl ring-1 ring-line">
+    <div class="mb-6 flex items-center gap-3">
+      <div class="grid h-11 w-11 place-items-center rounded-xl bg-brand text-white font-bold text-lg">D</div>
+      <div>
+        <p class="text-lg font-semibold leading-tight">Diagnóstico</p>
+        <p class="text-xs text-ink-muted">Centro de Salud · Gestión de Citas</p>
+      </div>
+    </div>
+    <h1 class="mb-1 text-xl font-semibold">Iniciar sesión</h1>
+    <p class="mb-6 text-sm text-ink-2">Acceso solo para personal autorizado.</p>
+    <label class="mb-1 block text-sm font-medium">Correo</label>
+    <input value="admin@diagnostico.ve" class="mb-4 w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none">
+    <label class="mb-1 block text-sm font-medium">Contraseña</label>
+    <input type="password" value="••••••••" class="mb-6 w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none">
+    <button onclick="entrar()" class="w-full rounded-lg bg-brand py-2.5 text-sm font-semibold text-white hover:bg-brand-dark transition">Entrar</button>
+    <p class="mt-4 text-center text-xs text-ink-muted">🔒 Conexión segura · Datos cifrados</p>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hidden min-h-screen">
+<div class="flex">
+
+  <!-- SIDEBAR -->
+  <aside class="fixed inset-y-0 left-0 flex w-60 flex-col border-r border-line bg-white">
+    <div class="flex items-center gap-3 px-5 py-5">
+      <div class="grid h-9 w-9 place-items-center rounded-lg bg-brand text-white font-bold">D</div>
+      <div>
+        <p class="text-sm font-semibold leading-tight">Diagnóstico</p>
+        <p class="text-[11px] text-ink-muted">Gestión de Citas</p>
+      </div>
+    </div>
+    <nav class="mt-2 flex-1 space-y-1 px-3 text-sm">
+      <a onclick="nav('panel')"     class="navlink active flex items-center gap-3 rounded-lg px-3 py-2 text-ink-2 cursor-pointer hover:bg-surface-plane">
+        <svg class="h-5 w-5 text-ink-muted" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg> Panel
+      </a>
+      <a onclick="nav('agenda')"    class="navlink flex items-center gap-3 rounded-lg px-3 py-2 text-ink-2 cursor-pointer hover:bg-surface-plane">
+        <svg class="h-5 w-5 text-ink-muted" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Agenda
+      </a>
+      <a onclick="nav('pacientes')" class="navlink flex items-center gap-3 rounded-lg px-3 py-2 text-ink-2 cursor-pointer hover:bg-surface-plane">
+        <svg class="h-5 w-5 text-ink-muted" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4z"/></svg> Pacientes
+      </a>
+      <a onclick="nav('medicos')"   class="navlink flex items-center gap-3 rounded-lg px-3 py-2 text-ink-2 cursor-pointer hover:bg-surface-plane">
+        <svg class="h-5 w-5 text-ink-muted" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2a3 3 0 00-3 3v1a3 3 0 006 0V5a3 3 0 00-3-3zM6 21v-2a6 6 0 0112 0v2"/></svg> Médicos
+      </a>
+      <a onclick="nav('reportes')"  class="navlink flex items-center gap-3 rounded-lg px-3 py-2 text-ink-2 cursor-pointer hover:bg-surface-plane">
+        <svg class="h-5 w-5 text-ink-muted" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 17V9m4 8V5m4 12v-4M4 21h16"/></svg> Reportes
+      </a>
+      <a onclick="nav('facturacion')" class="navlink flex items-center gap-3 rounded-lg px-3 py-2 text-ink-2 cursor-pointer hover:bg-surface-plane">
+        <svg class="h-5 w-5 text-ink-muted" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 7h6m-6 4h6m-3 8l-3-2-3 2V5a2 2 0 012-2h8a2 2 0 012 2v14l-3-2-3 2z"/></svg> Facturación
+      </a>
+      <div class="my-2 border-t border-line"></div>
+      <a onclick="nav('usuarios')"  class="navlink flex items-center gap-3 rounded-lg px-3 py-2 text-ink-2 cursor-pointer hover:bg-surface-plane">
+        <svg class="h-5 w-5 text-ink-muted" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10 15l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Usuarios
+      </a>
+      <a onclick="nav('configuracion')" class="navlink flex items-center gap-3 rounded-lg px-3 py-2 text-ink-2 cursor-pointer hover:bg-surface-plane">
+        <svg class="h-5 w-5 text-ink-muted" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg> Configuración
+      </a>
+    </nav>
+    <div class="border-t border-line px-3 py-3">
+      <div class="flex items-center gap-3 rounded-lg px-2 py-2">
+        <div class="grid h-8 w-8 place-items-center rounded-full bg-brand-light text-brand-dark text-sm font-semibold">MA</div>
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-medium">María Aponte</p>
+          <p class="text-[11px] text-ink-muted">Administrador</p>
+        </div>
+        <button onclick="salir()" title="Salir" class="text-ink-muted hover:text-crit">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="ml-60 flex-1">
+    <!-- TOP BAR -->
+    <header class="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-white/90 px-8 py-4 backdrop-blur">
+      <div>
+        <h1 id="page-title" class="text-lg font-semibold">Panel</h1>
+        <p class="text-xs text-ink-muted">Jueves, 2 de julio de 2026</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="relative hidden md:block">
+          <svg class="absolute left-3 top-2.5 h-4 w-4 text-ink-muted" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4-4"/></svg>
+          <input placeholder="Buscar paciente o cédula…" class="w-64 rounded-lg border border-line bg-surface-plane py-2 pl-9 pr-3 text-sm outline-none focus:border-brand focus:bg-white">
+        </div>
+        <button onclick="abrirNueva()" class="flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark transition">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Nueva cita
+        </button>
+      </div>
+    </header>
+
+    <div class="p-8">
+
+      <!-- ===== VISTA: PANEL ===== -->
+      <section data-view="panel" class="active space-y-6">
+        <!-- KPI TILES -->
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="rounded-xl border border-line bg-white p-5">
+            <p class="text-sm text-ink-2">Citas hoy</p>
+            <p class="mt-2 text-3xl font-semibold tnum">24</p>
+            <p class="mt-1 text-xs text-good">▲ 3 más que ayer</p>
+          </div>
+          <div class="rounded-xl border border-line bg-white p-5">
+            <p class="text-sm text-ink-2">Confirmadas</p>
+            <p class="mt-2 text-3xl font-semibold tnum">18</p>
+            <p class="mt-1 text-xs text-ink-muted">6 pendientes de confirmar</p>
+          </div>
+          <div class="rounded-xl border border-line bg-white p-5">
+            <p class="text-sm text-ink-2">Pacientes activos</p>
+            <p class="mt-2 text-3xl font-semibold tnum">1.312</p>
+            <p class="mt-1 text-xs text-ink-muted">+12 este mes</p>
+          </div>
+          <div class="rounded-xl border border-line bg-white p-5">
+            <p class="text-sm text-ink-2">Ocupación de agenda</p>
+            <p class="mt-2 text-3xl font-semibold tnum">78%</p>
+            <div class="mt-2 h-1.5 w-full rounded-full bg-line"><div class="h-1.5 rounded-full bg-brand" style="width:78%"></div></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <!-- AGENDA DEL DÍA -->
+          <div class="lg:col-span-2 rounded-xl border border-line bg-white">
+            <div class="flex items-center justify-between border-b border-line px-5 py-4">
+              <h2 class="font-semibold">Agenda de hoy</h2>
+              <span class="text-xs text-ink-muted">Todos los médicos</span>
+            </div>
+            <div class="divide-y divide-line">
+              <!-- fila cita -->
+              <div class="flex items-center gap-4 px-5 py-3.5 hover:bg-surface-plane">
+                <span class="w-14 text-sm font-medium tnum text-ink-2">08:00</span>
+                <span class="h-9 w-1 rounded-full bg-good"></span>
+                <div class="flex-1">
+                  <p class="text-sm font-medium">Carlos Mendoza</p>
+                  <p class="text-xs text-ink-muted">Dr. Rojas · Cardiología · Primera visita</p>
+                </div>
+                <span class="rounded-full bg-good/10 px-2.5 py-1 text-xs font-medium text-good">Confirmada</span>
+              </div>
+              <div class="flex items-center gap-4 px-5 py-3.5 hover:bg-surface-plane">
+                <span class="w-14 text-sm font-medium tnum text-ink-2">08:30</span>
+                <span class="h-9 w-1 rounded-full bg-warn"></span>
+                <div class="flex-1">
+                  <p class="text-sm font-medium">Ana Belén Torres</p>
+                  <p class="text-xs text-ink-muted">Dra. Salas · Pediatría · Revisión</p>
+                </div>
+                <span class="rounded-full bg-warn/10 px-2.5 py-1 text-xs font-medium text-[#8a6100]">Agendada</span>
+              </div>
+              <div class="flex items-center gap-4 px-5 py-3.5 hover:bg-surface-plane">
+                <span class="w-14 text-sm font-medium tnum text-ink-2">09:00</span>
+                <span class="h-9 w-1 rounded-full bg-good"></span>
+                <div class="flex-1">
+                  <p class="text-sm font-medium">Luis Guaramato</p>
+                  <p class="text-xs text-ink-muted">Dr. Rojas · Cardiología · Revisión</p>
+                </div>
+                <span class="rounded-full bg-good/10 px-2.5 py-1 text-xs font-medium text-good">Confirmada</span>
+              </div>
+              <div class="flex items-center gap-4 px-5 py-3.5 hover:bg-surface-plane">
+                <span class="w-14 text-sm font-medium tnum text-ink-2">09:30</span>
+                <span class="h-9 w-1 rounded-full bg-ink-muted"></span>
+                <div class="flex-1">
+                  <p class="text-sm font-medium">Yorman Pérez</p>
+                  <p class="text-xs text-ink-muted">Dra. Salas · Pediatría · Primera visita</p>
+                </div>
+                <span class="rounded-full bg-ink-muted/10 px-2.5 py-1 text-xs font-medium text-ink-2">Completada</span>
+              </div>
+              <div class="flex items-center gap-4 px-5 py-3.5 hover:bg-surface-plane">
+                <span class="w-14 text-sm font-medium tnum text-ink-2">10:00</span>
+                <span class="h-9 w-1 rounded-full bg-crit"></span>
+                <div class="flex-1">
+                  <p class="text-sm font-medium">Rosa Villalobos</p>
+                  <p class="text-xs text-ink-muted">Dr. Rojas · Cardiología · Revisión</p>
+                </div>
+                <span class="rounded-full bg-crit/10 px-2.5 py-1 text-xs font-medium text-crit">No asistió</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- OCUPACIÓN POR MÉDICO -->
+          <div class="rounded-xl border border-line bg-white">
+            <div class="border-b border-line px-5 py-4"><h2 class="font-semibold">Ocupación por médico</h2></div>
+            <div class="space-y-4 p-5">
+              <div>
+                <div class="mb-1 flex justify-between text-sm"><span>Dr. Rojas · Cardiología</span><span class="tnum text-ink-2">9/10</span></div>
+                <div class="h-2 w-full rounded-full bg-line"><div class="h-2 rounded-full bg-brand" style="width:90%"></div></div>
+              </div>
+              <div>
+                <div class="mb-1 flex justify-between text-sm"><span>Dra. Salas · Pediatría</span><span class="tnum text-ink-2">7/10</span></div>
+                <div class="h-2 w-full rounded-full bg-line"><div class="h-2 rounded-full bg-brand" style="width:70%"></div></div>
+              </div>
+              <div>
+                <div class="mb-1 flex justify-between text-sm"><span>Dr. Finol · Traumatología</span><span class="tnum text-ink-2">5/10</span></div>
+                <div class="h-2 w-full rounded-full bg-line"><div class="h-2 rounded-full bg-brand" style="width:50%"></div></div>
+              </div>
+              <div>
+                <div class="mb-1 flex justify-between text-sm"><span>Dra. Chávez · Dermatología</span><span class="tnum text-ink-2">3/10</span></div>
+                <div class="h-2 w-full rounded-full bg-line"><div class="h-2 rounded-full bg-brand" style="width:30%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== VISTA: AGENDA (calendario) ===== -->
+      <section data-view="agenda">
+        <div class="rounded-xl border border-line bg-white p-5">
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="font-semibold">Semana · 29 jun – 3 jul</h2>
+            <div class="flex gap-1 text-sm">
+              <button class="rounded-lg border border-line px-3 py-1.5 hover:bg-surface-plane">‹</button>
+              <button class="rounded-lg border border-line px-3 py-1.5 hover:bg-surface-plane">Hoy</button>
+              <button class="rounded-lg border border-line px-3 py-1.5 hover:bg-surface-plane">›</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-6 gap-px overflow-hidden rounded-lg border border-line bg-line text-sm">
+            <div class="bg-surface-plane p-2 text-center text-xs font-medium text-ink-muted">Hora</div>
+            <div class="bg-surface-plane p-2 text-center text-xs font-medium">Lun 29</div>
+            <div class="bg-surface-plane p-2 text-center text-xs font-medium">Mar 30</div>
+            <div class="bg-surface-plane p-2 text-center text-xs font-medium">Mié 1</div>
+            <div class="bg-surface-plane p-2 text-center text-xs font-medium text-brand-dark">Jue 2</div>
+            <div class="bg-surface-plane p-2 text-center text-xs font-medium">Vie 3</div>
+            <!-- filas -->
+            <div class="bg-white p-2 text-center text-xs tnum text-ink-muted">08:00</div>
+            <div class="bg-white p-1"><div class="rounded bg-brand-light px-1.5 py-1 text-[11px] text-brand-dark">Mendoza · Cardio</div></div>
+            <div class="bg-white p-1"></div>
+            <div class="bg-white p-1"><div class="rounded bg-[#e5f6ef] px-1.5 py-1 text-[11px] text-aqua">Rivas · Pediatría</div></div>
+            <div class="bg-white p-1"><div class="rounded bg-brand-light px-1.5 py-1 text-[11px] text-brand-dark">Torres · Cardio</div></div>
+            <div class="bg-white p-1"></div>
+            <div class="bg-white p-2 text-center text-xs tnum text-ink-muted">09:00</div>
+            <div class="bg-white p-1"><div class="rounded bg-brand-light px-1.5 py-1 text-[11px] text-brand-dark">Guaramato</div></div>
+            <div class="bg-white p-1"><div class="rounded bg-[#e5f6ef] px-1.5 py-1 text-[11px] text-aqua">Ojeda · Pedia</div></div>
+            <div class="bg-white p-1"></div>
+            <div class="bg-white p-1"><div class="rounded bg-brand-light px-1.5 py-1 text-[11px] text-brand-dark">Villalobos</div></div>
+            <div class="bg-white p-1"><div class="rounded bg-[#fdf2df] px-1.5 py-1 text-[11px] text-[#8a6100]">Finol · Trauma</div></div>
+            <div class="bg-white p-2 text-center text-xs tnum text-ink-muted">10:00</div>
+            <div class="bg-white p-1"></div>
+            <div class="bg-white p-1"><div class="rounded bg-brand-light px-1.5 py-1 text-[11px] text-brand-dark">Pérez · Cardio</div></div>
+            <div class="bg-white p-1"><div class="rounded bg-[#e5f6ef] px-1.5 py-1 text-[11px] text-aqua">Suárez · Pedia</div></div>
+            <div class="bg-white p-1"></div>
+            <div class="bg-white p-1"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== VISTA: PACIENTES ===== -->
+      <section data-view="pacientes">
+        <div class="rounded-xl border border-line bg-white">
+          <div class="flex items-center justify-between border-b border-line px-5 py-4">
+            <h2 class="font-semibold">Pacientes <span class="ml-1 text-sm font-normal text-ink-muted">(1.312)</span></h2>
+            <button class="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark">+ Nuevo paciente</button>
+          </div>
+          <table class="w-full text-sm">
+            <thead class="text-left text-xs uppercase tracking-wide text-ink-muted">
+              <tr class="border-b border-line">
+                <th class="px-5 py-3 font-medium">Paciente</th>
+                <th class="px-5 py-3 font-medium">Cédula</th>
+                <th class="px-5 py-3 font-medium">Teléfono</th>
+                <th class="px-5 py-3 font-medium">Última cita</th>
+                <th class="px-5 py-3"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-line">
+              <tr class="hover:bg-surface-plane"><td class="px-5 py-3 font-medium">Carlos Mendoza</td><td class="px-5 py-3 tnum text-ink-2">V-12.345.678</td><td class="px-5 py-3 tnum text-ink-2">0414-555-1122</td><td class="px-5 py-3 text-ink-2">02/07/2026</td><td class="px-5 py-3 text-right"><button onclick="verFicha()" class="text-brand hover:underline">Ver ficha</button></td></tr>
+              <tr class="hover:bg-surface-plane"><td class="px-5 py-3 font-medium">Ana Belén Torres</td><td class="px-5 py-3 tnum text-ink-2">V-18.902.334</td><td class="px-5 py-3 tnum text-ink-2">0424-333-8890</td><td class="px-5 py-3 text-ink-2">28/06/2026</td><td class="px-5 py-3 text-right"><button onclick="verFicha()" class="text-brand hover:underline">Ver ficha</button></td></tr>
+              <tr class="hover:bg-surface-plane"><td class="px-5 py-3 font-medium">Luis Guaramato</td><td class="px-5 py-3 tnum text-ink-2">V-9.887.221</td><td class="px-5 py-3 tnum text-ink-2">0412-777-0001</td><td class="px-5 py-3 text-ink-2">02/07/2026</td><td class="px-5 py-3 text-right"><button onclick="verFicha()" class="text-brand hover:underline">Ver ficha</button></td></tr>
+              <tr class="hover:bg-surface-plane"><td class="px-5 py-3 font-medium">Rosa Villalobos</td><td class="px-5 py-3 tnum text-ink-2">V-14.556.098</td><td class="px-5 py-3 tnum text-ink-2">0416-222-4545</td><td class="px-5 py-3 text-ink-2">15/06/2026</td><td class="px-5 py-3 text-right"><button onclick="verFicha()" class="text-brand hover:underline">Ver ficha</button></td></tr>
+              <tr class="hover:bg-surface-plane"><td class="px-5 py-3 font-medium">Yorman Pérez</td><td class="px-5 py-3 tnum text-ink-2">V-25.110.443</td><td class="px-5 py-3 tnum text-ink-2">0414-909-1234</td><td class="px-5 py-3 text-ink-2">02/07/2026</td><td class="px-5 py-3 text-right"><button onclick="verFicha()" class="text-brand hover:underline">Ver ficha</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== VISTA: MÉDICOS ===== -->
+      <section data-view="medicos">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="rounded-xl border border-line bg-white p-5">
+            <div class="flex items-center gap-3"><div class="grid h-11 w-11 place-items-center rounded-full bg-brand-light text-brand-dark font-semibold">JR</div><div><p class="font-medium">Dr. Julio Rojas</p><p class="text-xs text-ink-muted">MPPS 45.221</p></div></div>
+            <div class="mt-3 flex flex-wrap gap-1.5"><span class="rounded-full bg-brand-light px-2 py-0.5 text-xs text-brand-dark">Cardiología</span><span class="rounded-full bg-[#e5f6ef] px-2 py-0.5 text-xs text-aqua">Medicina Interna</span></div>
+          </div>
+          <div class="rounded-xl border border-line bg-white p-5">
+            <div class="flex items-center gap-3"><div class="grid h-11 w-11 place-items-center rounded-full bg-brand-light text-brand-dark font-semibold">MS</div><div><p class="font-medium">Dra. Marisol Salas</p><p class="text-xs text-ink-muted">MPPS 38.905</p></div></div>
+            <div class="mt-3 flex flex-wrap gap-1.5"><span class="rounded-full bg-[#e5f6ef] px-2 py-0.5 text-xs text-aqua">Pediatría</span></div>
+          </div>
+          <div class="rounded-xl border border-line bg-white p-5">
+            <div class="flex items-center gap-3"><div class="grid h-11 w-11 place-items-center rounded-full bg-brand-light text-brand-dark font-semibold">RF</div><div><p class="font-medium">Dr. Rafael Finol</p><p class="text-xs text-ink-muted">MPPS 51.008</p></div></div>
+            <div class="mt-3 flex flex-wrap gap-1.5"><span class="rounded-full bg-[#fdf2df] px-2 py-0.5 text-xs text-[#8a6100]">Traumatología</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== VISTA: USUARIOS ===== -->
+      <section data-view="usuarios">
+        <div class="rounded-xl border border-line bg-white">
+          <div class="flex items-center justify-between border-b border-line px-5 py-4">
+            <h2 class="font-semibold">Usuarios del sistema</h2>
+            <button class="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark">+ Nuevo acceso</button>
+          </div>
+          <table class="w-full text-sm">
+            <thead class="text-left text-xs uppercase tracking-wide text-ink-muted">
+              <tr class="border-b border-line"><th class="px-5 py-3 font-medium">Nombre</th><th class="px-5 py-3 font-medium">Correo</th><th class="px-5 py-3 font-medium">Rol</th><th class="px-5 py-3 font-medium">Estado</th></tr>
+            </thead>
+            <tbody class="divide-y divide-line">
+              <tr class="hover:bg-surface-plane"><td class="px-5 py-3 font-medium">María Aponte</td><td class="px-5 py-3 text-ink-2">admin@diagnostico.ve</td><td class="px-5 py-3"><span class="rounded-full bg-brand-light px-2 py-0.5 text-xs text-brand-dark">Administrador</span></td><td class="px-5 py-3"><span class="text-good">● Activo</span></td></tr>
+              <tr class="hover:bg-surface-plane"><td class="px-5 py-3 font-medium">Pedro Linares</td><td class="px-5 py-3 text-ink-2">recepcion@diagnostico.ve</td><td class="px-5 py-3"><span class="rounded-full bg-[#e5f6ef] px-2 py-0.5 text-xs text-aqua">Recepción</span></td><td class="px-5 py-3"><span class="text-good">● Activo</span></td></tr>
+              <tr class="hover:bg-surface-plane"><td class="px-5 py-3 font-medium">Dr. Julio Rojas</td><td class="px-5 py-3 text-ink-2">jrojas@diagnostico.ve</td><td class="px-5 py-3"><span class="rounded-full bg-[#fdf2df] px-2 py-0.5 text-xs text-[#8a6100]">Médico</span></td><td class="px-5 py-3"><span class="text-good">● Activo</span></td></tr>
+              <tr class="hover:bg-surface-plane"><td class="px-5 py-3 font-medium">Elena Bravo</td><td class="px-5 py-3 text-ink-2">ebravo@diagnostico.ve</td><td class="px-5 py-3"><span class="rounded-full bg-[#fdf2df] px-2 py-0.5 text-xs text-[#8a6100]">Médico</span></td><td class="px-5 py-3"><span class="text-ink-muted">○ Inactivo</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== VISTA: FICHA DE PACIENTE ===== -->
+      <section data-view="ficha">
+        <button onclick="nav('pacientes')" class="mb-4 flex items-center gap-1.5 text-sm text-ink-2 hover:text-brand">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg> Volver a Pacientes
+        </button>
+
+        <!-- Cabecera de la ficha -->
+        <div class="mb-6 rounded-xl border border-line bg-white p-5">
+          <div class="flex flex-wrap items-center gap-4">
+            <div class="grid h-16 w-16 place-items-center rounded-full bg-brand-light text-xl font-semibold text-brand-dark">CM</div>
+            <div class="flex-1">
+              <h2 class="text-xl font-semibold">Carlos Mendoza Rivas</h2>
+              <p class="text-sm text-ink-2">V-12.345.678 · 54 años · Masculino · Grupo O+</p>
+              <div class="mt-2 flex flex-wrap gap-1.5">
+                <span class="rounded-full bg-crit/10 px-2.5 py-0.5 text-xs font-medium text-crit">⚠ Alergia: Penicilina</span>
+                <span class="rounded-full bg-[#fdf2df] px-2.5 py-0.5 text-xs font-medium text-[#8a6100]">Hipertensión</span>
+              </div>
+            </div>
+            <button onclick="abrirNueva()" class="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark">+ Nueva cita</button>
+          </div>
+        </div>
+
+        <!-- Pestañas -->
+        <div class="mb-4 flex gap-1 border-b border-line text-sm">
+          <button onclick="tab('datos', this)"    class="ftab -mb-px border-b-2 border-brand px-4 py-2 font-medium text-brand-dark">Datos personales</button>
+          <button onclick="tab('citasP', this)"   class="ftab -mb-px border-b-2 border-transparent px-4 py-2 text-ink-2 hover:text-ink">Historial de citas</button>
+          <button onclick="tab('historia', this)" class="ftab -mb-px border-b-2 border-transparent px-4 py-2 text-ink-2 hover:text-ink">Historia clínica</button>
+        </div>
+
+        <!-- Tab: Datos personales -->
+        <div data-tab="datos" class="ftab-panel grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div class="rounded-xl border border-line bg-white p-5">
+            <h3 class="mb-3 text-sm font-semibold text-ink-muted uppercase tracking-wide">Identificación</h3>
+            <dl class="space-y-2 text-sm">
+              <div class="flex justify-between"><dt class="text-ink-2">Cédula</dt><dd class="font-medium tnum">V-12.345.678</dd></div>
+              <div class="flex justify-between"><dt class="text-ink-2">Fecha de nacimiento</dt><dd class="font-medium">14/03/1972</dd></div>
+              <div class="flex justify-between"><dt class="text-ink-2">Sexo</dt><dd class="font-medium">Masculino</dd></div>
+              <div class="flex justify-between"><dt class="text-ink-2">Grupo sanguíneo</dt><dd class="font-medium">O+</dd></div>
+            </dl>
+          </div>
+          <div class="rounded-xl border border-line bg-white p-5">
+            <h3 class="mb-3 text-sm font-semibold text-ink-muted uppercase tracking-wide">Contacto</h3>
+            <dl class="space-y-2 text-sm">
+              <div class="flex justify-between"><dt class="text-ink-2">Teléfono</dt><dd class="font-medium tnum">0414-555-1122</dd></div>
+              <div class="flex justify-between"><dt class="text-ink-2">Correo</dt><dd class="font-medium">c.mendoza@correo.ve</dd></div>
+              <div class="flex justify-between"><dt class="text-ink-2">Dirección</dt><dd class="font-medium text-right">Av. Bolívar, Maracaibo</dd></div>
+              <div class="flex justify-between"><dt class="text-ink-2">Contacto emergencia</dt><dd class="font-medium tnum">0424-888-3311</dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <!-- Tab: Historial de citas -->
+        <div data-tab="citasP" class="ftab-panel hidden rounded-xl border border-line bg-white">
+          <table class="w-full text-sm">
+            <thead class="text-left text-xs uppercase tracking-wide text-ink-muted">
+              <tr class="border-b border-line"><th class="px-5 py-3 font-medium">Fecha</th><th class="px-5 py-3 font-medium">Médico</th><th class="px-5 py-3 font-medium">Motivo</th><th class="px-5 py-3 font-medium">Estado</th></tr>
+            </thead>
+            <tbody class="divide-y divide-line">
+              <tr class="hover:bg-surface-plane"><td class="px-5 py-3 tnum">02/07/2026 · 08:00</td><td class="px-5 py-3">Dr. Rojas</td><td class="px-5 py-3 text-ink-2">Control de tensión</td><td class="px-5 py-3"><span class="text-good">Confirmada</span></td></tr>
+              <tr class="hover:bg-surface-plane"><td class="px-5 py-3 tnum">03/06/2026 · 09:30</td><td class="px-5 py-3">Dr. Rojas</td><td class="px-5 py-3 text-ink-2">Revisión cardiológica</td><td class="px-5 py-3"><span class="text-ink-2">Completada</span></td></tr>
+              <tr class="hover:bg-surface-plane"><td class="px-5 py-3 tnum">10/04/2026 · 11:00</td><td class="px-5 py-3">Dra. Chávez</td><td class="px-5 py-3 text-ink-2">Consulta dermatológica</td><td class="px-5 py-3"><span class="text-ink-2">Completada</span></td></tr>
+              <tr class="hover:bg-surface-plane"><td class="px-5 py-3 tnum">22/02/2026 · 10:00</td><td class="px-5 py-3">Dr. Rojas</td><td class="px-5 py-3 text-ink-2">Primera visita</td><td class="px-5 py-3"><span class="text-crit">No asistió</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tab: Historia clínica -->
+        <div data-tab="historia" class="ftab-panel hidden space-y-4">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div class="rounded-xl border border-line bg-white p-5">
+              <h3 class="mb-2 text-sm font-semibold text-ink-muted uppercase tracking-wide">Alergias</h3>
+              <div class="flex flex-wrap gap-1.5"><span class="rounded-full bg-crit/10 px-2.5 py-1 text-xs text-crit">Penicilina</span><span class="rounded-full bg-crit/10 px-2.5 py-1 text-xs text-crit">Polen</span></div>
+            </div>
+            <div class="rounded-xl border border-line bg-white p-5">
+              <h3 class="mb-2 text-sm font-semibold text-ink-muted uppercase tracking-wide">Antecedentes</h3>
+              <ul class="space-y-1 text-sm text-ink-2"><li>• Hipertensión arterial (2019)</li><li>• Diabetes tipo 2 (2021)</li></ul>
+            </div>
+            <div class="rounded-xl border border-line bg-white p-5">
+              <h3 class="mb-2 text-sm font-semibold text-ink-muted uppercase tracking-wide">Medicación actual</h3>
+              <ul class="space-y-1 text-sm text-ink-2"><li>• Losartán 50 mg / día</li><li>• Metformina 850 mg / 12h</li></ul>
+            </div>
+          </div>
+
+          <!-- Notas de evolución -->
+          <div class="rounded-xl border border-line bg-white">
+            <div class="flex items-center justify-between border-b border-line px-5 py-4">
+              <h3 class="font-semibold">Notas de evolución</h3>
+              <button class="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark">+ Nueva nota</button>
+            </div>
+            <div class="space-y-5 p-5">
+              <div class="relative border-l-2 border-brand/30 pl-4">
+                <p class="text-sm font-medium">03/06/2026 · Dr. Julio Rojas <span class="ml-1 font-normal text-ink-muted">Cardiología</span></p>
+                <p class="mt-1 text-sm text-ink-2">TA 130/85. Paciente estable. Se mantiene tratamiento antihipertensivo. Solicito perfil lipídico para próxima consulta.</p>
+              </div>
+              <div class="relative border-l-2 border-line pl-4">
+                <p class="text-sm font-medium">10/04/2026 · Dra. Chávez <span class="ml-1 font-normal text-ink-muted">Dermatología</span></p>
+                <p class="mt-1 text-sm text-ink-2">Dermatitis de contacto en antebrazo. Se indica corticoide tópico 7 días. Control si no mejora.</p>
+              </div>
+              <div class="relative border-l-2 border-line pl-4">
+                <p class="text-sm font-medium">15/01/2026 · Dr. Julio Rojas <span class="ml-1 font-normal text-ink-muted">Cardiología</span></p>
+                <p class="mt-1 text-sm text-ink-2">Ajuste de dosis de Losartán. Electrocardiograma sin alteraciones significativas.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== VISTA: REPORTES ===== -->
+      <section data-view="reportes" class="space-y-6">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div class="rounded-xl border border-line bg-white p-5"><p class="text-sm text-ink-2">Citas este mes</p><p class="mt-2 text-3xl font-semibold tnum">512</p><p class="mt-1 text-xs text-good">▲ 8% vs. mes anterior</p></div>
+          <div class="rounded-xl border border-line bg-white p-5"><p class="text-sm text-ink-2">Tasa de asistencia</p><p class="mt-2 text-3xl font-semibold tnum">91%</p><p class="mt-1 text-xs text-ink-muted">9% de inasistencias</p></div>
+          <div class="rounded-xl border border-line bg-white p-5"><p class="text-sm text-ink-2">Nuevos pacientes</p><p class="mt-2 text-3xl font-semibold tnum">37</p><p class="mt-1 text-xs text-ink-muted">Julio 2026</p></div>
+        </div>
+        <div class="rounded-xl border border-line bg-white p-5">
+          <h3 class="mb-4 font-semibold">Citas por especialidad · Julio</h3>
+          <div class="space-y-3 text-sm">
+            <div><div class="mb-1 flex justify-between"><span>Cardiología</span><span class="tnum text-ink-2">186</span></div><div class="h-2.5 w-full rounded-full bg-line"><div class="h-2.5 rounded-full bg-brand" style="width:100%"></div></div></div>
+            <div><div class="mb-1 flex justify-between"><span>Pediatría</span><span class="tnum text-ink-2">142</span></div><div class="h-2.5 w-full rounded-full bg-line"><div class="h-2.5 rounded-full bg-brand" style="width:76%"></div></div></div>
+            <div><div class="mb-1 flex justify-between"><span>Traumatología</span><span class="tnum text-ink-2">98</span></div><div class="h-2.5 w-full rounded-full bg-line"><div class="h-2.5 rounded-full bg-brand" style="width:53%"></div></div></div>
+            <div><div class="mb-1 flex justify-between"><span>Dermatología</span><span class="tnum text-ink-2">86</span></div><div class="h-2.5 w-full rounded-full bg-line"><div class="h-2.5 rounded-full bg-brand" style="width:46%"></div></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== VISTA: FACTURACIÓN ===== -->
+      <section data-view="facturacion">
+        <div class="rounded-xl border border-line bg-white">
+          <div class="flex items-center justify-between border-b border-line px-5 py-4">
+            <h2 class="font-semibold">Facturación <span class="ml-1 text-sm font-normal text-ink-muted">Julio 2026</span></h2>
+            <button class="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark">+ Nueva factura</button>
+          </div>
+          <table class="w-full text-sm">
+            <thead class="text-left text-xs uppercase tracking-wide text-ink-muted">
+              <tr class="border-b border-line"><th class="px-5 py-3 font-medium">Nº</th><th class="px-5 py-3 font-medium">Paciente</th><th class="px-5 py-3 font-medium">Concepto</th><th class="px-5 py-3 font-medium">Monto</th><th class="px-5 py-3 font-medium">Estado</th></tr>
+            </thead>
+            <tbody class="divide-y divide-line">
+              <tr class="hover:bg-surface-plane"><td class="px-5 py-3 tnum text-ink-2">#0512</td><td class="px-5 py-3 font-medium">Carlos Mendoza</td><td class="px-5 py-3 text-ink-2">Consulta cardiología</td><td class="px-5 py-3 tnum font-medium">$35,00</td><td class="px-5 py-3"><span class="rounded-full bg-good/10 px-2 py-0.5 text-xs text-good">Pagada</span></td></tr>
+              <tr class="hover:bg-surface-plane"><td class="px-5 py-3 tnum text-ink-2">#0511</td><td class="px-5 py-3 font-medium">Ana Belén Torres</td><td class="px-5 py-3 text-ink-2">Consulta pediatría</td><td class="px-5 py-3 tnum font-medium">$25,00</td><td class="px-5 py-3"><span class="rounded-full bg-warn/10 px-2 py-0.5 text-xs text-[#8a6100]">Pendiente</span></td></tr>
+              <tr class="hover:bg-surface-plane"><td class="px-5 py-3 tnum text-ink-2">#0510</td><td class="px-5 py-3 font-medium">Luis Guaramato</td><td class="px-5 py-3 text-ink-2">Revisión cardiología</td><td class="px-5 py-3 tnum font-medium">$20,00</td><td class="px-5 py-3"><span class="rounded-full bg-good/10 px-2 py-0.5 text-xs text-good">Pagada</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== VISTA: CONFIGURACIÓN / INTEGRACIONES ===== -->
+      <section data-view="configuracion" class="space-y-6">
+        <!-- Integraciones -->
+        <div class="rounded-xl border border-line bg-white">
+          <div class="border-b border-line px-5 py-4">
+            <h2 class="font-semibold">Integraciones</h2>
+            <p class="text-xs text-ink-muted">Conecta servicios externos. Requieren conexión a internet.</p>
+          </div>
+          <div class="divide-y divide-line">
+            <!-- Google Calendar -->
+            <div class="flex items-center gap-4 px-5 py-4">
+              <div class="grid h-11 w-11 place-items-center rounded-lg bg-[#e8f0fe]">
+                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="3" fill="#fff" stroke="#4285F4" stroke-width="1.5"/><path d="M3 8h18" stroke="#4285F4" stroke-width="1.5"/><text x="12" y="18" font-size="8" fill="#4285F4" text-anchor="middle" font-family="sans-serif" font-weight="700">31</text></svg>
+              </div>
+              <div class="flex-1">
+                <p class="font-medium">Google Calendar</p>
+                <p class="text-xs text-ink-2">Sincroniza las citas con tu calendario para verlas en el móvil. Sin datos clínicos, solo hora, paciente y especialidad.</p>
+              </div>
+              <span class="rounded-full bg-good/10 px-2.5 py-1 text-xs font-medium text-good">● Conectado</span>
+              <button class="rounded-lg border border-line px-3 py-1.5 text-sm font-medium hover:bg-surface-plane">Desconectar</button>
+            </div>
+            <!-- WhatsApp -->
+            <div class="flex items-center gap-4 px-5 py-4">
+              <div class="grid h-11 w-11 place-items-center rounded-lg bg-[#e6f7ee]">
+                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="#25D366"><path d="M12 2a10 10 0 00-8.5 15.3L2 22l4.8-1.5A10 10 0 1012 2zm0 18a8 8 0 01-4.1-1.1l-.3-.2-2.8.9.9-2.7-.2-.3A8 8 0 1112 20zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.7.9c-.1.2-.3.2-.5.1a6.5 6.5 0 01-3.2-2.8c-.1-.2 0-.4.1-.5l.4-.5c.1-.2.1-.3 0-.5l-.7-1.7c-.2-.4-.4-.4-.5-.4h-.5a1 1 0 00-.7.3c-.2.3-.9.9-.9 2.1s.9 2.5 1 2.6c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1z"/></svg>
+              </div>
+              <div class="flex-1">
+                <p class="font-medium">Recordatorios por WhatsApp</p>
+                <p class="text-xs text-ink-2">Envía un recordatorio automático al paciente antes de la cita para reducir inasistencias.</p>
+              </div>
+              <span class="rounded-full bg-warn/10 px-2.5 py-1 text-xs font-medium text-[#8a6100]">○ No conectado</span>
+              <button class="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark">Conectar</button>
+            </div>
+            <!-- Correo -->
+            <div class="flex items-center gap-4 px-5 py-4">
+              <div class="grid h-11 w-11 place-items-center rounded-lg bg-surface-plane">
+                <svg class="h-6 w-6 text-ink-2" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+              </div>
+              <div class="flex-1">
+                <p class="font-medium">Notificaciones por correo</p>
+                <p class="text-xs text-ink-2">Envía confirmaciones y recordatorios por email al paciente.</p>
+              </div>
+              <span class="rounded-full bg-warn/10 px-2.5 py-1 text-xs font-medium text-[#8a6100]">○ No conectado</span>
+              <button class="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark">Conectar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <!-- Datos del centro -->
+          <div class="rounded-xl border border-line bg-white p-5">
+            <h3 class="mb-4 font-semibold">Datos del centro</h3>
+            <div class="space-y-3 text-sm">
+              <div>
+                <label class="mb-1 block font-medium">Nombre del centro</label>
+                <input value="Centro de Salud Diagnóstico" class="w-full rounded-lg border border-line px-3 py-2 outline-none focus:border-brand">
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div><label class="mb-1 block font-medium">Teléfono</label><input value="0261-700-1234" class="w-full rounded-lg border border-line px-3 py-2 tnum outline-none focus:border-brand"></div>
+                <div><label class="mb-1 block font-medium">Ciudad</label><input value="Maracaibo" class="w-full rounded-lg border border-line px-3 py-2 outline-none focus:border-brand"></div>
+              </div>
+              <div>
+                <label class="mb-1 block font-medium">Horario de atención</label>
+                <input value="Lun–Vie · 07:00 a 18:00" class="w-full rounded-lg border border-line px-3 py-2 outline-none focus:border-brand">
+              </div>
+            </div>
+          </div>
+
+          <!-- Catálogos + Seguridad -->
+          <div class="space-y-6">
+            <div class="rounded-xl border border-line bg-white p-5">
+              <div class="mb-3 flex items-center justify-between"><h3 class="font-semibold">Tipos de consulta</h3><button class="text-sm font-medium text-brand hover:underline">+ Añadir</button></div>
+              <div class="space-y-2 text-sm">
+                <div class="flex items-center justify-between rounded-lg bg-surface-plane px-3 py-2"><span>Primera visita</span><span class="tnum text-ink-2">45 min</span></div>
+                <div class="flex items-center justify-between rounded-lg bg-surface-plane px-3 py-2"><span>Revisión</span><span class="tnum text-ink-2">20 min</span></div>
+                <div class="flex items-center justify-between rounded-lg bg-surface-plane px-3 py-2"><span>Urgencia</span><span class="tnum text-ink-2">30 min</span></div>
+              </div>
+            </div>
+            <div class="rounded-xl border border-line bg-white p-5">
+              <h3 class="mb-3 font-semibold">Seguridad y respaldos</h3>
+              <div class="space-y-2 text-sm">
+                <div class="flex items-center justify-between"><span class="text-ink-2">Respaldo automático diario</span><span class="rounded-full bg-good/10 px-2 py-0.5 text-xs text-good">Activo</span></div>
+                <div class="flex items-center justify-between"><span class="text-ink-2">Registro de auditoría (HIPAA/GDPR)</span><span class="rounded-full bg-good/10 px-2 py-0.5 text-xs text-good">Activo</span></div>
+                <div class="flex items-center justify-between"><span class="text-ink-2">Último respaldo</span><span class="tnum text-ink-2">02/07/2026 · 03:00</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- ============ MODAL: NUEVA CITA ============ -->
+<div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4">
+  <div class="w-full max-w-lg rounded-2xl bg-white shadow-xl">
+    <div class="flex items-center justify-between border-b border-line px-6 py-4">
+      <h3 class="text-lg font-semibold">Nueva cita</h3>
+      <button onclick="cerrarNueva()" class="text-ink-muted hover:text-ink">✕</button>
+    </div>
+    <div class="space-y-4 p-6">
+      <div>
+        <label class="mb-1 block text-sm font-medium">Paciente</label>
+        <input value="Carlos Mendoza · V-12.345.678" class="w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-brand">
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium">Médico</label>
+          <select class="w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-brand"><option>Dr. Julio Rojas · Cardiología</option><option>Dra. Marisol Salas · Pediatría</option></select>
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium">Tipo de consulta</label>
+          <select class="w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-brand"><option>Primera visita (45 min)</option><option>Revisión (20 min)</option></select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium">Fecha</label>
+          <input type="date" value="2026-07-02" class="w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-brand">
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium">Hora</label>
+          <input type="time" value="09:00" class="w-full rounded-lg border border-crit px-3 py-2 text-sm outline-none">
+        </div>
+      </div>
+      <!-- AVISO ANTI-SOLAPAMIENTO -->
+      <div class="flex items-start gap-3 rounded-lg border border-crit/30 bg-crit/5 p-3">
+        <svg class="mt-0.5 h-5 w-5 shrink-0 text-crit" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+        <div class="text-sm">
+          <p class="font-medium text-crit">Horario no disponible</p>
+          <p class="text-ink-2">El Dr. Rojas ya tiene una cita de 09:00 a 09:20 (Luis Guaramato). Elige otro horario para evitar solapamiento.</p>
+        </div>
+      </div>
+    </div>
+    <div class="flex justify-end gap-3 border-t border-line px-6 py-4">
+      <button onclick="cerrarNueva()" class="rounded-lg border border-line px-4 py-2 text-sm font-medium hover:bg-surface-plane">Cancelar</button>
+      <button class="cursor-not-allowed rounded-lg bg-brand/40 px-4 py-2 text-sm font-semibold text-white" disabled>Guardar cita</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const titulos = { panel:'Panel', agenda:'Agenda', pacientes:'Pacientes', medicos:'Médicos', usuarios:'Usuarios', ficha:'Ficha de paciente', reportes:'Reportes', facturacion:'Facturación', configuracion:'Configuración' };
+  function entrar(){ document.getElementById('login').style.display='none'; document.getElementById('app').classList.remove('hidden'); }
+  function salir(){ document.getElementById('app').classList.add('hidden'); document.getElementById('login').style.display='flex'; }
+  function showView(v){
+    document.querySelectorAll('[data-view]').forEach(s=>s.classList.toggle('active', s.dataset.view===v));
+    document.querySelectorAll('.navlink').forEach(a=>a.classList.remove('active'));
+    document.getElementById('page-title').textContent = titulos[v] || '';
+    window.scrollTo(0,0);
+  }
+  function nav(v){ showView(v); if(event&&event.currentTarget&&event.currentTarget.classList.contains('navlink')) event.currentTarget.classList.add('active'); }
+  function verFicha(){ showView('ficha'); }
+  function tab(name, el){
+    document.querySelectorAll('.ftab-panel').forEach(p=>p.classList.toggle('hidden', p.dataset.tab!==name));
+    document.querySelectorAll('.ftab').forEach(b=>{ b.classList.remove('border-brand','text-brand-dark','font-medium'); b.classList.add('border-transparent','text-ink-2'); });
+    el.classList.add('border-brand','text-brand-dark','font-medium'); el.classList.remove('border-transparent','text-ink-2');
+  }
+  function abrirNueva(){ const m=document.getElementById('modal'); m.classList.remove('hidden'); m.classList.add('flex'); }
+  function cerrarNueva(){ const m=document.getElementById('modal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+</script>
+</body>
+</html>
