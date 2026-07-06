@@ -16,6 +16,7 @@ flowchart TD
     E --> E1[Gestionar usuarios y accesos]
     E --> E2[Gestionar médicos y especialidades]
     E --> E3[Gestionar servicios y duraciones]
+    E --> E3b[Gestionar consultorios / salas]
     E --> E4[Ver reportes y auditoría]
 
     %% RECEPCIÓN
@@ -43,13 +44,13 @@ flowchart TD
     P -- No --> P1[Registrar paciente<br/>cédula opcional]
     P1 --> Q
     P -- Sí --> Q[Seleccionar paciente]
-    Q --> R[Elegir servicio y médico]
+    Q --> R[Elegir servicio, médico<br/>y consultorio/sala]
     R --> R1[Duración = DoctorServicio<br/>médico + servicio]
     R1 --> T[Elegir fecha y hora]
     T --> U{¿Dentro de la disponibilidad<br/>del médico?}
     U -- No --> V[Aviso: fuera de horario]
     V --> T
-    U -- Sí --> W{¿Se solapa con otra<br/>cita activa del médico?}
+    U -- Sí --> W{¿Se solapa el médico<br/>o el consultorio/sala?}
     W -- Sí --> X[Aviso: horario no disponible]
     X --> T
     W -- No --> M{¿Añadir otro estudio<br/>el mismo día?}
@@ -62,6 +63,6 @@ flowchart TD
 
 ## Notas
 
-- La validación de solapamiento se ejecuta en la **capa de servicio** y se refuerza con una restricción a nivel de **base de datos** (ver `MODELO-DATOS.md`).
+- La validación de solapamiento (por **médico y por consultorio/sala/equipo**) se ejecuta en la **capa de servicio** y se refuerza con restricciones a nivel de **base de datos** (ver `MODELO-DATOS.md`).
 - Los pacientes **no acceden** al sistema; toda gestión la realiza el personal.
 - Toda acción sobre datos médicos queda registrada en **auditoría** (requisito HIPAA/GDPR).
