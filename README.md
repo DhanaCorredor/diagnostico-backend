@@ -1,164 +1,165 @@
-# 🩺 Diagnóstico — ERP de Gestión de Citas Médicas
+# 🩺 Diagnóstico — Medical Appointment Management ERP
 
-Sistema interno de gestión de **citas médicas** para el centro de salud **Diagnóstico** (Maracay, Venezuela). Permite al personal gestionar pacientes, médicos, agendas y citas, con **validación estricta de horarios (cero solapamientos)** y protección de datos médicos.
+Internal **medical appointment** management system for the **Diagnóstico** health center (Maracay, Venezuela). It lets the staff manage patients, doctors, schedules and appointments, with **strict schedule validation (zero overlaps)** and protection of medical data.
 
-> Proyecto final de bootcamp. Documentación en `docs/`.
+> Bootcamp final project. Documentation in `docs/` (in Spanish).
 
 ---
 
-## 📑 Índice
+## 📑 Table of contents
 
-- [Descripción](#-descripción)
-- [Características](#-características)
-- [Roles y permisos](#-roles-y-permisos)
-- [Stack tecnológico](#-stack-tecnológico)
-- [Arquitectura](#-arquitectura)
-- [Modelo de datos](#-modelo-de-datos)
-- [Regla clave: cero solapamientos](#-regla-clave-cero-solapamientos)
-- [Instalación y puesta en marcha](#-instalación-y-puesta-en-marcha)
-- [Estructura del proyecto](#-estructura-del-proyecto)
+- [Overview](#-overview)
+- [Features](#-features)
+- [Roles and permissions](#-roles-and-permissions)
+- [Tech stack](#-tech-stack)
+- [Architecture](#-architecture)
+- [Data model](#-data-model)
+- [Core rule: zero overlaps](#-core-rule-zero-overlaps)
+- [Getting started](#-getting-started)
+- [Project structure](#-project-structure)
 - [Roadmap](#-roadmap)
-- [Documentación](#-documentación)
+- [Documentation](#-documentation)
 
 ---
 
-## 🎯 Descripción
+## 🎯 Overview
 
-**Diagnóstico** es un ERP interno enfocado en la **gestión, creación y control de citas médicas**. Lo usa únicamente el **personal del centro** (administración, recepción y médicos). Prioriza la seguridad de los datos médicos (HIPAA/GDPR), la validación estricta de horarios y una arquitectura limpia y mantenible.
+**Diagnóstico** is an internal ERP focused on **managing, creating and controlling medical appointments**. It is used only by the **center's staff** (administration, reception and doctors). It prioritizes medical-data security (HIPAA/GDPR), strict schedule validation and a clean, maintainable architecture.
 
-## ✨ Características
+## ✨ Features
 
-- 📅 **Citas y visitas** — agendar (incluso **varios estudios el mismo día**) con validación anti-solapamiento por médico; holter/MAPA con colocación + retiro.
-- 👤 **Pacientes** — alta y gestión (cédula única si se indica; **opcional**).
-- 🩺 **Médicos, especialidades y servicios** — con **duración por médico + servicio** y disponibilidad.
-- 📋 **Historia clínica** — notas por visita, útiles en reconsultas.
-- 💬 **Recordatorios por WhatsApp** — confirmación **automática** el día antes.
-- 🔐 **Autenticación y roles** — acceso por rol con control de permisos.
-- 📊 **Panel** — agenda del día, calendario y métricas; consultable desde el móvil.
-- 📝 **Auditoría** — registro de accesos y cambios sobre datos médicos.
+- 📅 **Appointments & visits** — schedule (even **several studies on the same day**) with overlap validation **per doctor and per room/resource (consultorio/sala/equipo)**; Holter/MAPA as placement + removal.
+- 👤 **Patients** — registration and management (national ID unique when provided; **optional**).
+- 🩺 **Doctors, specialties and services** — with **duration per doctor + service** and availability.
+- 📋 **Clinical history** — notes per visit, useful for follow-up consultations.
+- 💬 **WhatsApp reminders** — **automatic** confirmation 24 h before the appointment.
+- 🔐 **Authentication & roles** — role-based access control.
+- 📊 **Dashboard** — today's agenda, calendar and reports; accessible from mobile.
+- 📝 **Audit log** — record of access and changes to medical data.
 
-> La **facturación** se lleva aparte (máquinas fiscales del SENIAT). · **Datos:** ~60 citas/día · 18 médicos · ~11-13 especialidades.
+> **Billing** is handled separately (SENIAT fiscal machines); **direct payment only, no insurance**. · **Figures:** ~60 appointments/day · 18 doctors · ~11-13 specialties · single location.
 
-## 👥 Roles y permisos
+## 👥 Roles and permissions
 
-| Rol | Permisos |
-|-----|----------|
-| **ADMIN** | Control total: usuarios, médicos, especialidades, **servicios y duraciones**, reportes y auditoría. |
-| **RECEPCION** | Agenda citas/visitas (WhatsApp, llamada, presencial); gestiona pacientes y recordatorios; ve las agendas de todos. |
-| **MEDICO** | Ve su agenda y sus citas; marca asistencia/no-show; consulta y añade notas a la **historia clínica**. |
+| Role | Permissions |
+|------|-------------|
+| **ADMIN** | Full control: users, doctors, specialties, **services and durations**, rooms/resources, reports and audit. |
+| **RECEPCION** | Books appointments/visits (WhatsApp, call, in person); manages patients and reminders; sees everyone's agenda. |
+| **MEDICO** | Sees their own agenda and appointments; marks attendance/no-show; reads and adds notes to the **clinical history**. |
 
-## 🧱 Stack tecnológico
+## 🧱 Tech stack
 
-| Capa | Tecnología |
-|------|-----------|
-| Lenguaje | TypeScript |
+| Layer | Technology |
+|-------|-----------|
+| Language | TypeScript |
 | Framework | Next.js (App Router) |
-| Base de datos | PostgreSQL |
+| Database | PostgreSQL |
 | ORM | Prisma |
-| Estilos | Tailwind CSS |
-| Gestor de paquetes | pnpm |
+| Styling | Tailwind CSS |
+| Package manager | pnpm |
 | Runtime | Node.js 22+ |
-| Despliegue | Vercel (app) + Neon (PostgreSQL) |
+| Deployment | Vercel (app) + Neon (PostgreSQL) |
 
-## 🏗️ Arquitectura
+## 🏗️ Architecture
 
-- **Nube** — la aplicación y la base de datos viven en la nube (Vercel + Neon), permitiendo **acceso remoto** desde cualquier ordenador.
-- **Resiliencia offline** — PWA que cachea la última agenda para **consulta sin conexión** (crear/editar requiere internet). Mitiga la inestabilidad de red.
-- **Capa de dominio aislada** — la lógica de citas (incluida la validación anti-solapamiento) vive en `src/server/appointments`, testeable de forma independiente.
+- **Cloud** — the app and the database live in the cloud (Vercel + Neon), enabling **remote access** from any computer.
+- **Offline resilience** — a PWA caches the latest agenda for **offline reading** (creating/editing requires internet). Mitigates network instability.
+- **Isolated domain layer** — the appointment logic (including overlap validation) lives in `src/server/appointments`, independently testable.
 
-## 🗃️ Modelo de datos
+## 🗃️ Data model
 
-Entidades núcleo: `User`, `Doctor`, `Specialty` (N:M), `Servicio` + `DoctorServicio` (**duración por médico**), `Patient`, `Availability`, `Visita`, `Appointment`, `NotaClinica` (historia), `Recordatorio`, `AuditLog`.
+Core entities: `User`, `Doctor`, `Specialty` (N:M), `Servicio` + `DoctorServicio` (**duration per doctor**), `Recurso` (room/space/equipment), `Patient`, `Availability`, `Visita`, `Appointment`, `NotaClinica` (clinical history), `Recordatorio` (reminder), `AuditLog`.
 
-📄 Detalle completo y diagrama ER en [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md).
+📄 Full detail and ER diagram in [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md).
 
-## ⛔ Regla clave: cero solapamientos
+## ⛔ Core rule: zero overlaps
 
-Una cita nueva o modificada **no puede solaparse en el tiempo** con otra cita activa (`SCHEDULED`/`CONFIRMED`) del mismo médico. Se garantiza en **dos capas**:
+A new or modified appointment **cannot overlap in time** with another active appointment (`SCHEDULED`/`CONFIRMED`) that shares the same doctor or the same room/resource. This is guaranteed at **two layers**:
 
-1. **Servicio** — validación antes de guardar, con mensaje claro al usuario.
-2. **Base de datos** — restricción de exclusión temporal (`EXCLUDE USING gist` sobre `tstzrange`) que rechaza el solapamiento incluso ante operaciones concurrentes.
+1. **Service layer** — validation before saving, with a clear message to the user.
+2. **Database** — temporal exclusion constraints (`EXCLUDE USING gist` over `tstzrange`) that reject overlaps even under concurrent operations.
 
-## 🚀 Instalación y puesta en marcha
+## 🚀 Getting started
 
-> Requisitos: Node.js 22+, pnpm, y una base de datos PostgreSQL (Neon en la nube, recomendado).
+> Requirements: Node.js 22+, pnpm, and a PostgreSQL database (Neon in the cloud, recommended).
 
 ```bash
-# 1. Clonar e instalar dependencias
-git clone <url-del-repo>
+# 1. Clone and install dependencies
+git clone <repo-url>
 cd Diagnostico-Centro-Salud
 pnpm install
 
-# 2. Configurar variables de entorno
+# 2. Configure environment variables
 cp .env.example .env
-# Editar .env y poner la cadena de conexión de Neon en DATABASE_URL
+# Edit .env and set the Neon connection string in DATABASE_URL
 
-# 3. Preparar la base de datos
-pnpm prisma migrate dev      # aplica migraciones
-pnpm prisma db seed          # datos iniciales (usuarios, médicos, servicios)
+# 3. Prepare the database
+pnpm prisma migrate dev      # apply migrations
+pnpm prisma db seed          # seed data (users, doctors, services)
 
-# 4. Arrancar en desarrollo
+# 4. Run in development
 pnpm dev                     # http://localhost:3000
 ```
 
-Otros comandos:
+Other commands:
 
 ```bash
-pnpm build          # construir para producción
-pnpm start          # servir la build
-pnpm test           # ejecutar tests
+pnpm build          # build for production
+pnpm start          # serve the build
+pnpm test           # run tests
 pnpm lint           # linting
-pnpm prisma studio  # panel visual de la BD
+pnpm prisma studio  # visual DB panel
 ```
 
-> ⚠️ **Nunca** se suben credenciales al repositorio. Todo secreto va en `.env` (ignorado por git).
+> ⚠️ **Never** commit credentials to the repository. Every secret goes in `.env` (git-ignored).
 
-## 📂 Estructura del proyecto
+## 📂 Project structure
 
 ```
 Diagnostico-Centro-Salud/
 ├── src/
-│   ├── app/              # Next.js App Router (rutas + UI, en español)
-│   ├── server/           # Lógica de dominio
-│   │   ├── appointments/ # Validación anti-solapamiento (aislada, testeable)
-│   │   └── auth/         # Autenticación y sesión
-│   ├── lib/              # Cliente Prisma, guards de rol, utilidades
-│   └── components/       # UI reutilizable (Tailwind)
+│   ├── app/              # Next.js App Router (routes + UI, in Spanish)
+│   ├── server/           # Domain logic
+│   │   ├── appointments/ # Overlap validation (isolated, testable)
+│   │   └── auth/         # Authentication and session
+│   ├── lib/              # Prisma client, role guards, utilities
+│   └── components/       # Reusable UI (Tailwind)
 ├── prisma/
-│   ├── schema.prisma     # Modelo de datos
+│   ├── schema.prisma     # Data model
 │   └── migrations/
-├── tests/                # Tests unitarios e integración
-├── docs/                 # Documentación del proyecto
-├── mockup/               # Prototipo visual navegable (referencia de UI)
-└── propuesta/            # Propuesta para el cliente
+├── tests/                # Unit and integration tests
+├── docs/                 # Project documentation (Spanish)
+└── mockup/               # Clickable visual prototype (UI reference)
 ```
 
 ## 🗺️ Roadmap
 
-- [x] Documentación, modelo de datos y prototipo visual
-- [ ] **Fase 0** — Andamiaje (Next.js + TS + Tailwind + Prisma + Neon)
-- [ ] **Fase 1** — Esquema Prisma + migración + seed
-- [ ] **Fase 2** — Autenticación y roles
-- [ ] **Fase 3** — Citas y visitas + anti-solapamiento + holter/retiro + tests
-- [ ] **Fase 4** — UI (calendario, formularios, pacientes/médicos, visita)
-- [ ] **Fase 5** — Historia clínica + recordatorios WhatsApp automáticos
-- [ ] **Fase 6** — Panel + PWA (métricas, auditoría, offline)
+- [x] Documentation, data model and visual prototype
+- [ ] **Phase 0** — Scaffolding (Next.js + TS + Tailwind + Prisma + Neon)
+- [ ] **Phase 1** — Prisma schema + migration + seed
+- [ ] **Phase 2** — Authentication and roles
+- [ ] **Phase 3** — Appointments & visits + overlap prevention + Holter/removal + tests
+- [ ] **Phase 4** — UI (calendar, forms, patients/doctors, visit)
+- [ ] **Phase 5** — Clinical history + automatic WhatsApp reminders
+- [ ] **Phase 6** — Dashboard + PWA (reports, audit, offline)
 
-Detalle en [`docs/ROADMAP.md`](docs/ROADMAP.md).
+Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
-## 📚 Documentación
+## 📚 Documentation
 
-| Documento | Contenido |
-|-----------|-----------|
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Roadmap y planificación: fases, hitos, cronograma (Gantt), kanban y riesgos |
-| [`docs/DOCUMENTACION-FUNCIONAL.md`](docs/DOCUMENTACION-FUNCIONAL.md) | Requisitos, roles e historias de usuario |
-| [`docs/CASOS-DE-USO.md`](docs/CASOS-DE-USO.md) | Diagrama y descripción de casos de uso (Mermaid) |
-| [`docs/FLUJO-USUARIO.md`](docs/FLUJO-USUARIO.md) | Flowchart del flujo de usuario (Mermaid) |
-| [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md) | Entidades, campos, relaciones, diagrama ER y reglas |
-| [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Arquitectura, capas, flujo de datos y decisiones técnicas |
-| [`docs/MANUAL-USUARIO.md`](docs/MANUAL-USUARIO.md) | Guía de uso paso a paso para el personal |
-| [`propuesta/`](propuesta/) | Propuesta para el cliente (PDF) |
+> Documentation is written in Spanish (project language); this README is in English.
+
+| Document | Content |
+|----------|---------|
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Roadmap and planning: phases, milestones, schedule (Gantt), kanban and risks |
+| [`docs/DOCUMENTACION-FUNCIONAL.md`](docs/DOCUMENTACION-FUNCIONAL.md) | Requirements, roles and user stories |
+| [`docs/CASOS-DE-USO.md`](docs/CASOS-DE-USO.md) | Use-case diagram and description (Mermaid) |
+| [`docs/FLUJO-USUARIO.md`](docs/FLUJO-USUARIO.md) | User-flow flowchart (Mermaid) |
+| [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md) | Entities, fields, relations, ER diagram and rules |
+| [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Architecture, layers, data flow and technical decisions |
+| [`docs/MANUAL-USUARIO.md`](docs/MANUAL-USUARIO.md) | Step-by-step usage guide for the staff |
+| [`docs/BRIEFING.md`](docs/BRIEFING.md) | Scope-closing briefing: 13 questions with the client's confirmed answers (PDF) |
 
 ---
 
-*Desarrollado como proyecto final de bootcamp — Centro de Salud Diagnóstico, Maracay.*
+*Developed as a bootcamp final project — Centro de Salud Diagnóstico, Maracay.*
