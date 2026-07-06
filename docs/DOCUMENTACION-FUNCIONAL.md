@@ -6,7 +6,7 @@ Qué hace el sistema, para quién y bajo qué reglas. Basado en los requisitos r
 
 Dar al centro **Diagnóstico** una herramienta para **gestionar citas médicas** de forma organizada: evitar solapamientos, centralizar los pacientes (hoy dispersos en los contactos del teléfono), agilizar la **confirmación de asistencia** (hoy manual) y dar visión de la agenda desde cualquier sitio.
 
-**Datos del centro:** una sola sede · ~60 citas/día · 18 médicos · ~11-13 especialidades · consultas + ecografías (integral, doppler) + estudios cardíacos. Catálogo de servicios y cuadro médico reales → ver [`BRIEFING.md`](BRIEFING.md).
+**Datos del centro:** una sola sede · ~60 citas/día · 18 médicos · ~11-13 especialidades · consultas + ecografías (integral, doppler) + estudios cardíacos.
 
 ## 2. Alcance
 

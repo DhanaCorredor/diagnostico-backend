@@ -20,7 +20,6 @@
 - **Pagos:** solo **pago directo** (sin seguros/HCM); los cobros se registran **fuera del sistema**.
 - **Recordatorio WhatsApp:** un único aviso **24 h antes**; al **cancelar** una cita, su cupo queda libre automáticamente.
 - **Sede:** una sola.
-- **Catálogo real** de servicios/precios y **cuadro médico** (especialidades, médicos y horarios) → ver [`BRIEFING.md`](BRIEFING.md).
 
 ## Entidades
 

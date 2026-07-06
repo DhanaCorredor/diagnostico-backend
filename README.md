@@ -158,7 +158,6 @@ Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 | [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md) | Entities, fields, relations, ER diagram and rules |
 | [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Architecture, layers, data flow and technical decisions |
 | [`docs/MANUAL-USUARIO.md`](docs/MANUAL-USUARIO.md) | Step-by-step usage guide for the staff |
-| [`docs/BRIEFING.md`](docs/BRIEFING.md) | Scope-closing briefing: 13 questions with the client's confirmed answers (PDF) |
 
 ---
 
