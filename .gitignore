@@ -19,6 +19,10 @@ pnpm-debug.log*
 # Artefactos generados
 ERP-Diagnostico-Wiki.zip
 
+# Briefing con datos reales de la clienta (no publicar)
+docs/BRIEFING.md
+docs/BRIEFING.pdf
+
 # Sistema
 .DS_Store
 Thumbs.db
