@@ -15,6 +15,12 @@
 - **Recordatorios:** función principal — confirmación de asistencia por **WhatsApp** el día antes (hoy lo hacen a mano y quita mucho tiempo).
 - **Facturación:** **fuera del sistema** (el SENIAT obliga a máquinas fiscales aparte).
 - **Estudios multi-día (holter/MAPA):** se colocan un día y se retiran al siguiente → **cita de colocación + cita de retiro** enlazadas.
+- **Consultorios / salas / equipos:** cada cita puede ocupar un **recurso** (consultorio, sala o equipo de uso único como el ecógrafo o el endoscopio). El anti-solapamiento aplica **por médico y por recurso** (se elige al agendar).
+- **Duraciones por defecto:** consulta 45', ecografía 15', Doppler/Ecocardiograma 30', ECG 15', Holter/MAPA colocación 15' — ajustables por médico + servicio (`DoctorServicio`).
+- **Pagos:** solo **pago directo** (sin seguros/HCM); los cobros se registran **fuera del sistema**.
+- **Recordatorio WhatsApp:** un único aviso **24 h antes**; al **cancelar** una cita, su cupo queda libre automáticamente.
+- **Sede:** una sola.
+- **Catálogo real** de servicios/precios y **cuadro médico** (especialidades, médicos y horarios) → ver [`BRIEFING.md`](BRIEFING.md).
 
 ## Entidades
 
@@ -85,6 +91,16 @@
 ### `Availability` — disponibilidad recurrente del médico
 `id` · `doctorId` (FK) · `diaSemana` (0–6, 0=domingo) · `horaInicio` (time) · `horaFin` (time).
 
+### `Recurso` — consultorio, sala o equipo de uso único
+| Campo | Tipo | Nota |
+|-------|------|------|
+| id | uuid (PK) | |
+| nombre | string, único | ej. Consultorio 1, Sala de ecografía, Ecógrafo, Endoscopio |
+| tipo | `RecursoTipo` | CONSULTORIO · SALA · EQUIPO |
+| activo | bool (def. true) | |
+
+> Al agendar se elige el recurso que ocupa la cita. El anti-solapamiento bloquea el mismo **médico** *o* el mismo **recurso** a la vez (cubre equipos únicos como el ecógrafo).
+
 ### `Visita` — agrupa las citas de un paciente en un día
 | Campo | Tipo | Nota |
 |-------|------|------|
@@ -104,6 +120,7 @@
 | visitaId | uuid? (FK) | opcional; agrupa citas del mismo día/paciente |
 | patientId | uuid (FK) | → `Patient` |
 | doctorId | uuid (FK) | → `Doctor` |
+| recursoId | uuid? (FK) | → `Recurso` (consultorio/sala/equipo que ocupa) |
 | servicioId | uuid (FK) | → `Servicio` |
 | startsAt | datetime | |
 | endsAt | datetime | = startsAt + `DoctorServicio.duracionMin` |
@@ -143,29 +160,39 @@
 - `Role`: `ADMIN`, `RECEPCION`, `MEDICO`
 - `AppointmentStatus`: `SCHEDULED`, `CONFIRMED`, `CANCELLED`, `COMPLETED`, `NO_SHOW`
 - `ServicioCategoria`: `CONSULTA`, `ECOGRAFIA`, `ESTUDIO_CARDIACO`, `OTRO`
+- `RecursoTipo`: `CONSULTORIO`, `SALA`, `EQUIPO`
 - `RecordatorioCanal`: `WHATSAPP`, `LLAMADA`
 - `RecordatorioEstado`: `PENDIENTE`, `ENVIADO`, `CONFIRMADO`, `FALLIDO`
 
 ## Regla crítica: cero solapamientos
 
-Una cita nueva o modificada **no puede intersectar en el tiempo** con otra cita **activa** (`SCHEDULED`/`CONFIRMED`) del **mismo médico**. Intersección = `nueva.startsAt < existente.endsAt` **y** `nueva.endsAt > existente.startsAt`.
+Una cita nueva o modificada **no puede intersectar en el tiempo** con otra cita **activa** (`SCHEDULED`/`CONFIRMED`) que comparta el **mismo médico** o el **mismo recurso** (consultorio/sala/equipo). Intersección = `nueva.startsAt < existente.endsAt` **y** `nueva.endsAt > existente.startsAt`.
 
-- El bloqueo es **por médico** (recurso). Un **paciente sí** puede tener varias citas encadenadas el mismo día con distintos médicos/estudios (eso es una `Visita`); si dos citas del paciente coinciden en hora, se muestra un **aviso no bloqueante** (salvo casos como el holter, que se lleva puesto).
-- **Pendiente por confirmar:** si algunos estudios usan **equipos/salas compartidos** entre médicos. Si aplica, se añadiría un recurso (`Sala`/`Equipo`) y se extendería el anti-solapamiento también a ese recurso.
+- El bloqueo es **por médico y por recurso**: ni un médico ni un equipo de uso único (ej. el ecógrafo) pueden estar en dos citas a la vez.
+- Un **paciente sí** puede tener varias citas encadenadas el mismo día con distintos médicos/estudios (eso es una `Visita`); si dos citas del paciente coinciden en hora, se muestra un **aviso no bloqueante** (salvo casos como el holter, que se lleva puesto).
+- Al **cancelar** una cita (`CANCELLED`) sale de los estados activos → su hueco se **libera** automáticamente.
 
 Doble defensa:
 1. **Capa de servicio** — validación antes de guardar (mensaje claro).
-2. **Base de datos** — constraint de exclusión temporal por médico:
+2. **Base de datos** — dos constraints de exclusión temporal (médico y recurso):
 
 ```sql
 -- Requiere la extensión btree_gist
 ALTER TABLE "Appointment"
-  ADD CONSTRAINT no_overlap
+  ADD CONSTRAINT no_overlap_doctor
   EXCLUDE USING gist (
     "doctorId" WITH =,
     tstzrange("startsAt", "endsAt") WITH &&
   )
   WHERE (estado IN ('SCHEDULED', 'CONFIRMED'));
+
+ALTER TABLE "Appointment"
+  ADD CONSTRAINT no_overlap_recurso
+  EXCLUDE USING gist (
+    "recursoId" WITH =,
+    tstzrange("startsAt", "endsAt") WITH &&
+  )
+  WHERE (estado IN ('SCHEDULED', 'CONFIRMED') AND "recursoId" IS NOT NULL);
 ```
 
 ## Diagrama entidad-relación
@@ -183,6 +210,7 @@ erDiagram
     Patient ||--o{ Appointment : reserva
     Doctor ||--o{ Appointment : atiende
     Servicio ||--o{ Appointment : tipifica
+    Recurso ||--o{ Appointment : ocupa
     Appointment ||--o| Appointment : "retiro (holter)"
     Appointment ||--o| Recordatorio : confirma
     Patient ||--o{ NotaClinica : tiene
@@ -208,6 +236,10 @@ erDiagram
         string nombre UK
         ServicioCategoria categoria
         boolean requiereRetiro }
+    Recurso { uuid id PK
+        string nombre UK
+        RecursoTipo tipo
+        boolean activo }
     DoctorServicio { uuid doctorId FK
         uuid servicioId FK
         int duracionMin }
@@ -230,6 +262,7 @@ erDiagram
         uuid visitaId FK "opcional"
         uuid patientId FK
         uuid doctorId FK
+        uuid recursoId FK "opcional"
         uuid servicioId FK
         datetime startsAt
         datetime endsAt
@@ -264,6 +297,7 @@ erDiagram
 | `Doctor` – `Availability` | 1 : N | Franjas horarias. |
 | `Patient` – `Visita` | 1 : N | Visitas del paciente. |
 | `Visita` – `Appointment` | 1 : N | Estudios/consultas de esa visita. |
+| `Recurso` – `Appointment` | 1 : N | Consultorio/sala/equipo que ocupa cada cita (anti-solapamiento también por recurso). |
 | `Appointment` – `Appointment` | 1 : 0..1 | Retiro enlazado (holter/MAPA). |
 | `Appointment` – `Recordatorio` | 1 : 0..1 | Confirmación de asistencia. |
 | `Patient` / `Doctor` – `NotaClinica` | 1 : N | Historia clínica. |

@@ -12,7 +12,11 @@ Plan de proyecto, decisiones, fases, cronograma y riesgos. Basado en `CLAUDE.md`
 - **Visita:** agrupar los **varios estudios** del paciente el mismo día.
 - **Historia clínica:** **en el MVP** (notas por visita, para reconsultas).
 - **Recordatorios WhatsApp:** **función principal** (automatizar la confirmación del día antes, hoy manual).
-- **Facturación:** **fuera** (máquinas fiscales del SENIAT, aparte).
+- **Facturación y cobros:** **fuera** (máquinas fiscales del SENIAT); **solo pago directo, sin seguros**.
+- **Consultorios/salas/equipos:** anti-solapamiento **por médico y por recurso** (se elige consultorio/sala al agendar).
+- **Recordatorio WhatsApp:** un aviso **24 h antes**; cancelar libera el cupo.
+- **Reportes:** volumen de citas · demanda por servicio · ocupación por médico.
+- **Sede:** una sola.
 - **Google Calendar:** por ahora no (la vista móvil cubre la consulta desde el teléfono).
 - **Idioma UI:** español. · **Gestor de paquetes:** pnpm.
 
@@ -45,10 +49,10 @@ Todo con **capa gratuita** → coste cero para el bootcamp.
 1. **Autenticación y roles** — login + `ADMIN`, `RECEPCION`, `MEDICO`.
 2. **Pacientes** — CRUD (cédula única si se indica, opcional).
 3. **Médicos, especialidades y servicios** — con **duración por médico + servicio** y disponibilidad.
-4. **Citas y visitas** — agendar varios estudios el mismo día, con **anti-solapamiento por médico**; holter/MAPA (colocación + retiro).
+4. **Citas y visitas** — agendar varios estudios el mismo día, con **anti-solapamiento por médico y por consultorio/sala/equipo**; holter/MAPA (colocación + retiro).
 5. **Historia clínica** — notas por visita.
 6. **Recordatorios por WhatsApp** — confirmación **automática** el día antes.
-7. **Panel** — agenda del día, calendario y métricas; consultable desde el móvil (PWA).
+7. **Panel** — agenda del día, calendario y **reportes** (volumen de citas, demanda por servicio, ocupación por médico); consultable desde el móvil (PWA).
 8. **Auditoría**.
 
 > **Fuera del MVP:** facturación (SENIAT, aparte), portal de pacientes, Google Calendar, adjuntos pesados en la historia.
@@ -57,7 +61,7 @@ Todo con **capa gratuita** → coste cero para el bootcamp.
 
 **Definido** → ver [`MODELO-DATOS.md`](MODELO-DATOS.md) (incluye el diagrama entidad-relación).
 
-Resumen: `User`, `Doctor`, `Specialty` (N:M), `Servicio` + `DoctorServicio` (**duración por médico**), `Patient`, `Availability`, `Visita`, `Appointment` (cero solapamientos), `NotaClinica` (historia), `Recordatorio`, `AuditLog`.
+Resumen: `User`, `Doctor`, `Specialty` (N:M), `Servicio` + `DoctorServicio` (**duración por médico**), `Recurso` (consultorio/sala/equipo), `Patient`, `Availability`, `Visita`, `Appointment` (cero solapamientos por médico y recurso), `NotaClinica` (historia), `Recordatorio`, `AuditLog`.
 
 > **Estructura de carpetas** y detalle técnico → ver [`ARQUITECTURA.md`](ARQUITECTURA.md).
 
@@ -67,9 +71,9 @@ Resumen: `User`, `Doctor`, `Specialty` (N:M), `Servicio` + `DoctorServicio` (**d
 |------|----------|-------------------|:--------:|
 | **Documentación** | Requisitos, modelo, diagramas | ✅ Docs completas en `docs/` | — |
 | **Fase 0 — Andamiaje** | Next.js + TS + Tailwind + Prisma; Neon; deploy Vercel | App corriendo ("hola mundo" online) | 2 d |
-| **Fase 1 — Datos** | Esquema Prisma (servicios, duración por médico, visita, historia, recordatorios) + migración + seed | BD conectada con datos base | 3 d |
+| **Fase 1 — Datos** | Esquema Prisma (servicios, duración por médico, consultorios/recursos, visita, historia, recordatorios) + migración + seed | BD conectada con datos base | 3 d |
 | **Fase 2 — Auth y roles** | Login, sesión, guards por rol | Acceso por rol funcionando | 4 d |
-| **Fase 3 — Citas y visitas (core)** | Servicio de citas/visitas + anti-solapamiento por médico + holter/retiro + tests | Reglas de negocio validadas | 6 d |
+| **Fase 3 — Citas y visitas (core)** | Servicio de citas/visitas + anti-solapamiento por médico y recurso + holter/retiro + tests | Reglas de negocio validadas | 6 d |
 | **Fase 4 — UI** | Calendario, formularios, pacientes/médicos, visita multi-estudio | Flujo de citas usable | 5 d |
 | **Fase 5 — Historia clínica + Recordatorios** | Notas por visita + confirmación automática por WhatsApp (API Meta + cron) | Historia y recordatorios funcionando | 5 d |
 | **Fase 6 — Panel + PWA** | Métricas, auditoría, vista móvil offline | MVP completo | 4 d |
@@ -106,9 +110,9 @@ gantt
 
 **Por hacer**
 - Andamiaje del proyecto (Fase 0)
-- Esquema Prisma —servicios, duración por médico, visita, historia, recordatorios— y migración (Fase 1)
+- Esquema Prisma —servicios, duración por médico, consultorios/recursos, visita, historia, recordatorios— y migración (Fase 1)
 - Login y roles (Fase 2)
-- Citas y visitas + anti-solapamiento + holter/retiro + tests (Fase 3)
+- Citas y visitas + anti-solapamiento (médico y recurso) + holter/retiro + tests (Fase 3)
 - Calendario, formularios y visita multi-estudio (Fase 4)
 - Historia clínica + recordatorios WhatsApp automáticos (Fase 5)
 - Panel, auditoría y PWA (Fase 6)

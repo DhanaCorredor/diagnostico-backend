@@ -14,7 +14,7 @@ Guía de uso del sistema para el personal del centro. La interfaz está en espa�
 
 ## 2. El panel según tu rol
 
-- **Administrador:** acceso a todo — usuarios, médicos, especialidades, servicios y duraciones, reportes y auditoría.
+- **Administrador:** acceso a todo — usuarios, médicos, especialidades, servicios y duraciones, **consultorios/salas**, reportes y auditoría.
 - **Recepción:** pacientes, agenda, citas/visitas y recordatorios.
 - **Médico:** tu agenda, tus citas y la historia clínica.
 
@@ -22,9 +22,9 @@ Guía de uso del sistema para el personal del centro. La interfaz está en espa�
 
 1. Pulsa **Nueva cita** (botón superior).
 2. **Paciente:** búscalo por nombre o cédula. Si no existe, pulsa **Nuevo paciente** y regístralo.
-3. **Servicio y médico:** elige el servicio (consulta o estudio) y el médico. La **duración se calcula sola** según el médico + servicio.
+3. **Servicio, médico y consultorio:** elige el servicio (consulta o estudio), el médico y el **consultorio/sala** donde se realiza. La **duración se calcula sola** según el médico + servicio.
 4. **Varios estudios el mismo día (visita):** añade más servicios para ese día (ej. eco 9:00 + ecocardiograma 9:30 + holter 10:00). Se agendan juntos como una **visita**.
-5. **Fecha y hora:** elige un hueco dentro de la disponibilidad del médico. Si está ocupado, el sistema **avisa** y no deja guardar; elige otro horario.
+5. **Fecha y hora:** elige un hueco dentro de la disponibilidad del médico. Si el médico **o el consultorio/sala** ya están ocupados, el sistema **avisa** y no deja guardar; elige otro horario.
 6. **Holter / MAPA:** el sistema te pide también la cita de **retiro** (normalmente al día siguiente).
 7. Pulsa **Guardar**. El **recordatorio** de confirmación se programa automáticamente.
 
@@ -47,6 +47,8 @@ Guía de uso del sistema para el personal del centro. La interfaz está en espa�
 3. Define los **servicios** que ofrece y la **duración** de cada uno (ej. consulta 45 min, ecocardiograma 30 min).
 4. Define su **disponibilidad** (días y horas de atención).
 
+> Los **consultorios, salas y equipos** (p. ej. ecógrafo, endoscopio) se gestionan también desde administración; al agendar se asigna uno y el sistema evita que dos citas usen el mismo a la vez.
+
 ## 7. Crear accesos para el personal (Admin)
 
 1. Entra en **Usuarios**.
@@ -68,7 +70,7 @@ Guía de uso del sistema para el personal del centro. La interfaz está en espa�
 
 ## 10. Recordatorios de confirmación
 
-- El sistema **envía solo** por WhatsApp la confirmación de la cita el **día antes**.
+- El sistema **envía solo** por WhatsApp la confirmación de la cita **24 h antes**.
 - En el panel ves quién **confirmó**, quién no, y puedes **reenviar** si hace falta.
 
 ## 11. Sin conexión a internet

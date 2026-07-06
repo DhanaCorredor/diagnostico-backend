@@ -64,7 +64,7 @@ public/           # manifest PWA + service worker
 
 1. El usuario envía el formulario desde la **UI**.
 2. Una **Server Action / API route** recibe la petición y verifica **sesión y rol** (`auth`).
-3. El servicio de **citas** (`appointments`) valida disponibilidad y **solapamiento**.
+3. El servicio de **citas** (`appointments`) valida disponibilidad y **solapamiento (médico y consultorio/sala)**.
 4. Si es válido, **Prisma** persiste la cita; la **constraint de exclusión** en la BD es la última línea de defensa ante concurrencia.
 5. Se escribe un registro de **auditoría**.
 6. La UI se actualiza (revalidación).
@@ -75,12 +75,12 @@ public/           # manifest PWA + service worker
 |----------|---------------|
 | **Nube (Vercel + Neon)** | Se necesita acceso remoto desde otros ordenadores; una sola BD accesible con la cadena de conexión. |
 | **PWA con caché de lectura** | Mitiga la inestabilidad de internet: permite consultar la agenda offline (crear/editar requiere conexión). |
-| **Cero solapamientos en 2 capas** | Validación en servicio (UX) + constraint `EXCLUDE USING gist` en BD (integridad ante concurrencia). |
+| **Cero solapamientos en 2 capas** | Validación en servicio (UX) + constraints `EXCLUDE USING gist` en BD **por médico y por recurso** (integridad ante concurrencia). |
 | **RBAC por rol** | Control de acceso simple y claro (ADMIN/RECEPCION/MEDICO). |
 | **IDs `uuid`/`cuid`** | Evitan colisiones si se sincroniza o migra entre entornos. |
 | **TypeScript + dominio aislado** | Mantenibilidad y tests de la lógica crítica sin depender de la UI. |
 | **pnpm** | Gestor de paquetes rápido y eficiente en disco. |
-| **Recordatorios automáticos** | Confirmación por **WhatsApp** (API de WhatsApp Business) disparada por una **tarea programada (cron)** el día antes; se registra la respuesta. |
+| **Recordatorios automáticos** | Confirmación por **WhatsApp** (API de WhatsApp Business) disparada por una **tarea programada (cron)** **24 h antes**; se registra la respuesta. |
 | **Duración por médico + servicio** | La duración de la cita no es global: sale de `DoctorServicio` (cada médico define su duración por servicio). |
 
 ## 6. Seguridad y privacidad
