@@ -1,8 +1,8 @@
 # 🩺 Diagnóstico — Medical Appointment Management ERP
 
-Internal **medical appointment** management system for the **Diagnóstico** health center (Maracay, Venezuela). It lets the staff manage patients, doctors, schedules and appointments, with **strict schedule validation (zero overlaps)** and protection of medical data.
+Internal **medical appointment** management system for the **Diagnóstico** health center (Maracay, Venezuela). It lets the staff log in by role and manage patients, doctors and appointments, with **strict schedule validation (zero overlaps per doctor)** and **availability-aware scheduling**.
 
-> Bootcamp final project. Documentation in `docs/` (in Spanish).
+> Bootcamp final project — MVP scoped to a 2-week deadline. Documentation in `docs/` (in Spanish).
 
 ---
 
@@ -14,7 +14,7 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 - [Tech stack](#-tech-stack)
 - [Architecture](#-architecture)
 - [Data model](#-data-model)
-- [Core rule: zero overlaps](#-core-rule-zero-overlaps)
+- [Core rules](#-core-rules)
 - [Getting started](#-getting-started)
 - [Project structure](#-project-structure)
 - [Roadmap](#-roadmap)
@@ -24,91 +24,82 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 
 ## 🎯 Overview
 
-**Diagnóstico** is an internal ERP focused on **managing, creating and controlling medical appointments**. It is used only by the **center's staff** (administration, reception and doctors). It prioritizes medical-data security (HIPAA/GDPR), strict schedule validation and a clean, maintainable architecture.
+**Diagnóstico** is an internal ERP focused on **managing and creating medical appointments**. It is used only by the **center's staff** (administration, reception and doctors). It prioritizes medical-data security, strict schedule validation and a simple, maintainable architecture.
 
 ## ✨ Features
 
-- 📅 **Appointments & visits** — schedule (even **several studies on the same day**) with overlap validation **per doctor and per room/resource (consultorio/sala/equipo)**; Holter/MAPA as placement + removal.
-- 👤 **Patients** — registration and management (national ID unique when provided; **optional**).
-- 🩺 **Doctors, specialties and services** — with **duration per doctor + service** and availability.
-- 📋 **Clinical history** — notes per visit, useful for follow-up consultations.
-- 💬 **WhatsApp reminders** — **automatic** confirmation 24 h before the appointment.
-- 🔐 **Authentication & roles** — role-based access control.
-- 📊 **Dashboard** — today's agenda, calendar and reports; accessible from mobile.
-- 📝 **Audit log** — record of access and changes to medical data.
+- 🔐 **Authentication & roles** — login (JWT) with role-based access control.
+- 👥 **Unified users table** — staff, doctors and patients share one `usuarios` table (by `rol`); the UI keeps **two separate views** (Patients and Doctors).
+- 👤 **Patients** — registration and management (national ID unique when provided; **optional**), with **automatic upsert when booking** (detect if exists, create if not).
+- 🩺 **Doctors** — specialties (**N:M**) and **weekly availability**.
+- 📅 **Appointments & calendar** — book with **overlap validation per doctor** and **availability-based blocking** (days/hours the doctor is off are not selectable).
+- 📋 **Minimal clinical history** — the doctor reads/adds text notes per patient.
 
-> **Billing** is handled separately (SENIAT fiscal machines); **direct payment only, no insurance**. · **Figures:** ~60 appointments/day · 18 doctors · ~11-13 specialties · single location.
+> **Out of MVP (phase 2):** reports, WhatsApp reminders, audit log, visits (grouped studies), per-doctor duration, rooms/resources + resource overlap, Holter placement/removal, PWA offline. · **Billing** is handled separately (SENIAT); **direct payment only**.
 
 ## 👥 Roles and permissions
 
 | Role | Permissions |
 |------|-------------|
-| **ADMIN** | Full control: users, doctors, specialties, **services and durations**, rooms/resources, reports and audit. |
-| **RECEPCION** | Books appointments/visits (WhatsApp, call, in person); manages patients and reminders; sees everyone's agenda. |
-| **MEDICO** | Sees their own agenda and appointments; marks attendance/no-show; reads and adds notes to the **clinical history**. |
+| **ADMIN** | Full control: users, doctors, specialties, services, configuration. |
+| **RECEPCION** | Books appointments; manages patients and doctors; sees agendas. **No** access to **users**, **configuration** or **reports**. |
+| **MEDICO** | Sees their own agenda; marks attendance/no-show; reads and adds notes to the **clinical history**. |
+
+> Patients do **not** log in (they are records managed by reception).
 
 ## 🧱 Tech stack
 
 | Layer | Technology |
 |-------|-----------|
-| Language | TypeScript |
-| Framework | Next.js (App Router) |
-| Database | PostgreSQL |
-| ORM | Prisma |
+| Backend | **Python + FastAPI** |
+| ORM | **SQLAlchemy** (+ Alembic migrations) |
+| Database | **PostgreSQL** |
+| Auth | **JWT** (bcrypt password hashing) |
+| Frontend | **React (Vite, JavaScript)** + React Router |
 | Styling | Tailwind CSS |
-| Package manager | pnpm |
-| Runtime | Node.js 22+ |
-| Deployment | Vercel (app) + Neon (PostgreSQL) |
+| Package manager | **pnpm** (frontend) · pip (backend) |
+
+> No Prisma, no Next.js, no TypeScript.
 
 ## 🏗️ Architecture
 
-- **Cloud** — the app and the database live in the cloud (Vercel + Neon), enabling **remote access** from any computer.
-- **Offline resilience** — a PWA caches the latest agenda for **offline reading** (creating/editing requires internet). Mitigates network instability.
-- **Isolated domain layer** — the appointment logic (including overlap validation) lives in `src/server/appointments`, independently testable.
+- **Decoupled** — a **React SPA** (Vite) talks to a **FastAPI** REST API over HTTP/JSON, authenticated with a **JWT** bearer token.
+- **Business logic in the service layer** — appointment validation (overlap per doctor, availability) and patient upsert live in `backend/app/services`, independently testable.
+- **Two UI views over one table** — Patients and Doctors are filtered views of the unified `usuarios` table.
 
 ## 🗃️ Data model
 
-Core entities: `User`, `Doctor`, `Specialty` (N:M), `Servicio` + `DoctorServicio` (**duration per doctor**), `Recurso` (room/space/equipment), `Patient`, `Availability`, `Visita`, `Appointment`, `NotaClinica` (clinical history), `Recordatorio` (reminder), `AuditLog`.
+Core entities (7 tables): `usuarios` (unified), `especialidades` + `usuario_especialidad` (N:M), `servicios` (with duration), `disponibilidad`, `citas` (zero overlaps per doctor), `notas_clinicas` (minimal clinical history).
 
 📄 Full detail and ER diagram in [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md).
 
-## ⛔ Core rule: zero overlaps
+## ⛔ Core rules
 
-A new or modified appointment **cannot overlap in time** with another active appointment (`SCHEDULED`/`CONFIRMED`) that shares the same doctor or the same room/resource. This is guaranteed at **two layers**:
-
-1. **Service layer** — validation before saving, with a clear message to the user.
-2. **Database** — temporal exclusion constraints (`EXCLUDE USING gist` over `tstzrange`) that reject overlaps even under concurrent operations.
+- **Zero overlaps (per doctor)** — a new/modified appointment cannot overlap in time with another active appointment (`SCHEDULED`/`CONFIRMED`) of the same doctor. Validated in the backend service layer before saving.
+- **Availability** — appointments can only be booked inside the doctor's weekly availability; the calendar blocks the rest.
+- **Patient upsert** — booking detects an existing patient (by national ID, or name + birth date) or creates a new one.
 
 ## 🚀 Getting started
 
-> Requirements: Node.js 22+, pnpm, and a PostgreSQL database (Neon in the cloud, recommended).
+> Requirements: Python 3.12+, Node.js 20+ with pnpm, and a PostgreSQL database (Neon in the cloud, recommended).
 
 ```bash
-# 1. Clone and install dependencies
+# 1. Clone
 git clone <repo-url>
 cd Diagnostico-Centro-Salud
+
+# 2. Backend
+cd backend
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env         # set DATABASE_URL and JWT_SECRET
+alembic upgrade head         # apply migrations
+uvicorn app.main:app --reload   # http://localhost:8000  (Swagger at /docs)
+
+# 3. Frontend (in another terminal)
+cd frontend
 pnpm install
-
-# 2. Configure environment variables
-cp .env.example .env
-# Edit .env and set the Neon connection string in DATABASE_URL
-
-# 3. Prepare the database
-pnpm prisma migrate dev      # apply migrations
-pnpm prisma db seed          # seed data (users, doctors, services)
-
-# 4. Run in development
-pnpm dev                     # http://localhost:3000
-```
-
-Other commands:
-
-```bash
-pnpm build          # build for production
-pnpm start          # serve the build
-pnpm test           # run tests
-pnpm lint           # linting
-pnpm prisma studio  # visual DB panel
+pnpm dev                     # http://localhost:5173
 ```
 
 > ⚠️ **Never** commit credentials to the repository. Every secret goes in `.env` (git-ignored).
@@ -117,31 +108,35 @@ pnpm prisma studio  # visual DB panel
 
 ```
 Diagnostico-Centro-Salud/
-├── src/
-│   ├── app/              # Next.js App Router (routes + UI, in Spanish)
-│   ├── server/           # Domain logic
-│   │   ├── appointments/ # Overlap validation (isolated, testable)
-│   │   └── auth/         # Authentication and session
-│   ├── lib/              # Prisma client, role guards, utilities
-│   └── components/       # Reusable UI (Tailwind)
-├── prisma/
-│   ├── schema.prisma     # Data model
-│   └── migrations/
-├── tests/                # Unit and integration tests
-├── docs/                 # Project documentation (Spanish)
-└── mockup/               # Clickable visual prototype (UI reference)
+├── backend/                 # FastAPI + SQLAlchemy
+│   ├── app/
+│   │   ├── main.py          # FastAPI app + routers
+│   │   ├── models.py        # SQLAlchemy models
+│   │   ├── schemas.py       # Pydantic schemas
+│   │   ├── auth.py          # JWT, hashing, role guard
+│   │   ├── routers/         # auth, usuarios, citas, servicios
+│   │   └── services/        # appointment & patient logic
+│   ├── alembic/             # migrations
+│   ├── tests/               # pytest
+│   └── requirements.txt
+├── frontend/                # React (Vite, JS)
+│   └── src/
+│       ├── api/             # HTTP client + token
+│       ├── pages/           # login, agenda, patients, doctors
+│       └── components/      # reusable UI (Tailwind)
+├── docs/                    # project documentation (Spanish)
+└── mockup/                  # clickable visual prototype (UI reference)
 ```
 
 ## 🗺️ Roadmap
 
-- [x] Documentation, data model and visual prototype
-- [ ] **Phase 0** — Scaffolding (Next.js + TS + Tailwind + Prisma + Neon)
-- [ ] **Phase 1** — Prisma schema + migration + seed
-- [ ] **Phase 2** — Authentication and roles
-- [ ] **Phase 3** — Appointments & visits + overlap prevention + Holter/removal + tests
-- [ ] **Phase 4** — UI (calendar, forms, patients/doctors, visit)
-- [ ] **Phase 5** — Clinical history + automatic WhatsApp reminders
-- [ ] **Phase 6** — Dashboard + PWA (reports, audit, offline)
+- [x] Documentation, unified data model and visual prototype
+- [ ] **Phase 0** — Scaffolding (FastAPI backend + React/Vite frontend)
+- [ ] **Phase 1** — SQLAlchemy models + Alembic migration + seed
+- [ ] **Phase 2** — Authentication (JWT) and roles
+- [ ] **Phase 3** — Appointments core (patient upsert + availability + overlap per doctor) + tests
+- [ ] **Phase 4** — UI (login, calendar, Patients/Doctors views, appointment form)
+- [ ] **Phase 5** — Minimal clinical history + polish + deployment
 
 Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
@@ -151,7 +146,7 @@ Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 | Document | Content |
 |----------|---------|
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Roadmap and planning: phases, milestones, schedule (Gantt), kanban and risks |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Roadmap and planning: phases, schedule (Gantt), kanban and risks |
 | [`docs/DOCUMENTACION-FUNCIONAL.md`](docs/DOCUMENTACION-FUNCIONAL.md) | Requirements, roles and user stories |
 | [`docs/CASOS-DE-USO.md`](docs/CASOS-DE-USO.md) | Use-case diagram and description (Mermaid) |
 | [`docs/FLUJO-USUARIO.md`](docs/FLUJO-USUARIO.md) | User-flow flowchart (Mermaid) |
