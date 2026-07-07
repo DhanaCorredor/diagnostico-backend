@@ -1,302 +1,197 @@
 # ERP Diagnóstico — Modelo de Datos
 
-> Modelo definido a partir de los requisitos reales del centro. Listo para formalizar en `schema.prisma`. Incluye el diagrama entidad-relación.
-> IDs tipo `uuid`/`cuid` (no autoincrementales) para evitar colisiones al sincronizar o migrar entre entornos.
+> Modelo del **MVP** (deadline 2 semanas), definido a partir de los requisitos reales del centro. Se formaliza como **modelos SQLAlchemy** sobre **PostgreSQL**. Incluye el diagrama entidad-relación.
+> IDs tipo `uuid` (no autoincrementales) para evitar colisiones al migrar entre entornos.
+> Nomenclatura **snake_case** (convención de Python/SQLAlchemy y PostgreSQL).
+
+## Decisión clave: tabla `usuarios` unificada
+
+Para **ahorrar código y simplificar**, personal, médicos y pacientes **comparten el mismo diseño de tabla** (`usuarios`), diferenciados por el campo `rol`. No hay tablas `User`/`Doctor`/`Patient` separadas: una sola entidad "persona" con los campos que cada rol necesita (los no aplicables quedan a `NULL`).
+
+- **Login** solo para el personal interno (`ADMIN`, `RECEPCION`, `MEDICO`): tienen `email` + `password_hash`.
+- **Pacientes** (`rol = PACIENTE`) son filas **sin contraseña**; los gestiona recepción (no acceden al sistema).
+- En la interfaz se mantienen **dos vistas separadas** —**Pacientes** y **Médicos**— que consultan esta misma tabla filtrando por `rol`.
+
+## Alcance del MVP
+
+**7 tablas.** Se prioriza lo demostrable y las validaciones que pidió la profe.
+
+| Núcleo (MVP) | Fuera del MVP (→ fase 2) |
+|--------------|--------------------------|
+| `usuarios`, `especialidades`, `usuario_especialidad`, `servicios`, `disponibilidad`, `citas`, `notas_clinicas` | Reportes · recordatorios WhatsApp · auditoría · visitas (agrupar estudios) · duración por médico · recursos/salas + anti-solapamiento por recurso · holter colocación+retiro · constraint `gist` en BD · PWA offline |
 
 ## Decisiones cerradas (con datos reales del centro)
 
-- **Usuarios:** solo personal interno (`ADMIN`, `RECEPCION`, `MEDICO`). Las citas las agenda **recepción** (WhatsApp, llamada o presencial).
-- **Volumen:** ~60 citas/día · 18 médicos · ~11-13 especialidades · servicios de consulta, ecografía (integral, doppler) y estudios cardíacos.
-- **Especialidades:** varias por médico → relación **N:M**.
-- **Paciente:** identificado preferentemente por **cédula (única si se indica, pero opcional)**; algunos pacientes (niños, extranjeros) se registran **sin cédula** y se identifican por id interno + nombre + fecha de nacimiento (hoy solo los tienen en los contactos del teléfono; nombres repetidos → la cédula/ficha los diferencia).
-- **Duración de la cita:** depende del **médico + servicio** (ej. Dra Fabiola: consulta 45', ecocardiograma 30'; Richard: consulta 60', ecocardiograma 30'). → entidad `DoctorServicio` con la duración.
-- **Visita:** un paciente suele tener **2-3 estudios el mismo día** (eco + ecocardiograma + holter). Se agrupan en una **`Visita`**.
-- **Historia clínica:** se incluye (notas por visita, útiles para reconsultas o si le atiende otro especialista del área).
-- **Recordatorios:** función principal — confirmación de asistencia por **WhatsApp** el día antes (hoy lo hacen a mano y quita mucho tiempo).
-- **Facturación:** **fuera del sistema** (el SENIAT obliga a máquinas fiscales aparte).
-- **Estudios multi-día (holter/MAPA):** se colocan un día y se retiran al siguiente → **cita de colocación + cita de retiro** enlazadas.
-- **Consultorios / salas / equipos:** cada cita puede ocupar un **recurso** (consultorio, sala o equipo de uso único como el ecógrafo o el endoscopio). El anti-solapamiento aplica **por médico y por recurso** (se elige al agendar).
-- **Duraciones por defecto:** consulta 45', ecografía 15', Doppler/Ecocardiograma 30', ECG 15', Holter/MAPA colocación 15' — ajustables por médico + servicio (`DoctorServicio`).
-- **Pagos:** solo **pago directo** (sin seguros/HCM); los cobros se registran **fuera del sistema**.
-- **Recordatorio WhatsApp:** un único aviso **24 h antes**; al **cancelar** una cita, su cupo queda libre automáticamente.
-- **Sede:** una sola.
+- **Usuarios:** solo personal interno hace login (`ADMIN`, `RECEPCION`, `MEDICO`). Las citas las agenda **recepción**. Los pacientes son registros, no usuarios con acceso.
+- **Roles:** ADMIN todo · RECEPCION agenda/pacientes/médicos pero **sin** usuarios, configuración ni reportes · MEDICO su agenda + notas clínicas.
+- **Paciente:** identificado preferentemente por **cédula (única si se indica, pero opcional)**; algunos (niños, extranjeros) se registran **sin cédula** y se identifican por id interno + nombre + fecha de nacimiento.
+- **Alta de paciente al agendar (upsert):** al crear una cita el sistema **busca al paciente** (por cédula, o nombre + fecha de nacimiento); si **existe** lo reutiliza, si **no existe** lo **crea** con `rol = PACIENTE`. Nunca se duplica.
+- **Duración de la cita:** la marca el **servicio** (`servicios.duracion_min`). `ends_at = starts_at + duracion_min`.
+- **Disponibilidad:** cada médico define sus franjas semanales (`disponibilidad`). El calendario **no deja ver ni agendar** en días/horas fuera de su disponibilidad.
+- **Cero solapamientos (MVP): solo por médico.** Un médico no puede tener dos citas activas que se solapen en el tiempo. *(El anti-solapamiento por recurso/sala queda para fase 2.)*
+- **Historia clínica mínima:** notas de texto por paciente (`notas_clinicas`), que escribe el médico; da contenido a la vista del rol MEDICO.
+- **Pagos y facturación:** **fuera del sistema**. **Sede:** una sola.
+
+---
 
 ## Entidades
 
-### `User` — personal con acceso
+### `usuarios` — persona única (personal, médicos y pacientes)
 | Campo | Tipo | Nota |
 |-------|------|------|
 | id | uuid (PK) | |
-| email | string, único | login |
-| passwordHash | string | argon2/bcrypt |
-| nombre | string | |
-| rol | `Role` | ADMIN · RECEPCION · MEDICO |
-| doctorId | uuid?, único | si es médico → 1:1 con `Doctor` |
+| nombre_completo | string | |
+| rol | `Rol` | ADMIN · RECEPCION · MEDICO · PACIENTE |
+| email | string?, único | login (solo staff) |
+| password_hash | string? | bcrypt (solo staff) |
+| cedula | string?, **única si se indica** | documento; **opcional** (niños/extranjeros) |
+| fecha_nacimiento | date? | |
+| telefono | string? | (varios pacientes pueden compartir número) |
+| matricula | string? | nº de colegiado (solo médico) |
+| alergias | text? | historia clínica (solo paciente) |
+| antecedentes | text? | historia clínica (solo paciente) |
 | activo | bool (def. true) | baja lógica |
-| createdAt / updatedAt | datetime | |
+| created_at / updated_at | datetime | |
 
-### `Doctor` — profesional
-| Campo | Tipo | Nota |
-|-------|------|------|
-| id | uuid (PK) | |
-| nombreCompleto | string | |
-| matricula | string? | nº de registro/colegiado |
-| activo | bool (def. true) | |
-| especialidades | N:M vía `DoctorSpecialty` | |
-| servicios | N:M vía `DoctorServicio` (con duración) | |
-| disponibilidad | 1:N `Availability` | |
+> Un mismo diseño de tabla sirve para los cuatro roles; la vista de **Pacientes** filtra `rol = PACIENTE` y la de **Médicos** filtra `rol = MEDICO`.
 
-### `Specialty` — especialidad médica
+### `especialidades` — especialidad médica
 | Campo | Tipo | Nota |
 |-------|------|------|
 | id | uuid (PK) | |
 | nombre | string, único | ej. Cardiología |
 
-### `DoctorSpecialty` — N:M médico ↔ especialidad
-`doctorId` (FK) · `specialtyId` (FK) · PK compuesta.
+### `usuario_especialidad` — N:M médico ↔ especialidad
+`usuario_id` (FK → usuarios) · `especialidad_id` (FK → especialidades) · PK compuesta.
 
-### `Servicio` — catálogo de consultas y estudios
+### `servicios` — catálogo de consultas y estudios
 | Campo | Tipo | Nota |
 |-------|------|------|
 | id | uuid (PK) | |
-| nombre | string, único | ej. Consulta cardiología, Ecocardiograma, Holter, MAPA, Eco abdominal, Doppler… |
+| nombre | string, único | ej. Consulta cardiología, Ecocardiograma, Holter, Eco abdominal, Doppler… |
 | categoria | `ServicioCategoria` | CONSULTA · ECOGRAFIA · ESTUDIO_CARDIACO · OTRO |
-| requiereRetiro | bool (def. false) | true en holter/MAPA (colocación + retiro) |
+| duracion_min | int | duración → fuente del `ends_at` de la cita |
 | activo | bool (def. true) | |
 
-### `DoctorServicio` — qué hace cada médico y **cuánto dura**
-| Campo | Tipo | Nota |
-|-------|------|------|
-| doctorId | uuid (FK) | |
-| servicioId | uuid (FK) | |
-| duracionMin | int | **duración específica de ese médico para ese servicio** |
-| — | PK compuesta (doctorId, servicioId) | |
+### `disponibilidad` — franjas semanales del médico
+`id` · `usuario_id` (FK → usuarios, médico) · `dia_semana` (0–6, 0=domingo) · `hora_inicio` (time) · `hora_fin` (time).
 
-> De aquí sale la duración de la cita: (médico + servicio) → `duracionMin`.
+> El calendario lee esto para **grisar** (no clicable) los días/horas en que el médico no atiende; al guardar, el backend **revalida** que la cita cae dentro de la disponibilidad.
 
-### `Patient` — paciente (gestionado por recepción)
+### `citas` — la cita (núcleo)
 | Campo | Tipo | Nota |
 |-------|------|------|
 | id | uuid (PK) | |
-| nombreCompleto | string | |
-| cedula | string?, **único si se indica** | documento (Venezuela); **opcional** (niños/extranjeros sin cédula) |
-| fechaNacimiento | date | |
-| telefono | string? | (varios pacientes pueden compartir número) |
-| email | string? | |
-| alergias | text? | para la historia clínica |
-| antecedentes | text? | para la historia clínica |
-| createdAt / updatedAt | datetime | |
-
-### `Availability` — disponibilidad recurrente del médico
-`id` · `doctorId` (FK) · `diaSemana` (0–6, 0=domingo) · `horaInicio` (time) · `horaFin` (time).
-
-### `Recurso` — consultorio, sala o equipo de uso único
-| Campo | Tipo | Nota |
-|-------|------|------|
-| id | uuid (PK) | |
-| nombre | string, único | ej. Consultorio 1, Sala de ecografía, Ecógrafo, Endoscopio |
-| tipo | `RecursoTipo` | CONSULTORIO · SALA · EQUIPO |
-| activo | bool (def. true) | |
-
-> Al agendar se elige el recurso que ocupa la cita. El anti-solapamiento bloquea el mismo **médico** *o* el mismo **recurso** a la vez (cubre equipos únicos como el ecógrafo).
-
-### `Visita` — agrupa las citas de un paciente en un día
-| Campo | Tipo | Nota |
-|-------|------|------|
-| id | uuid (PK) | |
-| patientId | uuid (FK) | |
-| fecha | date | |
-| creadoPorId | uuid (FK → User) | recepción que la agendó |
-| notas | text? | |
-| createdAt | datetime | |
-
-> Una visita agrupa varias `Appointment` (ej. eco 9:00 + ecocardiograma 9:30 + holter 10:00).
-
-### `Appointment` — la cita (núcleo)
-| Campo | Tipo | Nota |
-|-------|------|------|
-| id | uuid (PK) | |
-| visitaId | uuid? (FK) | opcional; agrupa citas del mismo día/paciente |
-| patientId | uuid (FK) | → `Patient` |
-| doctorId | uuid (FK) | → `Doctor` |
-| recursoId | uuid? (FK) | → `Recurso` (consultorio/sala/equipo que ocupa) |
-| servicioId | uuid (FK) | → `Servicio` |
-| startsAt | datetime | |
-| endsAt | datetime | = startsAt + `DoctorServicio.duracionMin` |
-| estado | `AppointmentStatus` | SCHEDULED · CONFIRMED · CANCELLED · COMPLETED · NO_SHOW |
+| paciente_id | uuid (FK → usuarios) | rol PACIENTE |
+| medico_id | uuid (FK → usuarios) | rol MEDICO |
+| servicio_id | uuid (FK → servicios) | |
+| starts_at | datetime | |
+| ends_at | datetime | = starts_at + `servicios.duracion_min` |
+| estado | `EstadoCita` | SCHEDULED · CONFIRMED · CANCELLED · COMPLETED · NO_SHOW |
 | motivo | string? | |
-| citaOrigenId | uuid? (FK → Appointment) | enlaza el **retiro** con la **colocación** (holter/MAPA) |
-| creadoPorId | uuid (FK → User) | |
-| createdAt / updatedAt | datetime | |
+| creado_por_id | uuid (FK → usuarios) | recepción que la agendó |
+| created_at / updated_at | datetime | |
 
-### `NotaClinica` — historia clínica (notas de evolución)
+### `notas_clinicas` — historia clínica (versión mínima)
 | Campo | Tipo | Nota |
 |-------|------|------|
 | id | uuid (PK) | |
-| patientId | uuid (FK) | |
-| doctorId | uuid (FK) | quién la escribe |
-| appointmentId | uuid? (FK) | visita/cita asociada |
+| paciente_id | uuid (FK → usuarios) | |
+| medico_id | uuid (FK → usuarios) | quién la escribe |
+| cita_id | uuid? (FK → citas) | cita asociada (opcional) |
 | fecha | datetime | |
 | contenido | text | evolución, hallazgos, indicaciones |
 
-> El médico consulta el historial del paciente en reconsultas o si le atiende otro especialista del área.
-
-### `Recordatorio` — confirmación de asistencia
-| Campo | Tipo | Nota |
-|-------|------|------|
-| id | uuid (PK) | |
-| appointmentId | uuid (FK) | (o `visitaId` si se confirma la visita completa) |
-| canal | `RecordatorioCanal` | WHATSAPP (posible LLAMADA manual) |
-| programadoPara | datetime | normalmente el día antes |
-| estado | `RecordatorioEstado` | PENDIENTE · ENVIADO · CONFIRMADO · FALLIDO |
-| enviadoAt | datetime? | |
-
-### `AuditLog` — trazabilidad (HIPAA/GDPR)
-`id` · `userId?` (FK) · `accion` (CREATE/UPDATE/DELETE/LOGIN/VIEW) · `entidad` · `entidadId?` · `detalle` (json?) · `timestamp`.
-
 ## Enums
 
-- `Role`: `ADMIN`, `RECEPCION`, `MEDICO`
-- `AppointmentStatus`: `SCHEDULED`, `CONFIRMED`, `CANCELLED`, `COMPLETED`, `NO_SHOW`
+- `Rol`: `ADMIN`, `RECEPCION`, `MEDICO`, `PACIENTE`
+- `EstadoCita`: `SCHEDULED`, `CONFIRMED`, `CANCELLED`, `COMPLETED`, `NO_SHOW`
 - `ServicioCategoria`: `CONSULTA`, `ECOGRAFIA`, `ESTUDIO_CARDIACO`, `OTRO`
-- `RecursoTipo`: `CONSULTORIO`, `SALA`, `EQUIPO`
-- `RecordatorioCanal`: `WHATSAPP`, `LLAMADA`
-- `RecordatorioEstado`: `PENDIENTE`, `ENVIADO`, `CONFIRMADO`, `FALLIDO`
 
-## Regla crítica: cero solapamientos
+## Reglas de validación (en el backend FastAPI)
 
-Una cita nueva o modificada **no puede intersectar en el tiempo** con otra cita **activa** (`SCHEDULED`/`CONFIRMED`) que comparta el **mismo médico** o el **mismo recurso** (consultorio/sala/equipo). Intersección = `nueva.startsAt < existente.endsAt` **y** `nueva.endsAt > existente.startsAt`.
+Toda la validación vive en la **capa de servicio** del backend (Python), antes de guardar:
 
-- El bloqueo es **por médico y por recurso**: ni un médico ni un equipo de uso único (ej. el ecógrafo) pueden estar en dos citas a la vez.
-- Un **paciente sí** puede tener varias citas encadenadas el mismo día con distintos médicos/estudios (eso es una `Visita`); si dos citas del paciente coinciden en hora, se muestra un **aviso no bloqueante** (salvo casos como el holter, que se lleva puesto).
-- Al **cancelar** una cita (`CANCELLED`) sale de los estados activos → su hueco se **libera** automáticamente.
+1. **Upsert de paciente** — `buscar_o_crear_paciente(cedula | nombre + fecha_nacimiento)`: reutiliza si existe, crea con `rol = PACIENTE` si no.
+2. **Dentro de disponibilidad** — la cita debe caer en una franja de `disponibilidad` del médico para ese día de la semana.
+3. **Cero solapamientos (por médico)** — una cita nueva/modificada **no puede intersectar** con otra cita **activa** (`SCHEDULED`/`CONFIRMED`) del **mismo médico**. Intersección = `nueva.starts_at < existente.ends_at` **y** `nueva.ends_at > existente.starts_at`.
+4. **Cancelar libera** — al pasar a `CANCELLED` la cita sale de los estados activos y su hueco se reutiliza.
 
-Doble defensa:
-1. **Capa de servicio** — validación antes de guardar (mensaje claro).
-2. **Base de datos** — dos constraints de exclusión temporal (médico y recurso):
-
-```sql
--- Requiere la extensión btree_gist
-ALTER TABLE "Appointment"
-  ADD CONSTRAINT no_overlap_doctor
-  EXCLUDE USING gist (
-    "doctorId" WITH =,
-    tstzrange("startsAt", "endsAt") WITH &&
-  )
-  WHERE (estado IN ('SCHEDULED', 'CONFIRMED'));
-
-ALTER TABLE "Appointment"
-  ADD CONSTRAINT no_overlap_recurso
-  EXCLUDE USING gist (
-    "recursoId" WITH =,
-    tstzrange("startsAt", "endsAt") WITH &&
-  )
-  WHERE (estado IN ('SCHEDULED', 'CONFIRMED') AND "recursoId" IS NOT NULL);
+```python
+# Anti-solapamiento por médico (pseudocódigo del servicio de citas)
+def hay_solapamiento(db, medico_id, starts_at, ends_at, excluir_cita_id=None):
+    q = (
+        db.query(Cita)
+        .filter(Cita.medico_id == medico_id)
+        .filter(Cita.estado.in_(["SCHEDULED", "CONFIRMED"]))
+        .filter(Cita.starts_at < ends_at)   # se cruzan en el tiempo
+        .filter(Cita.ends_at > starts_at)
+    )
+    if excluir_cita_id:                      # al editar, ignora la propia cita
+        q = q.filter(Cita.id != excluir_cita_id)
+    return db.query(q.exists()).scalar()
 ```
 
 ## Diagrama entidad-relación
 
 ```mermaid
 erDiagram
-    User ||--o| Doctor : "es (si MEDICO)"
-    Doctor ||--o{ DoctorSpecialty : tiene
-    Specialty ||--o{ DoctorSpecialty : agrupa
-    Doctor ||--o{ DoctorServicio : ofrece
-    Servicio ||--o{ DoctorServicio : "lo dan"
-    Doctor ||--o{ Availability : define
-    Patient ||--o{ Visita : acude
-    Visita ||--o{ Appointment : agrupa
-    Patient ||--o{ Appointment : reserva
-    Doctor ||--o{ Appointment : atiende
-    Servicio ||--o{ Appointment : tipifica
-    Recurso ||--o{ Appointment : ocupa
-    Appointment ||--o| Appointment : "retiro (holter)"
-    Appointment ||--o| Recordatorio : confirma
-    Patient ||--o{ NotaClinica : tiene
-    Doctor ||--o{ NotaClinica : escribe
-    User ||--o{ Appointment : crea
-    User ||--o{ AuditLog : genera
+    usuarios ||--o{ usuario_especialidad : tiene
+    especialidades ||--o{ usuario_especialidad : agrupa
+    usuarios ||--o{ disponibilidad : define
+    usuarios ||--o{ citas : "paciente / médico"
+    servicios ||--o{ citas : tipifica
+    usuarios ||--o{ notas_clinicas : "paciente / médico"
+    citas ||--o{ notas_clinicas : asocia
 
-    User {
+    usuarios {
         uuid id PK
-        string email UK
-        Role rol
-        uuid doctorId FK "opcional"
+        string nombre_completo
+        Rol rol
+        string email UK "opc"
+        string password_hash "opc"
+        string cedula UK "opc"
+        date fecha_nacimiento "opc"
         boolean activo
     }
-    Doctor { uuid id PK
-        string nombreCompleto
-        boolean activo }
-    Specialty { uuid id PK
+    especialidades { uuid id PK
         string nombre UK }
-    DoctorSpecialty { uuid doctorId FK
-        uuid specialtyId FK }
-    Servicio { uuid id PK
+    usuario_especialidad { uuid usuario_id FK
+        uuid especialidad_id FK }
+    servicios { uuid id PK
         string nombre UK
         ServicioCategoria categoria
-        boolean requiereRetiro }
-    Recurso { uuid id PK
-        string nombre UK
-        RecursoTipo tipo
-        boolean activo }
-    DoctorServicio { uuid doctorId FK
-        uuid servicioId FK
-        int duracionMin }
-    Patient { uuid id PK
-        string nombreCompleto
-        string cedula UK
-        date fechaNacimiento
-        text alergias "opcional"
-        text antecedentes "opcional" }
-    Availability { uuid id PK
-        uuid doctorId FK
-        int diaSemana
-        time horaInicio
-        time horaFin }
-    Visita { uuid id PK
-        uuid patientId FK
-        date fecha
-        uuid creadoPorId FK }
-    Appointment { uuid id PK
-        uuid visitaId FK "opcional"
-        uuid patientId FK
-        uuid doctorId FK
-        uuid recursoId FK "opcional"
-        uuid servicioId FK
-        datetime startsAt
-        datetime endsAt
-        AppointmentStatus estado
-        uuid citaOrigenId FK "retiro"
-        uuid creadoPorId FK }
-    NotaClinica { uuid id PK
-        uuid patientId FK
-        uuid doctorId FK
-        uuid appointmentId FK "opcional"
+        int duracion_min }
+    disponibilidad { uuid id PK
+        uuid usuario_id FK
+        int dia_semana
+        time hora_inicio
+        time hora_fin }
+    citas { uuid id PK
+        uuid paciente_id FK
+        uuid medico_id FK
+        uuid servicio_id FK
+        datetime starts_at
+        datetime ends_at
+        EstadoCita estado
+        uuid creado_por_id FK }
+    notas_clinicas { uuid id PK
+        uuid paciente_id FK
+        uuid medico_id FK
+        uuid cita_id FK "opc"
         datetime fecha
         text contenido }
-    Recordatorio { uuid id PK
-        uuid appointmentId FK
-        RecordatorioCanal canal
-        datetime programadoPara
-        RecordatorioEstado estado }
-    AuditLog { uuid id PK
-        uuid userId FK
-        string accion
-        string entidad
-        datetime timestamp }
 ```
 
 ### Relaciones (resumen)
 
 | Relación | Cardinalidad | Nota |
 |----------|--------------|------|
-| `User` – `Doctor` | 1 : 0..1 | Un usuario `MEDICO` enlaza con su ficha. |
-| `Doctor` – `Specialty` | N : M | Vía `DoctorSpecialty`. |
-| `Doctor` – `Servicio` | N : M | Vía `DoctorServicio` (**con duración por médico**). |
-| `Doctor` – `Availability` | 1 : N | Franjas horarias. |
-| `Patient` – `Visita` | 1 : N | Visitas del paciente. |
-| `Visita` – `Appointment` | 1 : N | Estudios/consultas de esa visita. |
-| `Recurso` – `Appointment` | 1 : N | Consultorio/sala/equipo que ocupa cada cita (anti-solapamiento también por recurso). |
-| `Appointment` – `Appointment` | 1 : 0..1 | Retiro enlazado (holter/MAPA). |
-| `Appointment` – `Recordatorio` | 1 : 0..1 | Confirmación de asistencia. |
-| `Patient` / `Doctor` – `NotaClinica` | 1 : N | Historia clínica. |
+| `usuarios` (médico) – `especialidades` | N : M | Vía `usuario_especialidad`. |
+| `usuarios` (médico) – `disponibilidad` | 1 : N | Franjas horarias semanales. |
+| `usuarios` (paciente) – `citas` | 1 : N | Citas del paciente. |
+| `usuarios` (médico) – `citas` | 1 : N | Citas que atiende (anti-solapamiento por médico). |
+| `servicios` – `citas` | 1 : N | Servicio de la cita (fuente de la duración). |
+| `usuarios` – `notas_clinicas` | 1 : N | Historia clínica (paciente y médico). |
+
+> **Fase 2** (si sobra tiempo): recursos/salas + anti-solapamiento por recurso, duración por médico (`medico_servicio`), visitas para agrupar estudios, recordatorios WhatsApp, auditoría, reportes y PWA. El diseño actual permite añadirlas sin romper lo existente.
