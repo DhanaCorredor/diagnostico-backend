@@ -50,12 +50,12 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 | RF-02 | ADMIN gestiona usuarios, médicos, especialidades y servicios. |
 | RF-03 | RECEPCION **no** puede acceder a usuarios, configuración ni reportes. |
 | RF-04 | Cada médico define sus **especialidades (N:M)** y su **disponibilidad** semanal. |
-| RF-05 | RECEPCION registra y edita **pacientes** (cédula única si se indica; **opcional**). |
-| RF-06 | Al **agendar**, el sistema **detecta al paciente** si ya existe (por cédula o nombre + fecha de nacimiento) y lo **crea** si no existe (upsert). |
+| RF-05 | RECEPCION registra **pacientes** con **nombre, apellido y edad**; la **cédula** es **opcional** (la añaden los especialistas al hacer la consulta/estudio). |
+| RF-06 | Al **agendar**, el sistema **detecta** al paciente por **nombre + apellido + edad** (o lo **crea** si no existe, upsert); si hay varias coincidencias, recepción **elige**. |
 | RF-07 | RECEPCION crea, edita, mueve y cancela **citas**. |
 | RF-08 | El sistema **impide solapar** dos citas activas del **mismo médico**. |
 | RF-09 | La duración/fin de la cita se calcula según el **servicio** elegido (`duracion_min`). |
-| RF-10 | El **calendario bloquea** (no muestra ni permite agendar) los días/horas fuera de la **disponibilidad** del médico. |
+| RF-10 | El **calendario bloquea** los días/horas fuera de la **disponibilidad** del médico, **salvo que recepción fuerce un cupo extra** (sobrecupo) con confirmación. |
 | RF-11 | Al **cancelar** una cita, su cupo queda libre. |
 | RF-12 | El MEDICO ve su agenda y marca **atendida / no-show**. |
 | RF-13 | El MEDICO consulta y añade **notas de historia clínica** del paciente. |
@@ -74,7 +74,7 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 ## 6. Historias de usuario
 
 **Recepción**
-- *Quiero registrar al paciente con su cédula, para no confundir nombres repetidos.*
+- *Quiero registrar al paciente rápido con nombre, apellido y edad (la cédula se añade luego).*
 - *Quiero que, al agendar, si el paciente ya existe se detecte solo y si no, se cree.*
 - *Quiero que el sistema me avise si el horario del médico está ocupado o fuera de su disponibilidad, para no solapar.*
 
@@ -92,14 +92,14 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 |----|-------|
 | RN-01 | **Cero solapamientos por médico**: dos citas activas del mismo médico no pueden intersectar en el tiempo. |
 | RN-02 | La **duración** de la cita la define el **servicio** (`servicios.duracion_min`). |
-| RN-03 | La **cédula** es única cuando se indica, pero **opcional** (se permite registrar pacientes sin ella). |
+| RN-03 | La **cédula** es **opcional** (única si se indica); los especialistas la añaden **después** del agendado, para el informe. |
 | RN-04 | Un médico puede tener **varias especialidades** (N:M). |
-| RN-05 | Al **agendar** se hace **upsert** del paciente (detectar si existe, crear si no). |
-| RN-06 | Solo se agenda dentro de la **disponibilidad** del médico. |
+| RN-05 | Al **agendar** se hace **upsert** del paciente por **nombre + apellido + edad** (detectar o crear; si hay varios, recepción elige). |
+| RN-06 | Se agenda dentro de la **disponibilidad** del médico; recepción puede **forzar un cupo extra** (sobrecupo) de mutuo acuerdo. |
 | RN-07 | Bajas **lógicas** (`activo`), nunca borrado físico. |
 | RN-08 | Estados de cita: `SCHEDULED` · `CONFIRMED` · `CANCELLED` · `COMPLETED` · `NO_SHOW`. |
 | RN-09 | Al **cancelar** una cita, su hueco queda libre (sale de los estados activos) y puede reutilizarse. |
 
 ## 8. Flujo principal: crear una cita
 
-El recorrido completo está en el **flowchart** de [`FLUJO-USUARIO.md`](FLUJO-USUARIO.md). En resumen: **login** → elegir médico y servicio → el calendario muestra solo los días/horas **disponibles** → introducir/buscar al paciente (**upsert**) → el sistema calcula la duración y **valida solapamiento por médico** → guardar la cita.
+El recorrido completo está en el **flowchart** de [`FLUJO-USUARIO.md`](FLUJO-USUARIO.md). En resumen: **login** → elegir médico y servicio → el calendario muestra los días/horas **disponibles** (recepción puede forzar un **sobrecupo**) → introducir al paciente por **nombre + apellido + edad** (**upsert**) → el sistema calcula la duración y **valida el solapamiento por médico** → guardar la cita.

@@ -44,17 +44,18 @@ flowchart TD
 flowchart TD
     S([Nueva cita]) --> R[Elegir médico y servicio]
     R --> R1[Duración = servicio.duracion_min]
-    R1 --> C1[Introducir paciente<br/>cédula o nombre + fecha nac.]
+    R1 --> C1[Introducir paciente<br/>nombre + apellido + edad]
     C1 --> P{¿El paciente existe?}
     P -- No --> P1[Crear paciente<br/>rol PACIENTE]
     P1 --> T
     P -- Sí --> P2[Reutilizar paciente]
-    P2 --> T[Elegir fecha y hora<br/>solo días disponibles]
+    P2 --> T[Elegir fecha y hora]
     T --> U{¿Dentro de la disponibilidad<br/>del médico?}
-    U -- No --> V[Aviso: fuera de horario]
-    V --> T
+    U -- No --> Vov{¿Forzar cupo extra?<br/>sobrecupo}
+    Vov -- No --> T
+    Vov -- Sí --> W
     U -- Sí --> W{¿Se solapa con otra<br/>cita del médico?}
-    W -- Sí --> X[Aviso: horario no disponible]
+    W -- Sí --> X[Aviso: solapamiento · elige otra hora]
     X --> T
     W -- No --> Y[Guardar cita · SCHEDULED]
     Y --> Z([Cita agendada])
@@ -63,6 +64,6 @@ flowchart TD
 ## Notas
 
 - La validación (disponibilidad del médico + **cero solapamientos por médico**) y el **upsert de paciente** se ejecutan en la **capa de servicio** del backend (FastAPI) antes de guardar.
-- El calendario **bloquea** (grisa) los días/horas fuera de la disponibilidad del médico.
+- El calendario **bloquea** (grisa) los días/horas fuera de la disponibilidad del médico; recepción puede **forzar un cupo extra** (sobrecupo) con confirmación.
 - Los pacientes **no acceden** al sistema; toda gestión la realiza el personal.
 - **Fase 2:** anti-solapamiento por recurso/sala, agrupar varios estudios (visita), recordatorios WhatsApp, auditoría y refuerzo con restricciones a nivel de base de datos.
