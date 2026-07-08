@@ -63,8 +63,9 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 
 ## 🏗️ Architecture
 
-- **Decoupled** — a **React SPA** (Vite) talks to a **FastAPI** REST API over HTTP/JSON, authenticated with a **JWT** bearer token.
-- **Business logic in the service layer** — appointment validation (overlap per doctor, availability) and patient upsert live in `backend/app/services`, independently testable.
+- **Two repositories** — the **frontend** (React, `diagnostico-frontend`) and this **backend** (FastAPI) are separate repos; the project docs live here, in the backend repo.
+- **Decoupled** — the React SPA (Vite) talks to the FastAPI REST API over HTTP/JSON, authenticated with a **JWT** bearer token.
+- **Business logic in the service layer** — appointment validation (overlap per doctor, availability) and patient upsert live in `app/services`, independently testable.
 - **Two UI views over one table** — Patients and Doctors are filtered views of the unified `usuarios` table.
 
 ## 🗃️ Data model
@@ -77,27 +78,23 @@ Core entities (7 tables): `usuarios` (unified), `especialidades` + `usuario_espe
 
 - **Zero overlaps (per doctor)** — a new/modified appointment cannot overlap in time with another active appointment (`SCHEDULED`/`CONFIRMED`) of the same doctor. Validated in the backend service layer before saving.
 - **Availability** — appointments can only be booked inside the doctor's weekly availability; the calendar blocks the rest.
-- **Patient upsert** — booking detects an existing patient (by national ID, or name + birth date) or creates a new one.
+- **Patient upsert** — booking identifies the patient by **name + surname + age** and creates one if none exists (the national ID is optional, added later by specialists).
 
 ## 🚀 Getting started
 
-> Requirements: Python 3.12+, Node.js 20+ with pnpm, and a PostgreSQL database (Neon in the cloud, recommended).
+> Requirements: Python 3.12+, Node.js 20+ with pnpm, and a PostgreSQL database (a local install, or Neon in the cloud).
 
 ```bash
-# 1. Clone
-git clone <repo-url>
-cd Diagnostico-Centro-Salud
-
-# 2. Backend
-cd backend
+# Backend (this repo)
+git clone <backend-repo-url> && cd diagnostico-centro-salud
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env         # set DATABASE_URL and JWT_SECRET
 alembic upgrade head         # apply migrations
 uvicorn app.main:app --reload   # http://localhost:8000  (Swagger at /docs)
 
-# 3. Frontend (in another terminal)
-cd frontend
+# Frontend (separate repo, in another terminal)
+git clone <frontend-repo-url> && cd diagnostico-frontend
 pnpm install
 pnpm dev                     # http://localhost:5173
 ```
@@ -106,32 +103,36 @@ pnpm dev                     # http://localhost:5173
 
 ## 📂 Project structure
 
+**Backend repo** (`diagnostico-centro-salud`, this one):
+
 ```
-Diagnostico-Centro-Salud/
-├── backend/                 # FastAPI + SQLAlchemy
-│   ├── app/
-│   │   ├── main.py          # FastAPI app + routers
-│   │   ├── models.py        # SQLAlchemy models
-│   │   ├── schemas.py       # Pydantic schemas
-│   │   ├── auth.py          # JWT, hashing, role guard
-│   │   ├── routers/         # auth, usuarios, citas, servicios
-│   │   └── services/        # appointment & patient logic
-│   ├── alembic/             # migrations
-│   ├── tests/               # pytest
-│   └── requirements.txt
-├── frontend/                # React (Vite, JS)
-│   └── src/
-│       ├── api/             # HTTP client + token
-│       ├── pages/           # login, agenda, patients, doctors
-│       └── components/      # reusable UI (Tailwind)
-├── docs/                    # project documentation (Spanish)
-└── mockup/                  # clickable visual prototype (UI reference)
+├── app/
+│   ├── main.py          # FastAPI app + routers
+│   ├── models.py        # SQLAlchemy models
+│   ├── schemas.py       # Pydantic schemas
+│   ├── auth.py          # JWT, hashing, role guard
+│   ├── routers/         # auth, usuarios, citas, servicios
+│   └── services/        # appointment & patient logic
+├── alembic/             # migrations
+├── tests/               # pytest
+├── requirements.txt
+├── docs/                # project documentation (Spanish)
+└── mockup/              # clickable visual prototype (UI reference)
+```
+
+**Frontend repo** (`diagnostico-frontend`):
+
+```
+└── src/
+    ├── api/             # HTTP client + token
+    ├── pages/           # login, agenda, patients, doctors
+    └── components/      # reusable UI (Tailwind)
 ```
 
 ## 🗺️ Roadmap
 
 - [x] Documentation, unified data model and visual prototype
-- [ ] **Phase 0** — Scaffolding (FastAPI backend + React/Vite frontend)
+- [ ] **Phase 0** — Scaffolding (FastAPI backend here + React/Vite frontend in its own repo)
 - [ ] **Phase 1** — SQLAlchemy models + Alembic migration + seed
 - [ ] **Phase 2** — Authentication (JWT) and roles
 - [ ] **Phase 3** — Appointments core (patient upsert + availability + overlap per doctor) + tests

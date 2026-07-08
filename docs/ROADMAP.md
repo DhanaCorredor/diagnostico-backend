@@ -59,7 +59,7 @@ Resumen (7 tablas): `usuarios` (unificada), `especialidades` + `usuario_especial
 | Fase | Objetivo | Hito / entregable | Duración |
 |------|----------|-------------------|:--------:|
 | **Documentación** | Requisitos, modelo, diagramas (actualizados al nuevo stack) | ✅ Docs en `docs/` | — |
-| **Fase 0 — Andamiaje** | `backend/` (FastAPI) + `frontend/` (React/Vite) corriendo; conexión a PostgreSQL | "Hola mundo" front↔back | 1 d |
+| **Fase 0 — Andamiaje** | Backend FastAPI (este repo) + frontend React/Vite (**repo aparte**) corriendo; conexión a PostgreSQL | "Hola mundo" front↔back | 1 d |
 | **Fase 1 — Datos** | Modelos SQLAlchemy + migración Alembic + seed (usuarios, especialidades, servicios) | BD conectada con datos base | 2 d |
 | **Fase 2 — Auth y roles** | Login JWT, hash de contraseñas, dependencia `requiere_rol` | Acceso por rol funcionando | 2 d |
 | **Fase 3 — Citas (core)** | Servicio de citas: upsert de paciente + disponibilidad + anti-solapamiento por médico + tests | Reglas de negocio validadas | 3 d |
@@ -91,7 +91,7 @@ gantt
 ## 6. Tablero de tareas (Kanban orientativo)
 
 **Por hacer**
-- Andamiaje `backend/` (FastAPI) + `frontend/` (React/Vite) (Fase 0)
+- Andamiaje backend FastAPI (este repo) + frontend React/Vite (repo aparte) (Fase 0)
 - Modelos SQLAlchemy + migración Alembic + seed (Fase 1)
 - Login JWT y guardas por rol (Fase 2)
 - Servicio de citas: upsert de paciente + disponibilidad + anti-solapamiento por médico + tests (Fase 3)

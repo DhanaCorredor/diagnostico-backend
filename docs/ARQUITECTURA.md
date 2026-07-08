@@ -4,10 +4,10 @@ Describe la arquitectura del sistema, sus capas, el flujo de datos y las decisio
 
 ## 1. Visión general
 
-Aplicación web de **dos piezas desacopladas**:
+Aplicación web de **dos piezas desacopladas**, en **dos repositorios separados**:
 
-- **Frontend** — una **SPA en React** (Vite, JavaScript) que consume una API REST.
-- **Backend** — una **API REST en FastAPI** (Python) con **SQLAlchemy** sobre **PostgreSQL**, autenticación por **JWT** y toda la lógica de negocio (validación de citas, upsert de pacientes, disponibilidad).
+- **Frontend** — repo `diagnostico-frontend`: una **SPA en React** (Vite, JavaScript) que consume una API REST.
+- **Backend** — repo `diagnostico-centro-salud` (este): una **API REST en FastAPI** (Python) con **SQLAlchemy** sobre **PostgreSQL**, autenticación por **JWT** y toda la lógica de negocio (validación de citas, upsert de pacientes, disponibilidad). Aquí viven también los `docs/` y el `mockup/` del proyecto.
 
 Se comunican por **HTTP/JSON**. El frontend guarda el token JWT y lo envía en la cabecera `Authorization` de cada petición.
 
@@ -39,35 +39,40 @@ flowchart TD
 
 | Capa | Responsabilidad | Ubicación |
 |------|-----------------|-----------|
-| **Presentación** | UI, formularios, calendario, navegación. Llamadas a la API. | `frontend/src` |
-| **API / routers** | Endpoints REST, validación de entrada (Pydantic), verificación de rol. | `backend/app/routers` |
-| **Dominio / servicios** | Reglas de negocio (citas, disponibilidad, upsert de paciente, auth). Aislada y testeable. | `backend/app/services` |
-| **Acceso a datos** | Modelos y consultas vía SQLAlchemy. | `backend/app/models`, `backend/app/db.py` |
+| **Presentación** | UI, formularios, calendario, navegación. Llamadas a la API. | frontend · `src/` |
+| **API / routers** | Endpoints REST, validación de entrada (Pydantic), verificación de rol. | backend · `app/routers` |
+| **Dominio / servicios** | Reglas de negocio (citas, disponibilidad, upsert de paciente, auth). Aislada y testeable. | backend · `app/services` |
+| **Acceso a datos** | Modelos y consultas vía SQLAlchemy. | backend · `app/models`, `app/db.py` |
 | **Base de datos** | Almacenamiento e integridad. | PostgreSQL |
 
 ### Estructura de carpetas
 
-```
-backend/
-  app/
-    main.py           # arranque FastAPI + montaje de routers
-    db.py             # engine + sesión SQLAlchemy
-    models.py         # modelos (usuarios, citas, servicios, ...)
-    schemas.py        # esquemas Pydantic (entrada/salida)
-    auth.py           # JWT, hash de contraseñas, dependencia requiere_rol
-    routers/          # endpoints: auth, usuarios, citas, servicios
-    services/         # lógica: citas (solapamiento/disponibilidad), pacientes (upsert)
-  alembic/            # migraciones
-  tests/              # pytest
-  requirements.txt
+**Repo BACKEND** (`diagnostico-centro-salud`, este repo):
 
-frontend/
-  src/
-    api/              # cliente HTTP (fetch/axios) + guardado del token
-    pages/            # login, agenda/calendario, pacientes, médicos
-    components/       # UI reutilizable (Tailwind)
-    App.jsx           # rutas (React Router) + guardas por rol
-  package.json        # pnpm
+```
+app/
+  main.py           # arranque FastAPI + montaje de routers
+  db.py             # engine + sesión SQLAlchemy
+  models.py         # modelos (usuarios, citas, servicios, ...)
+  schemas.py        # esquemas Pydantic (entrada/salida)
+  auth.py           # JWT, hash de contraseñas, dependencia requiere_rol
+  routers/          # endpoints: auth, usuarios, citas, servicios
+  services/         # lógica: citas (solapamiento/disponibilidad), pacientes (upsert)
+alembic/            # migraciones
+tests/              # pytest
+requirements.txt
+docs/  mockup/       # documentación del proyecto
+```
+
+**Repo FRONTEND** (`diagnostico-frontend`):
+
+```
+src/
+  api/              # cliente HTTP (fetch/axios) + guardado del token
+  pages/            # login, agenda/calendario, pacientes, médicos
+  components/       # UI reutilizable (Tailwind)
+  App.jsx           # rutas (React Router) + guardas por rol
+package.json        # pnpm
 ```
 
 ## 4. Flujo de datos (crear una cita)
