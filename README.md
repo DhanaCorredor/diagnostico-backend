@@ -153,6 +153,7 @@ Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 | [`docs/FLUJO-USUARIO.md`](docs/FLUJO-USUARIO.md) | User-flow flowchart (Mermaid) |
 | [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md) | Entities, fields, relations, ER diagram and rules |
 | [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Architecture, layers, data flow and technical decisions |
+| [`docs/COMPONENTES.md`](docs/COMPONENTES.md) | Frontend component map (Atomic Design lite) |
 | [`docs/MANUAL-USUARIO.md`](docs/MANUAL-USUARIO.md) | Step-by-step usage guide for the staff |
 
 ---
