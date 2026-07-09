@@ -1,6 +1,6 @@
 # ERP Diagnóstico — Roadmap y Planificación
 
-Plan de proyecto, decisiones, fases, cronograma y riesgos del **MVP** (deadline: 2 semanas). Basado en `CLAUDE.md` + decisiones acordadas.
+Plan de proyecto, decisiones, fases, cronograma y riesgos del **MVP** (entrega/presentación: **27 jul 2026**). Basado en `CLAUDE.md` + decisiones acordadas.
 
 ## 0. Decisiones acordadas (con datos reales del centro)
 
@@ -68,24 +68,28 @@ Resumen (7 tablas): `usuarios` (unificada), `especialidades` + `usuario_especial
 
 ### Cronograma (Gantt)
 
-> ⚠️ Fechas **orientativas**: ajústalas a tu calendario real.
+> Rebaselinado el **9 jul 2026**. Entrega/presentación: **27 jul 2026** → hay **margen holgado** (~5 días de buffer tras el desarrollo).
 
 ```mermaid
 gantt
-    title Cronograma MVP (2 semanas) — ERP Diagnóstico
+    title Cronograma MVP — ERP Diagnóstico (presentación 27 jul 2026)
     dateFormat  YYYY-MM-DD
     axisFormat  %d/%m
 
     section Preparación
-    Documentación            :done,    doc, 2026-07-01, 6d
+    Documentación y planificación :done, doc, 2026-07-01, 2026-07-09
 
     section Desarrollo
-    Fase 0 · Andamiaje           :         f0, after doc, 1d
-    Fase 1 · Datos               :         f1, after f0, 2d
-    Fase 2 · Auth y roles        :         f2, after f1, 2d
-    Fase 3 · Citas (core)        :crit,    f3, after f2, 3d
-    Fase 4 · UI                  :         f4, after f3, 3d
-    Fase 5 · Historia + cierre   :         f5, after f4, 2d
+    Fase 0 · Andamiaje         :active, f0, 2026-07-09, 1d
+    Fase 1 · Datos             :        f1, after f0, 2d
+    Fase 2 · Auth y roles      :        f2, after f1, 2d
+    Fase 3 · Citas (core)      :crit,   f3, after f2, 3d
+    Fase 4 · UI                :        f4, after f3, 3d
+    Fase 5 · Historia + cierre :        f5, after f4, 2d
+
+    section Cierre
+    Pruebas, pulido y margen   :        qa, after f5, 5d
+    Presentación (entrega)     :milestone, pres, 2026-07-27, 0d
 ```
 
 ## 6. Tablero de tareas (Kanban orientativo)
@@ -111,7 +115,7 @@ gantt
 
 | Riesgo | Mitigación |
 |--------|-----------|
-| **Plazo corto (2 semanas)** | MVP recortado (7 tablas), extras a fase 2, foco en el core de citas |
+| **Plazo (presentación 27 jul)** | MVP recortado (7 tablas), extras a fase 2, foco en el core; queda buffer de pruebas antes de presentar |
 | Solapamiento de citas | Validación en la capa de servicio (backend) antes de guardar |
 | Fuga de datos médicos | Hash de contraseñas (bcrypt), JWT, RBAC por rol, secretos en `.env` |
 | Alcance amplio | Lista explícita de "fuera del MVP" para no dispersarse |
