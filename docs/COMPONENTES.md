@@ -1,6 +1,8 @@
 # Mapa de Componentes (React) — Atomic Design *lite*
 
 > Inventario de componentes del **frontend** (repo `diagnostico-frontend`), derivado del `mockup/` y ceñido al **MVP**. Enfoque **Atomic Design ligero**: se usa la jerarquía como **guía de organización**, sin obsesionarse con clasificar cada pieza al milímetro.
+>
+> **🎯 Regla de oro: el código lo más sencillo posible.** Componentes pequeños y con **una sola responsabilidad**; nada de abstracciones prematuras ni librerías de estado complejas. Si algo se resuelve con `useState` + `fetch`, no metas más. Prima "que funcione y se lea claro" sobre "que sea sofisticado".
 
 ```
 Átomos  →  Moléculas  →  Organismos  →  Plantillas  →  Páginas
