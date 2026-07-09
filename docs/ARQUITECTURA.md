@@ -7,7 +7,7 @@ Describe la arquitectura del sistema, sus capas, el flujo de datos y las decisio
 Aplicación web de **dos piezas desacopladas**, en **dos repositorios separados**:
 
 - **Frontend** — repo `diagnostico-frontend`: una **SPA en React** (Vite, JavaScript) que consume una API REST.
-- **Backend** — repo `diagnostico-centro-salud` (este): una **API REST en FastAPI** (Python) con **SQLAlchemy** sobre **PostgreSQL**, autenticación por **JWT** y toda la lógica de negocio (validación de citas, upsert de pacientes, disponibilidad). Aquí viven también los `docs/` y el `mockup/` del proyecto.
+- **Backend** — repo `diagnostico-backend` (este): una **API REST en FastAPI** (Python) con **SQLAlchemy** sobre **PostgreSQL**, autenticación por **JWT** y toda la lógica de negocio (validación de citas, upsert de pacientes, disponibilidad). Aquí viven también los `docs/` y el `mockup/` del proyecto.
 
 Se comunican por **HTTP/JSON**. El frontend guarda el token JWT y lo envía en la cabecera `Authorization` de cada petición.
 
@@ -47,7 +47,7 @@ flowchart TD
 
 ### Estructura de carpetas
 
-**Repo BACKEND** (`diagnostico-centro-salud`, este repo):
+**Repo BACKEND** (`diagnostico-backend`, este repo):
 
 ```
 app/
