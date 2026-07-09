@@ -1,3 +1,6 @@
 # Dependencias del backend (se añaden a medida que se usan)
 fastapi            # framework web para crear la API
 uvicorn[standard]  # servidor que ejecuta la app FastAPI
+sqlalchemy         # ORM: traduce entre Python y la base de datos
+psycopg2-binary    # driver que conecta Python con PostgreSQL
+python-dotenv      # carga las variables del archivo .env
