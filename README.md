@@ -86,7 +86,7 @@ Core entities (7 tables): `usuarios` (unified), `especialidades` + `usuario_espe
 
 ```bash
 # Backend (this repo)
-git clone <backend-repo-url> && cd diagnostico-centro-salud
+git clone <backend-repo-url> && cd diagnostico-backend
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env         # set DATABASE_URL and JWT_SECRET
@@ -103,7 +103,7 @@ pnpm dev                     # http://localhost:5173
 
 ## 📂 Project structure
 
-**Backend repo** (`diagnostico-centro-salud`, this one):
+**Backend repo** (`diagnostico-backend`, this one):
 
 ```
 ├── app/
