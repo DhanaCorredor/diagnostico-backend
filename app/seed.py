@@ -14,6 +14,13 @@ from app.models import Especialidad, Rol, Servicio, ServicioCategoria, Usuario
 
 ADMIN_EMAIL = "admin@diagnostico.com"
 
+# Personal de ejemplo para desarrollo: (nombre, rol, email, matrícula).
+# Comparten la contraseña de desarrollo (ADMIN_PASSWORD); son solo para probar roles.
+STAFF_DEMO = [
+    ("Recepción Demo", "RECEPCION", "recepcion@diagnostico.com", None),
+    ("Dra. Ana Médico", "MEDICO", "medico@diagnostico.com", "MAT-0001"),
+]
+
 # --- Catálogo de especialidades (~12, perfil real del centro) ---------------
 ESPECIALIDADES = [
     "Cardiología",
@@ -98,14 +105,43 @@ def sembrar_admin(db):
     return 1
 
 
+def sembrar_staff_demo(db):
+    """Crea el personal de ejemplo (RECEPCION, MEDICO) que no exista. Devuelve cuántos creó.
+
+    Usan la contraseña de desarrollo (ADMIN_PASSWORD). Si no está definida, se saltan.
+    """
+    password = os.getenv("ADMIN_PASSWORD")
+    if not password:
+        return 0
+    creados = 0
+    for nombre, rol, email, matricula in STAFF_DEMO:
+        if db.query(Usuario).filter_by(email=email).first():
+            continue
+        db.add(
+            Usuario(
+                nombre_completo=nombre,
+                rol=Rol(rol),
+                email=email,
+                matricula=matricula,
+                password_hash=hashear_password(password),
+            )
+        )
+        creados += 1
+    return creados
+
+
 def main():
     db = SessionLocal()
     try:
         n_esp = sembrar_especialidades(db)
         n_serv = sembrar_servicios(db)
         n_admin = sembrar_admin(db)
+        n_staff = sembrar_staff_demo(db)
         db.commit()
-        print(f"Seed OK: +{n_esp} especialidades, +{n_serv} servicios, +{n_admin} admin.")
+        print(
+            f"Seed OK: +{n_esp} especialidades, +{n_serv} servicios, "
+            f"+{n_admin} admin, +{n_staff} staff."
+        )
     finally:
         db.close()
 
