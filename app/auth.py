@@ -5,11 +5,18 @@ para el login y para verificar el token en cada petición.
 """
 
 import os
+import uuid
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
 import jwt
 from dotenv import load_dotenv
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.orm import Session
+
+from app.db import get_db
+from app.models import Usuario
 
 load_dotenv()
 
@@ -61,3 +68,33 @@ def decodificar_token(token: str) -> dict:
     si el token es inválido, fue manipulado o ya expiró.
     """
     return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+
+
+# --- Dependencia de FastAPI: usuario autenticado ----------------------------
+
+# Lee la cabecera 'Authorization: Bearer <token>'. En /docs pone el botón "Authorize".
+security = HTTPBearer()
+
+
+def usuario_actual(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db),
+) -> Usuario:
+    """Valida el token del header y devuelve el usuario actual.
+
+    Se usa como dependencia en los endpoints que requieren estar autenticado.
+    Lanza 401 si el token es inválido/expiró o el usuario ya no existe.
+    """
+    no_autorizado = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Token inválido o expirado",
+    )
+    try:
+        datos = decodificar_token(credentials.credentials)
+        usuario_id = uuid.UUID(datos["sub"])
+    except (jwt.InvalidTokenError, KeyError, ValueError):
+        raise no_autorizado
+    usuario = db.get(Usuario, usuario_id)
+    if usuario is None:
+        raise no_autorizado
+    return usuario
