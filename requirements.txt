@@ -4,3 +4,4 @@ uvicorn[standard]  # servidor que ejecuta la app FastAPI
 sqlalchemy         # ORM: traduce entre Python y la base de datos
 psycopg2-binary    # driver que conecta Python con PostgreSQL
 python-dotenv      # carga las variables del archivo .env
+alembic            # migraciones: control de versiones del esquema de la BD
