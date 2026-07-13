@@ -19,3 +19,16 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False)
 
 # 'Base' es la clase de la que heredarán todos los modelos (las tablas).
 Base = declarative_base()
+
+
+def get_db():
+    """Dependencia de FastAPI: abre una sesión para la petición y la cierra al final.
+
+    El 'yield' entrega la sesión al endpoint; el 'finally' garantiza que se cierre
+    aunque haya un error. Cada petición usa su propia sesión.
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

@@ -6,8 +6,20 @@ falta (compara por `nombre`, que es único en ambas tablas).
 Ejecutar con:  python -m app.seed
 """
 
+import os
+
+from app.auth import hashear_password
 from app.db import SessionLocal
-from app.models import Especialidad, Servicio, ServicioCategoria
+from app.models import Especialidad, Rol, Servicio, ServicioCategoria, Usuario
+
+ADMIN_EMAIL = "admin@diagnostico.com"
+
+# Personal de ejemplo para desarrollo: (nombre, rol, email, matrícula).
+# Comparten la contraseña de desarrollo (ADMIN_PASSWORD); son solo para probar roles.
+STAFF_DEMO = [
+    ("Recepción Demo", "RECEPCION", "recepcion@diagnostico.com", None),
+    ("Dra. Ana Médico", "MEDICO", "medico@diagnostico.com", "MAT-0001"),
+]
 
 # --- Catálogo de especialidades (~12, perfil real del centro) ---------------
 ESPECIALIDADES = [
@@ -70,13 +82,66 @@ def sembrar_servicios(db):
     return len(nuevos)
 
 
+def sembrar_admin(db):
+    """Crea el usuario ADMIN si no existe. Devuelve 1 si lo creó, 0 si no.
+
+    La contraseña sale del .env (ADMIN_PASSWORD); nunca se escribe en el código.
+    Si no está definida, se salta el admin con un aviso (no inventa contraseñas).
+    """
+    if db.query(Usuario).filter_by(email=ADMIN_EMAIL).first():
+        return 0  # ya existe
+    password = os.getenv("ADMIN_PASSWORD")
+    if not password:
+        print("  (aviso) ADMIN_PASSWORD no está en el .env: me salto el admin.")
+        return 0
+    db.add(
+        Usuario(
+            nombre_completo="Administrador",
+            rol=Rol.ADMIN,
+            email=ADMIN_EMAIL,
+            password_hash=hashear_password(password),
+        )
+    )
+    return 1
+
+
+def sembrar_staff_demo(db):
+    """Crea el personal de ejemplo (RECEPCION, MEDICO) que no exista. Devuelve cuántos creó.
+
+    Usan la contraseña de desarrollo (ADMIN_PASSWORD). Si no está definida, se saltan.
+    """
+    password = os.getenv("ADMIN_PASSWORD")
+    if not password:
+        return 0
+    creados = 0
+    for nombre, rol, email, matricula in STAFF_DEMO:
+        if db.query(Usuario).filter_by(email=email).first():
+            continue
+        db.add(
+            Usuario(
+                nombre_completo=nombre,
+                rol=Rol(rol),
+                email=email,
+                matricula=matricula,
+                password_hash=hashear_password(password),
+            )
+        )
+        creados += 1
+    return creados
+
+
 def main():
     db = SessionLocal()
     try:
         n_esp = sembrar_especialidades(db)
         n_serv = sembrar_servicios(db)
+        n_admin = sembrar_admin(db)
+        n_staff = sembrar_staff_demo(db)
         db.commit()
-        print(f"Seed OK: +{n_esp} especialidades, +{n_serv} servicios.")
+        print(
+            f"Seed OK: +{n_esp} especialidades, +{n_serv} servicios, "
+            f"+{n_admin} admin, +{n_staff} staff."
+        )
     finally:
         db.close()
 
