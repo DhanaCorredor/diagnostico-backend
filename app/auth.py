@@ -16,7 +16,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Usuario
+from app.models import Rol, Usuario
 
 load_dotenv()
 
@@ -98,3 +98,22 @@ def usuario_actual(
     if usuario is None:
         raise no_autorizado
     return usuario
+
+
+def requiere_rol(*roles_permitidos: Rol):
+    """Fábrica de dependencias: exige que el usuario actual tenga uno de estos roles.
+
+    Uso en un endpoint:  dependencies=[Depends(requiere_rol(Rol.ADMIN))]
+    Devuelve una dependencia que primero autentica (usuario_actual) y luego
+    comprueba el rol; lanza 403 si no está permitido.
+    """
+
+    def verificar(usuario: Usuario = Depends(usuario_actual)) -> Usuario:
+        if usuario.rol not in roles_permitidos:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes permiso para esta acción",
+            )
+        return usuario
+
+    return verificar
