@@ -2,13 +2,14 @@
 
 from fastapi import FastAPI
 
-from app.routers import auth
+from app.routers import auth, usuarios
 
 # 'app' es la aplicación. El servidor (uvicorn) la busca por este nombre.
 app = FastAPI(title="Diagnóstico API")
 
-# Monta los endpoints de autenticación (POST /auth/login, GET /auth/me).
-app.include_router(auth.router)
+# Monta los routers (agrupan los endpoints).
+app.include_router(auth.router)      # POST /auth/login, GET /auth/me
+app.include_router(usuarios.router)  # GET /usuarios (solo ADMIN)
 
 
 @app.get("/health")
