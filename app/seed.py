@@ -6,8 +6,13 @@ falta (compara por `nombre`, que es único en ambas tablas).
 Ejecutar con:  python -m app.seed
 """
 
+import os
+
+from app.auth import hashear_password
 from app.db import SessionLocal
-from app.models import Especialidad, Servicio, ServicioCategoria
+from app.models import Especialidad, Rol, Servicio, ServicioCategoria, Usuario
+
+ADMIN_EMAIL = "admin@diagnostico.com"
 
 # --- Catálogo de especialidades (~12, perfil real del centro) ---------------
 ESPECIALIDADES = [
@@ -70,13 +75,37 @@ def sembrar_servicios(db):
     return len(nuevos)
 
 
+def sembrar_admin(db):
+    """Crea el usuario ADMIN si no existe. Devuelve 1 si lo creó, 0 si no.
+
+    La contraseña sale del .env (ADMIN_PASSWORD); nunca se escribe en el código.
+    Si no está definida, se salta el admin con un aviso (no inventa contraseñas).
+    """
+    if db.query(Usuario).filter_by(email=ADMIN_EMAIL).first():
+        return 0  # ya existe
+    password = os.getenv("ADMIN_PASSWORD")
+    if not password:
+        print("  (aviso) ADMIN_PASSWORD no está en el .env: me salto el admin.")
+        return 0
+    db.add(
+        Usuario(
+            nombre_completo="Administrador",
+            rol=Rol.ADMIN,
+            email=ADMIN_EMAIL,
+            password_hash=hashear_password(password),
+        )
+    )
+    return 1
+
+
 def main():
     db = SessionLocal()
     try:
         n_esp = sembrar_especialidades(db)
         n_serv = sembrar_servicios(db)
+        n_admin = sembrar_admin(db)
         db.commit()
-        print(f"Seed OK: +{n_esp} especialidades, +{n_serv} servicios.")
+        print(f"Seed OK: +{n_esp} especialidades, +{n_serv} servicios, +{n_admin} admin.")
     finally:
         db.close()
 
