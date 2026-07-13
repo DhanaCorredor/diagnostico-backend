@@ -80,9 +80,9 @@ gantt
     Documentación y planificación :done, doc, 2026-07-01, 2026-07-09
 
     section Desarrollo
-    Fase 0 · Andamiaje         :active, f0, 2026-07-09, 1d
-    Fase 1 · Datos             :        f1, after f0, 2d
-    Fase 2 · Auth y roles      :        f2, after f1, 2d
+    Fase 0 · Andamiaje         :done,   f0, 2026-07-09, 1d
+    Fase 1 · Datos             :done,   f1, after f0, 2d
+    Fase 2 · Auth y roles      :active, f2, after f1, 2d
     Fase 3 · Citas (core)      :crit,   f3, after f2, 3d
     Fase 4 · UI                :        f4, after f3, 3d
     Fase 5 · Historia + cierre :        f5, after f4, 2d
@@ -95,21 +95,21 @@ gantt
 ## 6. Tablero de tareas (Kanban orientativo)
 
 **Por hacer**
-- Andamiaje backend FastAPI (este repo) + frontend React/Vite (repo aparte) (Fase 0)
-- Modelos SQLAlchemy + migración Alembic + seed (Fase 1)
-- Login JWT y guardas por rol (Fase 2)
 - Servicio de citas: upsert de paciente + disponibilidad + anti-solapamiento por médico + tests (Fase 3)
 - Calendario, vistas Pacientes/Médicos y formulario de cita (Fase 4)
 - Historia clínica mínima + pulido + despliegue (Fase 5)
 
 **En curso**
-- Actualización de la documentación al nuevo stack (React + Python)
+- _(nada activo — Fase 1 recién cerrada; siguiente: **Login JWT, guardas por rol y usuario admin**, Fase 2)_
 
 **Hecho**
 - Planificación y decisiones de arquitectura
 - Modelo de datos y diagrama ER (unificado)
 - Documentación funcional, casos de uso, flujo de usuario y manual
 - Prototipo visual (mockup)
+- Documentación actualizada al stack React + Python
+- **Fase 0** — Andamiaje backend FastAPI + conexión a PostgreSQL (frontend React/Vite en repo aparte)
+- **Fase 1** — Modelos SQLAlchemy (7 tablas) + Alembic + migración inicial + seed de catálogos (12 especialidades, 16 servicios)
 
 ## 7. Riesgos y mitigación
 
