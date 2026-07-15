@@ -40,13 +40,13 @@ ESPECIALIDADES = [
 # --- Catálogo de servicios: (nombre, categoría, duración en minutos) ---------
 # La duración es la que marca el `ends_at` de cada cita.
 SERVICIOS = [
-    # Consultas
-    ("Consulta cardiología", ServicioCategoria.CONSULTA, 30),
-    ("Consulta medicina interna", ServicioCategoria.CONSULTA, 30),
-    ("Consulta ginecología", ServicioCategoria.CONSULTA, 30),
-    ("Consulta pediátrica", ServicioCategoria.CONSULTA, 20),
-    ("Consulta dermatología", ServicioCategoria.CONSULTA, 20),
-    ("Consulta traumatología", ServicioCategoria.CONSULTA, 20),
+    # Consultas (45 min)
+    ("Consulta cardiología", ServicioCategoria.CONSULTA, 45),
+    ("Consulta medicina interna", ServicioCategoria.CONSULTA, 45),
+    ("Consulta ginecología", ServicioCategoria.CONSULTA, 45),
+    ("Consulta pediátrica", ServicioCategoria.CONSULTA, 45),
+    ("Consulta dermatología", ServicioCategoria.CONSULTA, 45),
+    ("Consulta traumatología", ServicioCategoria.CONSULTA, 45),
     # Ecografías
     ("Ecografía abdominal", ServicioCategoria.ECOGRAFIA, 20),
     ("Ecografía obstétrica", ServicioCategoria.ECOGRAFIA, 30),

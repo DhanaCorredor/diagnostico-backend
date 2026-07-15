@@ -5,10 +5,11 @@ documentación automática de /docs).
 """
 
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from app.models import Rol
+from app.models import EstadoCita, Rol
 
 
 class LoginRequest(BaseModel):
@@ -34,4 +35,31 @@ class UsuarioOut(BaseModel):
     rol: Rol
 
     # Permite construir el esquema a partir de un objeto ORM (usuario.id, .rol...).
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CitaCreate(BaseModel):
+    """Cuerpo del POST /citas. El paciente se identifica por nombre + edad (upsert)."""
+
+    nombre_completo: str
+    edad: int
+    medico_id: uuid.UUID
+    servicio_id: uuid.UUID
+    starts_at: datetime
+    motivo: str | None = None
+    permitir_sobrecupo: bool = False  # recepción puede forzar un cupo extra
+
+
+class CitaOut(BaseModel):
+    """Datos de la cita creada."""
+
+    id: uuid.UUID
+    paciente_id: uuid.UUID
+    medico_id: uuid.UUID
+    servicio_id: uuid.UUID
+    starts_at: datetime
+    ends_at: datetime
+    estado: EstadoCita
+    motivo: str | None
+
     model_config = ConfigDict(from_attributes=True)

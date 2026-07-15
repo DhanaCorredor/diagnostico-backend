@@ -7,3 +7,4 @@ python-dotenv      # carga las variables del archivo .env
 alembic            # migraciones: control de versiones del esquema de la BD
 pyjwt              # crea y verifica los tokens JWT (login)
 bcrypt             # hash seguro de contraseñas
+pytest             # framework de tests
