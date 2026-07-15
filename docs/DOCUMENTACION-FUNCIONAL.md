@@ -1,107 +1,105 @@
 # Documentación Funcional — ERP Diagnóstico
 
-Qué hace el sistema, para quién y bajo qué reglas. Basado en los requisitos reales del centro. Complementa `ROADMAP.md` (plan) y `MODELO-DATOS.md` (datos).
+Qué hace el sistema, para quién y bajo qué reglas (alcance **MVP**, deadline 2 semanas). Basado en los requisitos reales del centro. Complementa `ROADMAP.md` (plan) y `MODELO-DATOS.md` (datos).
 
 ## 1. Objetivo
 
-Dar al centro **Diagnóstico** una herramienta para **gestionar citas médicas** de forma organizada: evitar solapamientos, centralizar los pacientes (hoy dispersos en los contactos del teléfono), agilizar la **confirmación de asistencia** (hoy manual) y dar visión de la agenda desde cualquier sitio.
+Dar al centro **Diagnóstico** una herramienta para **gestionar citas médicas** de forma organizada: login por roles, evitar solapamientos, centralizar los pacientes (hoy dispersos en los contactos del teléfono) y ver la agenda de cada médico respetando su disponibilidad.
 
-**Datos del centro:** una sola sede · ~60 citas/día · 18 médicos · ~11-13 especialidades · consultas + ecografías (integral, doppler) + estudios cardíacos.
+**Datos del centro:** una sola sede · ~60 citas/día · 18 médicos · ~11-13 especialidades · consultas + ecografías + estudios cardíacos.
 
 ## 2. Alcance
 
 **Incluye (MVP):**
-1. Autenticación con roles (ADMIN, RECEPCION, MEDICO).
-2. Gestión de **pacientes** (cédula única si se indica; opcional).
-3. **Médicos**, especialidades, **servicios** (con **duración por médico + servicio**) y **consultorios/salas/equipos**.
-4. **Disponibilidad** de médicos.
-5. Gestión de **citas** con **validación anti-solapamiento** (por **médico y por consultorio/sala/equipo**).
-6. **Visita**: agendar en un paso los **varios estudios** del paciente para un día.
-7. **Historia clínica** (notas por visita, para reconsultas).
-8. **Recordatorios / confirmación por WhatsApp** (el día antes).
-9. **Panel**: agenda del día, calendario y métricas.
-10. **Auditoría**.
+1. **Autenticación con roles** (ADMIN, RECEPCION, MEDICO) mediante login (JWT).
+2. Gestión de **usuarios/médicos** (ADMIN): médicos con **especialidades (N:M)** y **disponibilidad** semanal.
+3. Gestión de **pacientes** (cédula única si se indica; opcional) con **alta automática al agendar** (upsert).
+4. Catálogo de **servicios** con **duración** por servicio.
+5. Gestión de **citas** con **anti-solapamiento por médico** y **bloqueo por disponibilidad** del médico.
+6. **Calendario / agenda** del día por médico.
+7. **Historia clínica mínima** (notas de texto del médico por paciente).
 
-**Fuera del alcance:**
-- **Facturación y cobros** — se llevan aparte (máquinas fiscales del SENIAT); **solo pago directo, sin seguros/HCM**.
-- **Portal de pacientes** (los pacientes no acceden).
-- **Google Calendar** — por ahora no (la vista móvil de la agenda cubre "consultar desde el teléfono").
-- Historia clínica con adjuntos pesados (imágenes/radiografías).
+**Fuera del alcance (→ fase 2 / si sobra tiempo):**
+- **Reportes / métricas**.
+- **Recordatorios por WhatsApp**.
+- **Auditoría** detallada.
+- **Visitas** (agrupar varios estudios en un paso).
+- **Duración por médico** (se usa la del servicio).
+- **Recursos** (consultorios/salas/equipos) y anti-solapamiento por recurso.
+- **Holter/MAPA** colocación + retiro enlazados.
+- Facturación y cobros (máquinas fiscales del SENIAT; **solo pago directo, sin seguros**).
+- **Portal de pacientes**, Google Calendar, PWA offline.
 
 ## 3. Usuarios y roles
 
+Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (campo `rol`); en la UI hay **dos vistas separadas** —**Pacientes** y **Médicos**— que filtran por rol. Solo el personal interno hace login.
+
 | Rol | Permisos |
 |-----|----------|
-| **ADMIN** | Todo: usuarios, médicos, especialidades, servicios y duraciones, **consultorios/salas/equipos**, reportes y auditoría. |
-| **RECEPCION** | Agenda las citas (WhatsApp, llamada, presencial); gestiona pacientes y visitas; envía/gestiona recordatorios; ve agendas de todos. |
+| **ADMIN** | **Todo**: usuarios, médicos, especialidades, servicios, configuración. |
+| **RECEPCION** | Agenda las citas; gestiona pacientes y médicos; ve las agendas. **No** accede a **usuarios**, **configuración** ni **reportes**. |
 | **MEDICO** | Ve su agenda; marca asistencia/no-show; **consulta y añade notas a la historia clínica** de sus pacientes. |
 
-> Los **pacientes no acceden** al sistema.
+> Los **pacientes no acceden** al sistema (son registros que gestiona recepción).
 
 ## 4. Requisitos funcionales (RF)
 
 | ID | Requisito |
 |----|-----------|
-| RF-01 | Login con email/contraseña y permisos por rol. |
-| RF-02 | ADMIN gestiona usuarios, médicos, especialidades y **servicios**. |
-| RF-03 | Por cada médico se define **qué servicios ofrece y su duración** (médico + servicio → minutos). |
-| RF-04 | RECEPCION registra y edita **pacientes** (cédula única si se indica; **opcional** para niños/extranjeros). |
-| RF-05 | RECEPCION crea, edita, mueve y cancela **citas**. |
-| RF-06 | El sistema **impide** solapar dos citas activas del **mismo médico** o del **mismo consultorio/sala/equipo**. |
-| RF-07 | La duración/fin de la cita se calcula según el médico + servicio elegido. |
-| RF-07b | Al agendar se puede asignar un **consultorio/sala/equipo** a la cita; el sistema evita que dos citas usen el mismo recurso a la vez. |
-| RF-08 | RECEPCION agenda una **visita** con varios estudios del paciente el mismo día. |
-| RF-09 | Los estudios que requieren retiro (holter/MAPA) se agendan como **colocación + retiro** enlazados. |
-| RF-10 | El MEDICO ve su agenda y marca **atendida / no-show**. |
-| RF-11 | El MEDICO consulta y añade **notas de historia clínica** del paciente. |
-| RF-12 | El sistema envía **automáticamente** la confirmación por **WhatsApp** (API de WhatsApp Business) **24 h antes** y registra la respuesta; si el paciente cancela, el cupo se libera. |
-| RF-13 | Panel con agenda del día, calendario y **reportes**: volumen de citas, demanda por servicio (más/menos agendados) y ocupación por médico. |
-| RF-14 | La agenda es **consultable desde el móvil** (vista responsive / PWA). |
-| RF-15 | Auditoría de accesos y cambios sobre datos médicos. |
+| RF-01 | Login con email/contraseña (JWT) y permisos por rol. |
+| RF-02 | ADMIN gestiona usuarios, médicos, especialidades y servicios. |
+| RF-03 | RECEPCION **no** puede acceder a usuarios, configuración ni reportes. |
+| RF-04 | Cada médico define sus **especialidades (N:M)** y su **disponibilidad** semanal. |
+| RF-05 | RECEPCION registra **pacientes** con **nombre, apellido y edad**; la **cédula** es **opcional** (la añaden los especialistas al hacer la consulta/estudio). |
+| RF-06 | Al **agendar**, el sistema **detecta** al paciente por **nombre + apellido + edad** (o lo **crea** si no existe, upsert); si hay varias coincidencias, recepción **elige**. |
+| RF-07 | RECEPCION crea, edita, mueve y cancela **citas**. |
+| RF-08 | El sistema **impide solapar** dos citas activas del **mismo médico**. |
+| RF-09 | La duración/fin de la cita se calcula según el **servicio** elegido (`duracion_min`). |
+| RF-10 | El **calendario bloquea** los días/horas fuera de la **disponibilidad** del médico, **salvo que recepción fuerce un cupo extra** (sobrecupo) con confirmación. |
+| RF-11 | Al **cancelar** una cita, su cupo queda libre. |
+| RF-12 | El MEDICO ve su agenda y marca **atendida / no-show**. |
+| RF-13 | El MEDICO consulta y añade **notas de historia clínica** del paciente. |
 
 ## 5. Requisitos no funcionales (RNF)
 
 | ID | Requisito |
 |----|-----------|
-| RNF-01 | Seguridad: contraseñas con hash, sesiones seguras, control por rol. |
-| RNF-02 | Privacidad HIPAA/GDPR: auditoría; sin credenciales hardcodeadas. |
-| RNF-03 | Integridad: cero solapamientos garantizado también en la base de datos. |
+| RNF-01 | Seguridad: contraseñas con **hash (bcrypt)**, **JWT**, control de acceso por rol. |
+| RNF-02 | Privacidad HIPAA/GDPR: sin credenciales hardcodeadas; bajas lógicas (sin borrado físico). |
+| RNF-03 | Integridad: cero solapamientos garantizado en la capa de servicio del backend. |
 | RNF-04 | Rendimiento: soportar el volumen diario (~60 citas/día) con fluidez. |
-| RNF-05 | Disponibilidad: acceso remoto (nube) + consulta offline de la agenda (PWA). El centro tiene planta eléctrica, el internet es estable. |
-| RNF-06 | Usabilidad: interfaz en español, clara y responsive (uso frecuente desde el móvil). |
-| RNF-07 | Mantenibilidad: TypeScript, arquitectura limpia, dominio aislado y testeado. |
+| RNF-05 | Usabilidad: interfaz en **español**, clara y **responsive** (uso frecuente desde el móvil). |
+| RNF-06 | Mantenibilidad: **Python/FastAPI + React**, código simple, dominio (validaciones) aislado y testeado. |
 
 ## 6. Historias de usuario
 
 **Recepción**
-- *Quiero registrar al paciente con su cédula, para no confundir nombres repetidos.*
-- *Quiero agendar en un paso los 2-3 estudios del paciente para el mismo día (una visita).*
-- *Quiero que el sistema me avise si el horario del médico está ocupado, para no solapar.*
-- *Quiero que se envíe solo la confirmación por WhatsApp el día antes, para no hacerlo a mano.*
+- *Quiero registrar al paciente rápido con nombre, apellido y edad (la cédula se añade luego).*
+- *Quiero que, al agendar, si el paciente ya existe se detecte solo y si no, se cree.*
+- *Quiero que el sistema me avise si el horario del médico está ocupado o fuera de su disponibilidad, para no solapar.*
 
 **Médico**
 - *Quiero ver mi agenda del día y marcar asistencia.*
-- *Quiero revisar la historia del paciente en una reconsulta o si lo derivan de mi área.*
+- *Quiero revisar y añadir notas a la historia del paciente.*
 
 **Administrador**
-- *Quiero definir, por cada médico, qué servicios da y cuánto dura cada uno.*
-- *Quiero crear accesos para el personal y ver métricas.*
+- *Quiero crear accesos para el personal y dar de alta médicos con sus especialidades y disponibilidad.*
+- *Quiero mantener el catálogo de servicios y sus duraciones.*
 
 ## 7. Reglas de negocio
 
 | ID | Regla |
 |----|-------|
-| RN-01 | **Cero solapamientos por médico y por recurso**: dos citas activas no pueden intersectar si comparten médico o consultorio/sala/equipo. |
-| RN-02 | La **duración** de la cita la define la combinación **médico + servicio** (`DoctorServicio.duracionMin`). |
-| RN-03 | La **cédula** es única cuando se indica, pero **opcional** (se permite registrar pacientes sin ella). |
-| RN-04 | Un médico puede tener **varias especialidades** y varios **servicios** con duraciones distintas. |
-| RN-05 | Un paciente puede tener **varias citas el mismo día** (visita); si coinciden en hora, aviso **no bloqueante** (salvo casos como holter). |
-| RN-06 | Holter/MAPA: **colocación + retiro** en días distintos, enlazados. |
-| RN-07 | Solo se agenda dentro de la **disponibilidad** del médico. |
-| RN-08 | Bajas **lógicas** (`activo`), nunca borrado físico. |
-| RN-09 | Estados de cita: `SCHEDULED` · `CONFIRMED` (confirmó asistencia) · `CANCELLED` · `COMPLETED` · `NO_SHOW`. |
-| RN-10 | Al **cancelar** una cita, su hueco queda libre (sale de los estados activos) y puede reutilizarse. |
+| RN-01 | **Cero solapamientos por médico**: dos citas activas del mismo médico no pueden intersectar en el tiempo. |
+| RN-02 | La **duración** de la cita la define el **servicio** (`servicios.duracion_min`). |
+| RN-03 | La **cédula** es **opcional** (única si se indica); los especialistas la añaden **después** del agendado, para el informe. |
+| RN-04 | Un médico puede tener **varias especialidades** (N:M). |
+| RN-05 | Al **agendar** se hace **upsert** del paciente por **nombre + apellido + edad** (detectar o crear; si hay varios, recepción elige). |
+| RN-06 | Se agenda dentro de la **disponibilidad** del médico; recepción puede **forzar un cupo extra** (sobrecupo) de mutuo acuerdo. |
+| RN-07 | Bajas **lógicas** (`activo`), nunca borrado físico. |
+| RN-08 | Estados de cita: `SCHEDULED` · `CONFIRMED` · `CANCELLED` · `COMPLETED` · `NO_SHOW`. |
+| RN-09 | Al **cancelar** una cita, su hueco queda libre (sale de los estados activos) y puede reutilizarse. |
 
-## 8. Flujo principal: crear una cita / visita
+## 8. Flujo principal: crear una cita
 
-El recorrido completo está en el **flowchart** de [`FLUJO-USUARIO.md`](FLUJO-USUARIO.md). En resumen: seleccionar paciente → añadir uno o varios servicios (con su médico y su consultorio/sala) → el sistema calcula la duración y valida solapamientos (médico y recurso) → guardar la visita/citas y programar el recordatorio.
+El recorrido completo está en el **flowchart** de [`FLUJO-USUARIO.md`](FLUJO-USUARIO.md). En resumen: **login** → elegir médico y servicio → el calendario muestra los días/horas **disponibles** (recepción puede forzar un **sobrecupo**) → introducir al paciente por **nombre + apellido + edad** (**upsert**) → el sistema calcula la duración y **valida el solapamiento por médico** → guardar la cita.

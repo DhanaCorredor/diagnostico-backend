@@ -1,11 +1,17 @@
-# Dependencias
+# Dependencias (frontend)
 node_modules/
 
-# Next.js / build
-.next/
-out/
+# Build del frontend (Vite)
 dist/
-build/
+
+# Python (backend)
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
 
 # Entorno (¡nunca subir secretos!)
 .env
@@ -15,9 +21,6 @@ build/
 *.log
 npm-debug.log*
 pnpm-debug.log*
-
-# Artefactos generados
-ERP-Diagnostico-Wiki.zip
 
 # Briefing con datos reales de la clienta (no publicar)
 docs/BRIEFING.md

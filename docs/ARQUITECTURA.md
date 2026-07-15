@@ -1,101 +1,116 @@
 # Documentación Técnica / Arquitectura — ERP Diagnóstico
 
-Describe la arquitectura del sistema, sus capas, el flujo de datos y las decisiones técnicas.
+Describe la arquitectura del sistema, sus capas, el flujo de datos y las decisiones técnicas del **MVP**.
 
 ## 1. Visión general
 
-Aplicación web **en la nube** construida con **Next.js (App Router)** y **PostgreSQL** vía **Prisma**. La app y la base de datos se despliegan en la nube (Vercel + Neon) para permitir **acceso remoto**, con una **PWA** que cachea la agenda para consulta offline.
+Aplicación web de **dos piezas desacopladas**, en **dos repositorios separados**:
+
+- **Frontend** — repo `diagnostico-frontend`: una **SPA en React** (Vite, JavaScript) que consume una API REST.
+- **Backend** — repo `diagnostico-backend` (este): una **API REST en FastAPI** (Python) con **SQLAlchemy** sobre **PostgreSQL**, autenticación por **JWT** y toda la lógica de negocio (validación de citas, upsert de pacientes, disponibilidad). Aquí viven también los `docs/` y el `mockup/` del proyecto.
+
+Se comunican por **HTTP/JSON**. El frontend guarda el token JWT y lo envía en la cabecera `Authorization` de cada petición.
 
 ## 2. Diagrama de componentes
 
 ```mermaid
 flowchart TD
-    subgraph Cliente["Cliente (navegador / PWA)"]
-        UI["UI en React + Tailwind<br/>(Next.js App Router)"]
-        SW["Service Worker<br/>(caché de agenda offline)"]
+    subgraph Cliente["Navegador"]
+        UI["React SPA (Vite + Tailwind)<br/>páginas: login, agenda, pacientes, médicos"]
     end
 
-    subgraph Servidor["Next.js en Vercel"]
-        RSC["Server Components / Server Actions / API routes"]
-        subgraph Dominio["Capa de dominio (src/server)"]
-            AUTH["auth<br/>(sesión, roles)"]
-            APPT["appointments<br/>(regla anti-solapamiento)"]
-        end
-        PRISMA["Prisma Client (src/lib)"]
+    subgraph Backend["API FastAPI (Python)"]
+        ROUTERS["Routers REST<br/>(auth, usuarios, citas, servicios)"]
+        AUTHDEP["Dependencia de auth<br/>(verifica JWT + rol)"]
+        SERV["Capa de servicio<br/>(citas: solapamiento + disponibilidad,<br/>pacientes: upsert)"]
+        ORM["SQLAlchemy (models)"]
     end
 
-    DB[("PostgreSQL<br/>(Neon)")]
+    DB[("PostgreSQL")]
 
-    UI -->|acciones / datos| RSC
-    SW -.->|lectura offline| UI
-    RSC --> AUTH
-    RSC --> APPT
-    AUTH --> PRISMA
-    APPT --> PRISMA
-    PRISMA -->|SQL| DB
-    DB -->|constraint EXCLUDE gist| DB
+    UI -->|"HTTP/JSON + Bearer token"| ROUTERS
+    ROUTERS --> AUTHDEP
+    ROUTERS --> SERV
+    SERV --> ORM
+    ORM -->|SQL| DB
 ```
 
 ## 3. Capas
 
 | Capa | Responsabilidad | Ubicación |
 |------|-----------------|-----------|
-| **Presentación** | UI, formularios, calendario, navegación. | `src/app`, `src/components` |
-| **Dominio / servicios** | Reglas de negocio (citas, disponibilidad, auth). Aislada y testeable. | `src/server` |
-| **Acceso a datos** | Consultas y persistencia vía Prisma. | `src/lib` (cliente Prisma), `prisma/` |
-| **Base de datos** | Almacenamiento e integridad (constraints). | PostgreSQL / Neon |
+| **Presentación** | UI, formularios, calendario, navegación. Llamadas a la API. | frontend · `src/` |
+| **API / routers** | Endpoints REST, validación de entrada (Pydantic), verificación de rol. | backend · `app/routers` |
+| **Dominio / servicios** | Reglas de negocio (citas, disponibilidad, upsert de paciente, auth). Aislada y testeable. | backend · `app/services` |
+| **Acceso a datos** | Modelos y consultas vía SQLAlchemy. | backend · `app/models`, `app/db.py` |
+| **Base de datos** | Almacenamiento e integridad. | PostgreSQL |
 
 ### Estructura de carpetas
 
+**Repo BACKEND** (`diagnostico-backend`, este repo):
+
+```
+app/
+  main.py           # arranque FastAPI + montaje de routers
+  db.py             # engine + sesión SQLAlchemy
+  models.py         # modelos (usuarios, citas, servicios, ...)
+  schemas.py        # esquemas Pydantic (entrada/salida)
+  auth.py           # JWT, hash de contraseñas, dependencia requiere_rol
+  routers/          # endpoints: auth, usuarios, citas, servicios
+  services/         # lógica: citas (solapamiento/disponibilidad), pacientes (upsert)
+alembic/            # migraciones
+tests/              # pytest
+requirements.txt
+docs/  mockup/       # documentación del proyecto
+```
+
+**Repo FRONTEND** (`diagnostico-frontend`):
+
 ```
 src/
-  app/            # Next.js App Router (rutas + UI, en español)
-  server/         # Lógica de dominio
-    appointments/ # validación anti-solapamiento (aislada, testeable)
-    auth/
-  lib/            # prisma client, guards de rol, utilidades
-  components/     # UI reutilizable (Tailwind)
-prisma/schema.prisma
-tests/            # unit + integración
-public/           # manifest PWA + service worker
+  api/              # cliente HTTP (fetch/axios) + guardado del token
+  pages/            # login, agenda/calendario, pacientes, médicos
+  components/       # UI reutilizable (Tailwind)
+  App.jsx           # rutas (React Router) + guardas por rol
+package.json        # pnpm
 ```
 
-## 4. Flujo de datos (crear cita)
+## 4. Flujo de datos (crear una cita)
 
-1. El usuario envía el formulario desde la **UI**.
-2. Una **Server Action / API route** recibe la petición y verifica **sesión y rol** (`auth`).
-3. El servicio de **citas** (`appointments`) valida disponibilidad y **solapamiento (médico y consultorio/sala)**.
-4. Si es válido, **Prisma** persiste la cita; la **constraint de exclusión** en la BD es la última línea de defensa ante concurrencia.
-5. Se escribe un registro de **auditoría**.
-6. La UI se actualiza (revalidación).
+1. Recepción rellena el formulario en la **SPA** y envía la petición con el **token JWT**.
+2. El **router** de citas valida el cuerpo (Pydantic) y la **dependencia de auth** comprueba sesión y rol.
+3. El **servicio de pacientes** hace el **upsert**: busca al paciente por cédula (o nombre + fecha de nacimiento); si no existe, lo crea con `rol = PACIENTE`.
+4. El **servicio de citas** calcula `ends_at` (según `servicios.duracion_min`), valida que la hora cae **dentro de la disponibilidad** del médico y que **no se solapa** con otra cita activa del mismo médico.
+5. Si es válido, **SQLAlchemy** persiste la cita y responde en JSON; la SPA refresca la agenda.
 
 ## 5. Decisiones técnicas
 
 | Decisión | Justificación |
 |----------|---------------|
-| **Nube (Vercel + Neon)** | Se necesita acceso remoto desde otros ordenadores; una sola BD accesible con la cadena de conexión. |
-| **PWA con caché de lectura** | Mitiga la inestabilidad de internet: permite consultar la agenda offline (crear/editar requiere conexión). |
-| **Cero solapamientos en 2 capas** | Validación en servicio (UX) + constraints `EXCLUDE USING gist` en BD **por médico y por recurso** (integridad ante concurrencia). |
-| **RBAC por rol** | Control de acceso simple y claro (ADMIN/RECEPCION/MEDICO). |
-| **IDs `uuid`/`cuid`** | Evitan colisiones si se sincroniza o migra entre entornos. |
-| **TypeScript + dominio aislado** | Mantenibilidad y tests de la lógica crítica sin depender de la UI. |
-| **pnpm** | Gestor de paquetes rápido y eficiente en disco. |
-| **Recordatorios automáticos** | Confirmación por **WhatsApp** (API de WhatsApp Business) disparada por una **tarea programada (cron)** **24 h antes**; se registra la respuesta. |
-| **Duración por médico + servicio** | La duración de la cita no es global: sale de `DoctorServicio` (cada médico define su duración por servicio). |
+| **Simplicidad primero** *(regla de oro)* | El código **lo más sencillo posible**: menos abstracciones y dependencias, funciones cortas y legibles, sin patrones innecesarios. Ante la duda, la opción simple. |
+| **React (Vite) + FastAPI desacoplados** | Frontend y backend separados, cada uno simple; FastAPI da validación (Pydantic) y **Swagger** gratis en `/docs`. |
+| **JavaScript (no TypeScript)** | El usuario no vio TS en el bootcamp; se prioriza simplicidad y lo conocido. |
+| **SQLAlchemy (no Prisma)** | Es el ORM que se vio en el bootcamp; menos fricción. Migraciones con Alembic. |
+| **Tabla `usuarios` unificada** | Personal, médicos y pacientes comparten diseño de tabla (campo `rol`) → menos código. Dos vistas UI (Pacientes/Médicos) que filtran por rol. |
+| **JWT** | Encaje natural para SPA + API separadas; sin estado de sesión en el servidor. |
+| **Validación en la capa de servicio** | Cero solapamientos (por médico) y disponibilidad se validan en Python antes de guardar, con mensaje claro. *(Constraint `gist` en BD → fase 2.)* |
+| **Upsert de paciente al agendar** | Evita duplicados y agiliza el flujo real de recepción. |
+| **IDs `uuid`** | Evitan colisiones al migrar entre entornos. |
 
 ## 6. Seguridad y privacidad
 
-- Contraseñas con **hash** (argon2/bcrypt); nunca en texto plano.
-- **Sesiones** seguras (cookie httpOnly).
-- **Control de acceso** por rol en cada ruta/acción.
-- **Auditoría** de accesos y cambios sobre datos médicos (HIPAA/GDPR).
+- Contraseñas con **hash** (bcrypt); nunca en texto plano.
+- **JWT** firmado con secreto en variable de entorno; expiración razonable.
+- **Control de acceso por rol** en cada endpoint (dependencia `requiere_rol`): RECEPCIÓN no accede a usuarios, configuración ni reportes.
 - **Secretos** solo en variables de entorno (`.env`), nunca en el repositorio.
+- **Datos médicos** (HIPAA/GDPR): bajas lógicas (`activo`), sin borrado físico. *(Auditoría completa → fase 2.)*
 
-## 7. Despliegue
+## 7. Despliegue (orientativo)
 
-- **App:** Vercel (build de Next.js).
-- **BD:** Neon (PostgreSQL serverless).
-- **Variables de entorno:** `DATABASE_URL` y secretos de sesión configurados en Vercel.
-- **Migraciones:** `pnpm prisma migrate deploy` en el pipeline de despliegue.
+- **Frontend:** build estático de Vite (Vercel / Netlify / cualquier hosting estático).
+- **Backend:** servicio Python (Render / Railway / Fly.io).
+- **BD:** PostgreSQL en la nube (Neon) o local en desarrollo.
+- **Variables de entorno:** `DATABASE_URL` y `JWT_SECRET`.
+- **Migraciones:** `alembic upgrade head` en el despliegue.
 
 Ver también: [`ROADMAP.md`](ROADMAP.md) · [`MODELO-DATOS.md`](MODELO-DATOS.md) · [`FLUJO-USUARIO.md`](FLUJO-USUARIO.md).

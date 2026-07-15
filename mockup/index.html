@@ -92,9 +92,6 @@
       <a onclick="nav('medicos')"   class="navlink flex items-center gap-3 rounded-lg px-3 py-2 text-ink-2 cursor-pointer hover:bg-surface-plane">
         <svg class="h-5 w-5 text-ink-muted" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2a3 3 0 00-3 3v1a3 3 0 006 0V5a3 3 0 00-3-3zM6 21v-2a6 6 0 0112 0v2"/></svg> Médicos
       </a>
-      <a onclick="nav('reportes')"  class="navlink flex items-center gap-3 rounded-lg px-3 py-2 text-ink-2 cursor-pointer hover:bg-surface-plane">
-        <svg class="h-5 w-5 text-ink-muted" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 17V9m4 8V5m4 12v-4M4 21h16"/></svg> Reportes
-      </a>
       <div class="my-2 border-t border-line"></div>
       <a onclick="nav('usuarios')"  class="navlink flex items-center gap-3 rounded-lg px-3 py-2 text-ink-2 cursor-pointer hover:bg-surface-plane">
         <svg class="h-5 w-5 text-ink-muted" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10 15l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Usuarios
@@ -141,7 +138,7 @@
       <!-- ===== VISTA: PANEL ===== -->
       <section data-view="panel" class="active space-y-6">
         <!-- KPI TILES -->
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div class="rounded-xl border border-line bg-white p-5">
             <p class="text-sm text-ink-2">Citas hoy</p>
             <p class="mt-2 text-3xl font-semibold tnum">58</p>
@@ -157,16 +154,11 @@
             <p class="mt-2 text-3xl font-semibold tnum">1.312</p>
             <p class="mt-1 text-xs text-ink-muted">+12 este mes</p>
           </div>
-          <div class="rounded-xl border border-line bg-white p-5">
-            <p class="text-sm text-ink-2">Ocupación de agenda</p>
-            <p class="mt-2 text-3xl font-semibold tnum">82%</p>
-            <div class="mt-2 h-1.5 w-full rounded-full bg-line"><div class="h-1.5 rounded-full bg-brand" style="width:82%"></div></div>
-          </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div>
           <!-- AGENDA DEL DÍA -->
-          <div class="lg:col-span-2 rounded-xl border border-line bg-white">
+          <div class="rounded-xl border border-line bg-white">
             <div class="flex items-center justify-between border-b border-line px-5 py-4">
               <h2 class="font-semibold">Agenda de hoy</h2>
               <span class="text-xs text-ink-muted">Todos los médicos</span>
@@ -214,52 +206,13 @@
                 <span class="h-9 w-1 rounded-full bg-crit"></span>
                 <div class="flex-1">
                   <p class="text-sm font-medium">Rosa Villalobos</p>
-                  <p class="text-xs text-ink-muted">Dr. Rojas · Cardiología · Holter — colocación (15 min)</p>
+                  <p class="text-xs text-ink-muted">Dr. Rojas · Cardiología · Holter (15 min)</p>
                 </div>
                 <span class="rounded-full bg-crit/10 px-2.5 py-1 text-xs font-medium text-crit">No asistió</span>
               </div>
             </div>
           </div>
 
-          <!-- COLUMNA DERECHA -->
-          <div class="space-y-6">
-            <!-- OCUPACIÓN POR MÉDICO -->
-            <div class="rounded-xl border border-line bg-white">
-              <div class="border-b border-line px-5 py-4"><h2 class="font-semibold">Ocupación por médico</h2></div>
-              <div class="space-y-4 p-5">
-                <div>
-                  <div class="mb-1 flex justify-between text-sm"><span>Dr. Rojas · Cardiología</span><span class="tnum text-ink-2">9/10</span></div>
-                  <div class="h-2 w-full rounded-full bg-line"><div class="h-2 rounded-full bg-brand" style="width:90%"></div></div>
-                </div>
-                <div>
-                  <div class="mb-1 flex justify-between text-sm"><span>Dra. Salas · Pediatría</span><span class="tnum text-ink-2">7/10</span></div>
-                  <div class="h-2 w-full rounded-full bg-line"><div class="h-2 rounded-full bg-brand" style="width:70%"></div></div>
-                </div>
-                <div>
-                  <div class="mb-1 flex justify-between text-sm"><span>Dra. Chávez · Imagenología</span><span class="tnum text-ink-2">8/10</span></div>
-                  <div class="h-2 w-full rounded-full bg-line"><div class="h-2 rounded-full bg-brand" style="width:80%"></div></div>
-                </div>
-                <div>
-                  <div class="mb-1 flex justify-between text-sm"><span>Dr. Finol · Traumatología</span><span class="tnum text-ink-2">5/10</span></div>
-                  <div class="h-2 w-full rounded-full bg-line"><div class="h-2 rounded-full bg-brand" style="width:50%"></div></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- RECORDATORIOS WHATSAPP -->
-            <div class="rounded-xl border border-line bg-white">
-              <div class="flex items-center gap-2 border-b border-line px-5 py-4">
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="#25D366"><path d="M12 2a10 10 0 00-8.5 15.3L2 22l4.8-1.5A10 10 0 1012 2zm0 18a8 8 0 01-4.1-1.1l-.3-.2-2.8.9.9-2.7-.2-.3A8 8 0 1112 20zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.7.9c-.1.2-.3.2-.5.1a6.5 6.5 0 01-3.2-2.8c-.1-.2 0-.4.1-.5l.4-.5c.1-.2.1-.3 0-.5l-.7-1.7c-.2-.4-.4-.4-.5-.4h-.5a1 1 0 00-.7.3c-.2.3-.9.9-.9 2.1s.9 2.5 1 2.6c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1z"/></svg>
-                <h2 class="font-semibold">Recordatorios WhatsApp</h2>
-              </div>
-              <div class="space-y-3 p-5 text-sm">
-                <p class="text-xs text-ink-muted">Envío automático el día antes de la cita.</p>
-                <div class="flex justify-between"><span class="text-ink-2">Enviados para mañana</span><span class="tnum font-medium">54</span></div>
-                <div class="flex justify-between"><span class="text-ink-2">Confirmados</span><span class="tnum font-medium text-good">39</span></div>
-                <div class="flex justify-between"><span class="text-ink-2">Sin respuesta</span><span class="tnum font-medium text-ink-2">15</span></div>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -440,7 +393,7 @@
                 <div class="ag-c"></div>
                 <div class="ag-c"></div>
                 <div class="ag-c"><span class="chip c-teal">R. Salas · ECG</span></div>
-                <div class="ag-c"><span class="chip c-teal">J. Ortiz · MAPA — retiro</span></div>
+                <div class="ag-c"><span class="chip c-teal">J. Ortiz · MAPA</span></div>
                 <div class="ag-c"></div>
                 <div class="ag-c"></div>
               </div>
@@ -524,7 +477,7 @@
               <div class="space-y-1.5 text-sm">
                 <div class="flex justify-between"><span class="text-ink-2">Consulta cardiológica</span><span class="tnum text-ink-muted">30 min</span></div>
                 <div class="flex justify-between"><span class="text-ink-2">Ecocardiograma</span><span class="tnum text-ink-muted">30 min</span></div>
-                <div class="flex justify-between"><span class="text-ink-2">Holter — colocación</span><span class="tnum text-ink-muted">15 min</span></div>
+                <div class="flex justify-between"><span class="text-ink-2">Holter</span><span class="tnum text-ink-muted">15 min</span></div>
               </div>
             </div>
           </div>
@@ -693,47 +646,8 @@
         </div>
       </section>
 
-      <!-- ===== VISTA: REPORTES ===== -->
-      <section data-view="reportes" class="space-y-6">
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div class="rounded-xl border border-line bg-white p-5"><p class="text-sm text-ink-2">Citas este mes</p><p class="mt-2 text-3xl font-semibold tnum">1.284</p><p class="mt-1 text-xs text-good">▲ 8% vs. mes anterior</p></div>
-          <div class="rounded-xl border border-line bg-white p-5"><p class="text-sm text-ink-2">Tasa de asistencia</p><p class="mt-2 text-3xl font-semibold tnum">91%</p><p class="mt-1 text-xs text-ink-muted">9% de inasistencias</p></div>
-          <div class="rounded-xl border border-line bg-white p-5"><p class="text-sm text-ink-2">Nuevos pacientes</p><p class="mt-2 text-3xl font-semibold tnum">84</p><p class="mt-1 text-xs text-ink-muted">Julio 2026</p></div>
-        </div>
-        <div class="rounded-xl border border-line bg-white p-5">
-          <h3 class="mb-4 font-semibold">Citas por especialidad · Julio</h3>
-          <div class="space-y-3 text-sm">
-            <div><div class="mb-1 flex justify-between"><span>Cardiología</span><span class="tnum text-ink-2">342</span></div><div class="h-2.5 w-full rounded-full bg-line"><div class="h-2.5 rounded-full bg-brand" style="width:100%"></div></div></div>
-            <div><div class="mb-1 flex justify-between"><span>Ecografías / Doppler</span><span class="tnum text-ink-2">298</span></div><div class="h-2.5 w-full rounded-full bg-line"><div class="h-2.5 rounded-full bg-brand" style="width:87%"></div></div></div>
-            <div><div class="mb-1 flex justify-between"><span>Pediatría</span><span class="tnum text-ink-2">210</span></div><div class="h-2.5 w-full rounded-full bg-line"><div class="h-2.5 rounded-full bg-brand" style="width:61%"></div></div></div>
-            <div><div class="mb-1 flex justify-between"><span>Ginecología</span><span class="tnum text-ink-2">168</span></div><div class="h-2.5 w-full rounded-full bg-line"><div class="h-2.5 rounded-full bg-brand" style="width:49%"></div></div></div>
-            <div><div class="mb-1 flex justify-between"><span>Traumatología</span><span class="tnum text-ink-2">132</span></div><div class="h-2.5 w-full rounded-full bg-line"><div class="h-2.5 rounded-full bg-brand" style="width:39%"></div></div></div>
-            <div><div class="mb-1 flex justify-between"><span>Dermatología</span><span class="tnum text-ink-2">98</span></div><div class="h-2.5 w-full rounded-full bg-line"><div class="h-2.5 rounded-full bg-brand" style="width:29%"></div></div></div>
-          </div>
-        </div>
-      </section>
-
       <!-- ===== VISTA: CONFIGURACIÓN ===== -->
       <section data-view="configuracion" class="space-y-6">
-        <!-- Integración WhatsApp -->
-        <div class="rounded-xl border border-line bg-white">
-          <div class="border-b border-line px-5 py-4">
-            <h2 class="font-semibold">Recordatorios por WhatsApp</h2>
-            <p class="text-xs text-ink-muted">Confirmación automática al paciente. Requiere conexión a internet.</p>
-          </div>
-          <div class="flex items-center gap-4 px-5 py-4">
-            <div class="grid h-11 w-11 place-items-center rounded-lg bg-[#e6f7ee]">
-              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="#25D366"><path d="M12 2a10 10 0 00-8.5 15.3L2 22l4.8-1.5A10 10 0 1012 2zm0 18a8 8 0 01-4.1-1.1l-.3-.2-2.8.9.9-2.7-.2-.3A8 8 0 1112 20zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.7.9c-.1.2-.3.2-.5.1a6.5 6.5 0 01-3.2-2.8c-.1-.2 0-.4.1-.5l.4-.5c.1-.2.1-.3 0-.5l-.7-1.7c-.2-.4-.4-.4-.5-.4h-.5a1 1 0 00-.7.3c-.2.3-.9.9-.9 2.1s.9 2.5 1 2.6c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1z"/></svg>
-            </div>
-            <div class="flex-1">
-              <p class="font-medium">WhatsApp Business API</p>
-              <p class="text-xs text-ink-2">Envío <b>automático el día antes</b> de la cita. El sistema registra la respuesta del paciente (confirma / cancela) y reduce las inasistencias.</p>
-            </div>
-            <span class="rounded-full bg-good/10 px-2.5 py-1 text-xs font-medium text-good">● Conectado</span>
-            <button class="rounded-lg border border-line px-3 py-1.5 text-sm font-medium hover:bg-surface-plane">Configurar</button>
-          </div>
-        </div>
-
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <!-- Datos del centro -->
           <div class="rounded-xl border border-line bg-white p-5">
@@ -758,23 +672,21 @@
           <div class="space-y-6">
             <div class="rounded-xl border border-line bg-white p-5">
               <div class="mb-1 flex items-center justify-between"><h3 class="font-semibold">Servicios</h3><button class="text-sm font-medium text-brand hover:underline">+ Añadir</button></div>
-              <p class="mb-3 text-xs text-ink-muted">La duración se define por médico + servicio.</p>
+              <p class="mb-3 text-xs text-ink-muted">Cada servicio define su duración.</p>
               <div class="space-y-2 text-sm">
-                <div class="flex items-center justify-between rounded-lg bg-surface-plane px-3 py-2"><span>Consulta médica</span><span class="text-xs text-ink-muted">según médico</span></div>
-                <div class="flex items-center justify-between rounded-lg bg-surface-plane px-3 py-2"><span>Ecografía abdominal</span><span class="tnum text-ink-2">20 min<span class="text-ink-muted">*</span></span></div>
-                <div class="flex items-center justify-between rounded-lg bg-surface-plane px-3 py-2"><span>Eco Doppler</span><span class="tnum text-ink-2">35 min<span class="text-ink-muted">*</span></span></div>
-                <div class="flex items-center justify-between rounded-lg bg-surface-plane px-3 py-2"><span>Ecocardiograma</span><span class="tnum text-ink-2">30 min<span class="text-ink-muted">*</span></span></div>
-                <div class="flex items-center justify-between rounded-lg bg-surface-plane px-3 py-2"><span>Holter / MAPA</span><span class="text-xs text-ink-muted">colocación + retiro</span></div>
+                <div class="flex items-center justify-between rounded-lg bg-surface-plane px-3 py-2"><span>Consulta médica</span><span class="tnum text-ink-2">45 min</span></div>
+                <div class="flex items-center justify-between rounded-lg bg-surface-plane px-3 py-2"><span>Ecografía abdominal</span><span class="tnum text-ink-2">20 min</span></div>
+                <div class="flex items-center justify-between rounded-lg bg-surface-plane px-3 py-2"><span>Eco Doppler</span><span class="tnum text-ink-2">35 min</span></div>
+                <div class="flex items-center justify-between rounded-lg bg-surface-plane px-3 py-2"><span>Ecocardiograma</span><span class="tnum text-ink-2">30 min</span></div>
+                <div class="flex items-center justify-between rounded-lg bg-surface-plane px-3 py-2"><span>Holter / MAPA</span><span class="tnum text-ink-2">15 min</span></div>
               </div>
-              <p class="mt-2 text-[11px] text-ink-muted">* duración de referencia; se ajusta por médico.</p>
             </div>
             <div class="rounded-xl border border-line bg-white p-5">
-              <h3 class="mb-3 font-semibold">Seguridad y disponibilidad</h3>
+              <h3 class="mb-3 font-semibold">Seguridad</h3>
               <div class="space-y-2 text-sm">
-                <div class="flex items-center justify-between"><span class="text-ink-2">Registro de auditoría (HIPAA/GDPR)</span><span class="rounded-full bg-good/10 px-2 py-0.5 text-xs text-good">Activo</span></div>
-                <div class="flex items-center justify-between"><span class="text-ink-2">Respaldo automático diario</span><span class="rounded-full bg-good/10 px-2 py-0.5 text-xs text-good">Activo</span></div>
-                <div class="flex items-center justify-between"><span class="text-ink-2">Acceso remoto (nube) + consulta offline (PWA)</span><span class="rounded-full bg-good/10 px-2 py-0.5 text-xs text-good">Activo</span></div>
-                <div class="flex items-center justify-between"><span class="text-ink-2">Último respaldo</span><span class="tnum text-ink-2">02/07/2026 · 03:00</span></div>
+                <div class="flex items-center justify-between"><span class="text-ink-2">Contraseñas cifradas (bcrypt)</span><span class="rounded-full bg-good/10 px-2 py-0.5 text-xs text-good">Activo</span></div>
+                <div class="flex items-center justify-between"><span class="text-ink-2">Acceso por rol (JWT)</span><span class="rounded-full bg-good/10 px-2 py-0.5 text-xs text-good">Activo</span></div>
+                <div class="flex items-center justify-between"><span class="text-ink-2">Bajas lógicas (sin borrado físico)</span><span class="rounded-full bg-good/10 px-2 py-0.5 text-xs text-good">Activo</span></div>
               </div>
             </div>
           </div>
@@ -791,39 +703,31 @@
   <div class="w-full max-w-lg rounded-2xl bg-white shadow-xl">
     <div class="flex items-center justify-between border-b border-line px-6 py-4">
       <div>
-        <h3 class="text-lg font-semibold">Nueva cita / visita</h3>
-        <p class="text-xs text-ink-muted">Agrupa varios estudios del mismo día en una visita.</p>
+        <h3 class="text-lg font-semibold">Nueva cita</h3>
+        <p class="text-xs text-ink-muted">Si el paciente no existe, se crea automáticamente al guardar.</p>
       </div>
       <button onclick="cerrarNueva()" class="text-ink-muted hover:text-ink">✕</button>
     </div>
     <div class="space-y-4 p-6">
       <div>
         <label class="mb-1 block text-sm font-medium">Paciente</label>
-        <input value="Carlos Mendoza · V-12.345.678" class="w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-brand">
-        <p class="mt-1 text-[11px] text-ink-muted">La cédula es opcional (niños/extranjeros).</p>
+        <input value="Carlos Mendoza · 54 años" class="w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-brand">
+        <p class="mt-1 text-[11px] text-ink-muted">Nombre, apellido y edad. La cédula la añaden los especialistas después; si no existe, se crea al guardar.</p>
       </div>
       <div>
-        <label class="mb-1 block text-sm font-medium">Fecha</label>
-        <input type="date" value="2026-07-02" class="w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-brand">
+        <label class="mb-1 block text-sm font-medium">Servicio y médico</label>
+        <select class="w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-brand"><option>Ecocardiograma · Dr. Rojas (30 min)</option><option>Ecografía abdominal · Dra. Chávez (20 min)</option><option>Eco Doppler · Dra. Chávez (35 min)</option><option>Consulta pediátrica · Dra. Salas (25 min)</option></select>
+        <p class="mt-1 text-[11px] text-ink-muted">La duración la define el servicio.</p>
       </div>
-
-      <!-- Estudios de la visita -->
-      <div>
-        <div class="mb-1 flex items-center justify-between">
-          <label class="block text-sm font-medium">Estudios</label>
-          <button class="text-xs font-medium text-brand hover:underline">+ Añadir estudio</button>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="mb-1 block text-sm font-medium">Fecha</label>
+          <input type="date" value="2026-07-02" class="w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-brand">
         </div>
-        <div class="space-y-2">
-          <div class="grid grid-cols-3 gap-2">
-            <select class="col-span-2 rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-brand"><option>Ecografía abdominal · Dra. Chávez (20 min)</option><option>Eco Doppler · Dra. Chávez (35 min)</option><option>Ecocardiograma · Dr. Rojas (30 min)</option></select>
-            <input type="time" value="09:00" class="rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-brand">
-          </div>
-          <div class="grid grid-cols-3 gap-2">
-            <select class="col-span-2 rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-brand"><option>Eco Doppler · Dra. Chávez (35 min)</option><option>Ecografía abdominal · Dra. Chávez (20 min)</option></select>
-            <input type="time" value="09:15" class="rounded-lg border border-crit px-3 py-2 text-sm outline-none">
-          </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium">Hora</label>
+          <input type="time" value="09:15" class="w-full rounded-lg border border-crit px-3 py-2 text-sm outline-none">
         </div>
-        <p class="mt-1.5 text-[11px] text-ink-muted">Holter/MAPA se agendan como colocación + retiro enlazados.</p>
       </div>
 
       <!-- AVISO ANTI-SOLAPAMIENTO -->
@@ -831,19 +735,19 @@
         <svg class="mt-0.5 h-5 w-5 shrink-0 text-crit" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
         <div class="text-sm">
           <p class="font-medium text-crit">Horario no disponible</p>
-          <p class="text-ink-2">La Dra. Chávez atiende la ecografía de 09:00 a 09:20. El Eco Doppler a las 09:15 se solaparía. Elige otro horario.</p>
+          <p class="text-ink-2">El Dr. Rojas ya tiene una cita de 09:00 a 09:30. La cita de las 09:15 se solaparía con ese médico. Elige otro horario.</p>
         </div>
       </div>
     </div>
     <div class="flex justify-end gap-3 border-t border-line px-6 py-4">
       <button onclick="cerrarNueva()" class="rounded-lg border border-line px-4 py-2 text-sm font-medium hover:bg-surface-plane">Cancelar</button>
-      <button class="cursor-not-allowed rounded-lg bg-brand/40 px-4 py-2 text-sm font-semibold text-white" disabled>Guardar visita</button>
+      <button class="cursor-not-allowed rounded-lg bg-brand/40 px-4 py-2 text-sm font-semibold text-white" disabled>Guardar cita</button>
     </div>
   </div>
 </div>
 
 <script>
-  const titulos = { panel:'Panel', agenda:'Agenda', pacientes:'Pacientes', medicos:'Médicos', usuarios:'Usuarios', ficha:'Ficha de paciente', reportes:'Reportes', configuracion:'Configuración' };
+  const titulos = { panel:'Panel', agenda:'Agenda', pacientes:'Pacientes', medicos:'Médicos', usuarios:'Usuarios', ficha:'Ficha de paciente', configuracion:'Configuración' };
   function entrar(){ document.getElementById('login').style.display='none'; document.getElementById('app').classList.remove('hidden'); }
   function salir(){ document.getElementById('app').classList.add('hidden'); document.getElementById('login').style.display='flex'; }
   function showView(v){

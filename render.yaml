@@ -1,0 +1,29 @@
+# Blueprint de despliegue en Render (todo en un proveedor):
+#   - la API (FastAPI) como Web Service
+#   - su base de datos PostgreSQL
+# Render lee este archivo y crea ambos servicios automáticamente.
+
+databases:
+  - name: diagnostico-db
+    plan: free
+
+services:
+  - type: web
+    name: diagnostico-api
+    runtime: python
+    plan: free
+    # Build: instala dependencias, aplica migraciones y carga los datos base (seed).
+    buildCommand: "pip install -r requirements.txt && alembic upgrade head && python -m app.seed"
+    # Arranque: uvicorn escuchando en el puerto que Render inyecta ($PORT).
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL           # la conexión a la base, enchufada por Render
+        fromDatabase:
+          name: diagnostico-db
+          property: connectionString
+      - key: JWT_SECRET             # secreto de los tokens: Render genera uno aleatorio
+        generateValue: true
+      - key: ADMIN_PASSWORD         # contraseña del admin: se pone a mano en el panel
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.12.0"

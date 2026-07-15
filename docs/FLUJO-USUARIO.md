@@ -1,6 +1,6 @@
 # Flujo de Usuario — ERP Diagnóstico
 
-Diagrama de flujo (flowchart) del recorrido del personal en el sistema, según su rol. Se renderiza automáticamente en GitHub (Mermaid).
+Diagrama de flujo (flowchart) del recorrido del personal en el sistema, según su rol (alcance **MVP**). Se renderiza automáticamente en GitHub (Mermaid).
 
 ## Flujo general por rol
 
@@ -16,8 +16,7 @@ flowchart TD
     E --> E1[Gestionar usuarios y accesos]
     E --> E2[Gestionar médicos y especialidades]
     E --> E3[Gestionar servicios y duraciones]
-    E --> E3b[Gestionar consultorios / salas]
-    E --> E4[Ver reportes y auditoría]
+    E --> E4[Definir disponibilidad de médicos]
 
     %% RECEPCIÓN
     D -- RECEPCIÓN --> F[Panel de recepción]
@@ -29,6 +28,7 @@ flowchart TD
     D -- MÉDICO --> H[Mi agenda]
     H --> H1[Ver mis citas del día]
     H --> H2[Marcar atendida / no asistió]
+    H --> H3[Consultar / añadir historia clínica]
 
     %% Cierre
     E --> Z([Cerrar sesión])
@@ -36,33 +36,34 @@ flowchart TD
     H --> Z
 ```
 
-## Subflujo: crear una cita / visita (regla de cero solapamientos)
+> Recepción **no** ve gestión de usuarios, configuración ni reportes.
+
+## Subflujo: crear una cita (upsert de paciente + cero solapamientos)
 
 ```mermaid
 flowchart TD
-    S([Nueva cita / visita]) --> P{¿El paciente existe?}
-    P -- No --> P1[Registrar paciente<br/>cédula opcional]
-    P1 --> Q
-    P -- Sí --> Q[Seleccionar paciente]
-    Q --> R[Elegir servicio, médico<br/>y consultorio/sala]
-    R --> R1[Duración = DoctorServicio<br/>médico + servicio]
-    R1 --> T[Elegir fecha y hora]
+    S([Nueva cita]) --> R[Elegir médico y servicio]
+    R --> R1[Duración = servicio.duracion_min]
+    R1 --> C1[Introducir paciente<br/>nombre + apellido + edad]
+    C1 --> P{¿El paciente existe?}
+    P -- No --> P1[Crear paciente<br/>rol PACIENTE]
+    P1 --> T
+    P -- Sí --> P2[Reutilizar paciente]
+    P2 --> T[Elegir fecha y hora]
     T --> U{¿Dentro de la disponibilidad<br/>del médico?}
-    U -- No --> V[Aviso: fuera de horario]
-    V --> T
-    U -- Sí --> W{¿Se solapa el médico<br/>o el consultorio/sala?}
-    W -- Sí --> X[Aviso: horario no disponible]
+    U -- No --> Vov{¿Forzar cupo extra?<br/>sobrecupo}
+    Vov -- No --> T
+    Vov -- Sí --> W
+    U -- Sí --> W{¿Se solapa con otra<br/>cita del médico?}
+    W -- Sí --> X[Aviso: solapamiento · elige otra hora]
     X --> T
-    W -- No --> M{¿Añadir otro estudio<br/>el mismo día?}
-    M -- Sí --> R
-    M -- No --> Y[Guardar visita y citas · SCHEDULED]
-    Y --> Y1[Programar recordatorio WhatsApp]
-    Y1 --> Y2[Registrar en auditoría]
-    Y2 --> Z([Visita agendada])
+    W -- No --> Y[Guardar cita · SCHEDULED]
+    Y --> Z([Cita agendada])
 ```
 
 ## Notas
 
-- La validación de solapamiento (por **médico y por consultorio/sala/equipo**) se ejecuta en la **capa de servicio** y se refuerza con restricciones a nivel de **base de datos** (ver `MODELO-DATOS.md`).
+- La validación (disponibilidad del médico + **cero solapamientos por médico**) y el **upsert de paciente** se ejecutan en la **capa de servicio** del backend (FastAPI) antes de guardar.
+- El calendario **bloquea** (grisa) los días/horas fuera de la disponibilidad del médico; recepción puede **forzar un cupo extra** (sobrecupo) con confirmación.
 - Los pacientes **no acceden** al sistema; toda gestión la realiza el personal.
-- Toda acción sobre datos médicos queda registrada en **auditoría** (requisito HIPAA/GDPR).
+- **Fase 2:** anti-solapamiento por recurso/sala, agrupar varios estudios (visita), recordatorios WhatsApp, auditoría y refuerzo con restricciones a nivel de base de datos.
