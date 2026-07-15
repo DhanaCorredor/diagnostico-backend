@@ -111,6 +111,9 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 
 ## Reglas de validación (en el backend FastAPI)
 
+> 📖 La **referencia canónica** de las reglas de negocio y su implementación está en
+> [`REGLAS-DE-NEGOCIO.md`](REGLAS-DE-NEGOCIO.md). Lo de aquí es un resumen.
+
 Toda la validación vive en la **capa de servicio** del backend (Python), antes de guardar:
 
 1. **Upsert de paciente** — `buscar_o_crear_paciente(nombre, apellido, edad)`: reutiliza si existe, crea con `rol = PACIENTE` si no; si hay varias coincidencias, recepción elige. La cédula se añade después.
