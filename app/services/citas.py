@@ -9,7 +9,24 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from app.models import Cita, Disponibilidad, EstadoCita, Servicio
+from app.models import Cita, Disponibilidad, EstadoCita, Rol, Servicio, Usuario
+from app.services.pacientes import buscar_o_crear_paciente
+
+
+class ServicioNoEncontrado(Exception):
+    """El servicio indicado no existe."""
+
+
+class MedicoNoEncontrado(Exception):
+    """El médico indicado no existe o no tiene rol MEDICO."""
+
+
+class FueraDeDisponibilidad(Exception):
+    """La cita cae fuera de la disponibilidad del médico (se puede forzar con sobrecupo)."""
+
+
+class Solapamiento(Exception):
+    """El médico ya tiene una cita activa que se cruza con este horario."""
 
 
 def calcular_ends_at(starts_at: datetime, servicio: Servicio) -> datetime:
@@ -69,3 +86,60 @@ def hay_solapamiento(
     if excluir_cita_id is not None:
         q = q.filter(Cita.id != excluir_cita_id)
     return db.query(q.exists()).scalar()
+
+
+def crear_cita(
+    db: Session,
+    *,
+    nombre_completo: str,
+    edad: int,
+    medico_id: uuid.UUID,
+    servicio_id: uuid.UUID,
+    starts_at: datetime,
+    creado_por_id: uuid.UUID,
+    motivo: str | None = None,
+    permitir_sobrecupo: bool = False,
+) -> Cita:
+    """Orquesta las reglas y prepara la cita. Hace flush (no commit): el commit lo hace el endpoint.
+
+    Orden: valida servicio y médico -> upsert del paciente -> calcula ends_at ->
+    valida disponibilidad (salvo sobrecupo) -> valida anti-solapamiento (siempre).
+    Lanza una excepción de dominio si alguna regla falla.
+    """
+    servicio = db.get(Servicio, servicio_id)
+    if servicio is None:
+        raise ServicioNoEncontrado()
+
+    medico = db.get(Usuario, medico_id)
+    if medico is None or medico.rol != Rol.MEDICO:
+        raise MedicoNoEncontrado()
+
+    # R1: buscar o crear al paciente (puede lanzar PacientesAmbiguos)
+    paciente = buscar_o_crear_paciente(db, nombre_completo, edad)
+
+    # R2: la duración la marca el servicio
+    ends_at = calcular_ends_at(starts_at, servicio)
+
+    # R3: disponibilidad (salvo que recepción fuerce un sobrecupo)
+    if not permitir_sobrecupo and not dentro_de_disponibilidad(
+        db, medico_id, starts_at, ends_at
+    ):
+        raise FueraDeDisponibilidad()
+
+    # R4: anti-solapamiento por médico (siempre se bloquea)
+    if hay_solapamiento(db, medico_id, starts_at, ends_at):
+        raise Solapamiento()
+
+    cita = Cita(
+        paciente_id=paciente.id,
+        medico_id=medico_id,
+        servicio_id=servicio_id,
+        starts_at=starts_at,
+        ends_at=ends_at,
+        estado=EstadoCita.SCHEDULED,
+        motivo=motivo,
+        creado_por_id=creado_por_id,
+    )
+    db.add(cita)
+    db.flush()  # asigna el id; el commit lo hace quien llama (el endpoint)
+    return cita
