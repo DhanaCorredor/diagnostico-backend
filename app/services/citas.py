@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from app.models import Disponibilidad, Servicio
+from app.models import Cita, Disponibilidad, EstadoCita, Servicio
 
 
 def calcular_ends_at(starts_at: datetime, servicio: Servicio) -> datetime:
@@ -43,3 +43,29 @@ def dentro_de_disponibilidad(
     return any(
         f.hora_inicio <= hora_inicio and hora_fin <= f.hora_fin for f in franjas
     )
+
+
+def hay_solapamiento(
+    db: Session,
+    medico_id: uuid.UUID,
+    starts_at: datetime,
+    ends_at: datetime,
+    excluir_cita_id: uuid.UUID | None = None,
+) -> bool:
+    """Indica si el médico ya tiene una cita ACTIVA que se cruza con este horario.
+
+    Dos citas se cruzan si:  nueva.inicio < existente.fin  Y  nueva.fin > existente.inicio.
+    - Solo cuentan las activas (SCHEDULED / CONFIRMED); una CANCELLED libera el hueco.
+    - Citas pegadas (una acaba justo cuando empieza la otra) NO se solapan.
+    - excluir_cita_id: al editar una cita, se ignora ella misma.
+    """
+    q = (
+        db.query(Cita)
+        .filter(Cita.medico_id == medico_id)
+        .filter(Cita.estado.in_([EstadoCita.SCHEDULED, EstadoCita.CONFIRMED]))
+        .filter(Cita.starts_at < ends_at)  # la existente empieza antes de que acabe la nueva
+        .filter(Cita.ends_at > starts_at)  # y termina después de que empiece la nueva
+    )
+    if excluir_cita_id is not None:
+        q = q.filter(Cita.id != excluir_cita_id)
+    return db.query(q.exists()).scalar()
