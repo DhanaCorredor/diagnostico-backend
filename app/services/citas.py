@@ -12,6 +12,10 @@ from sqlalchemy.orm import Session
 from app.models import Cita, Disponibilidad, EstadoCita, Rol, Servicio, Usuario
 from app.services.pacientes import buscar_o_crear_paciente
 
+# La cita solo puede empezar en un minuto "de rejilla" (:00, :15, :30, :45).
+# Cambiar este valor mueve la rejilla (p. ej. 10 o 20 min) sin tocar la lógica.
+GRID_MINUTOS = 15
+
 
 class ServicioNoEncontrado(Exception):
     """El servicio indicado no existe."""
@@ -27,6 +31,22 @@ class FueraDeDisponibilidad(Exception):
 
 class Solapamiento(Exception):
     """El médico ya tiene una cita activa que se cruza con este horario."""
+
+
+class HorarioNoAlineado(Exception):
+    """El inicio no cae en la rejilla de minutos permitida (:00, :15, :30, :45)."""
+
+
+def esta_alineado(starts_at: datetime) -> bool:
+    """True si el inicio cae justo en la rejilla de GRID_MINUTOS y sin segundos sueltos.
+
+    Ej. con rejilla de 15: 10:00 y 10:30 valen; 10:07 o 10:15:30 no.
+    """
+    return (
+        starts_at.minute % GRID_MINUTOS == 0
+        and starts_at.second == 0
+        and starts_at.microsecond == 0
+    )
 
 
 def calcular_ends_at(starts_at: datetime, servicio: Servicio) -> datetime:
@@ -113,6 +133,11 @@ def crear_cita(
     medico = db.get(Usuario, medico_id)
     if medico is None or medico.rol != Rol.MEDICO:
         raise MedicoNoEncontrado()
+
+    # R0: el inicio debe caer en la rejilla de minutos (:00, :15, :30, :45).
+    # Se valida antes de tocar al paciente para no crear datos por una hora inválida.
+    if not esta_alineado(starts_at):
+        raise HorarioNoAlineado()
 
     # R1: buscar o crear al paciente (puede lanzar PacientesAmbiguos)
     paciente = buscar_o_crear_paciente(db, nombre_completo, edad)

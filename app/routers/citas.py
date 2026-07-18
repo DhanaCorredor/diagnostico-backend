@@ -39,6 +39,11 @@ def agendar_cita(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado")
     except citas_service.MedicoNoEncontrado:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Médico no encontrado")
+    except citas_service.HorarioNoAlineado:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "La cita debe empezar en :00, :15, :30 o :45",
+        )
     except PacientesAmbiguos as e:
         raise HTTPException(status.HTTP_409_CONFLICT, str(e))
     except citas_service.FueraDeDisponibilidad:
