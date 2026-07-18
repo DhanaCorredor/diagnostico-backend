@@ -50,15 +50,15 @@ def verificar_password(password: str, password_hash: str) -> bool:
 # --- Tokens JWT (PyJWT) -----------------------------------------------------
 
 
-def crear_token(usuario_id: uuid.UUID, rol: str) -> str:
-    """Crea un JWT firmado que identifica al usuario y su rol.
+def crear_token(usuario_id: uuid.UUID) -> str:
+    """Crea un JWT firmado que identifica al usuario.
 
-    El token lleva 'sub' (subject = quién es), 'rol' y 'exp' (cuándo caduca).
+    El token lleva 'sub' (subject = quién es) y 'exp' (cuándo caduca). El rol NO
+    se guarda: se consulta siempre en la BD (fresco), igual que el estado activo.
     """
     ahora = datetime.now(timezone.utc)
     payload = {
         "sub": str(usuario_id),
-        "rol": rol,
         "exp": ahora + timedelta(minutes=JWT_EXPIRA_MINUTOS),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
