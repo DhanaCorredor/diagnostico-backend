@@ -12,11 +12,10 @@ from app.auth import hashear_password
 from app.db import SessionLocal
 from app.models import Especialidad, Rol, Servicio, ServicioCategoria, Usuario
 
-ADMIN_EMAIL = "admin@diagnostico.com"
-
-# Personal de ejemplo para desarrollo: (nombre, rol, email, matrícula).
-# Comparten la contraseña de desarrollo (ADMIN_PASSWORD); son solo para probar roles.
-STAFF_DEMO = [
+# Personal interno que hace login: (nombre, rol, email, matrícula).
+# Todos comparten la contraseña del .env (ADMIN_PASSWORD); sin ella, se saltan.
+STAFF = [
+    ("Administrador", "ADMIN", "admin@diagnostico.com", None),
     ("Recepción Demo", "RECEPCION", "recepcion@diagnostico.com", None),
     ("Dra. Ana Médico", "MEDICO", "medico@diagnostico.com", "MAT-0001"),
 ]
@@ -82,39 +81,18 @@ def sembrar_servicios(db):
     return len(nuevos)
 
 
-def sembrar_admin(db):
-    """Crea el usuario ADMIN si no existe. Devuelve 1 si lo creó, 0 si no.
+def sembrar_staff(db):
+    """Crea el personal interno (admin, recepción, médico) que no exista. Devuelve cuántos creó.
 
-    La contraseña sale del .env (ADMIN_PASSWORD); nunca se escribe en el código.
-    Si no está definida, se salta el admin con un aviso (no inventa contraseñas).
-    """
-    if db.query(Usuario).filter_by(email=ADMIN_EMAIL).first():
-        return 0  # ya existe
-    password = os.getenv("ADMIN_PASSWORD")
-    if not password:
-        print("  (aviso) ADMIN_PASSWORD no está en el .env: me salto el admin.")
-        return 0
-    db.add(
-        Usuario(
-            nombre_completo="Administrador",
-            rol=Rol.ADMIN,
-            email=ADMIN_EMAIL,
-            password_hash=hashear_password(password),
-        )
-    )
-    return 1
-
-
-def sembrar_staff_demo(db):
-    """Crea el personal de ejemplo (RECEPCION, MEDICO) que no exista. Devuelve cuántos creó.
-
-    Usan la contraseña de desarrollo (ADMIN_PASSWORD). Si no está definida, se saltan.
+    Todos usan la contraseña del .env (ADMIN_PASSWORD); nunca se escribe en el código.
+    Si no está definida, no crea a nadie (no inventa contraseñas).
     """
     password = os.getenv("ADMIN_PASSWORD")
     if not password:
+        print("  (aviso) ADMIN_PASSWORD no está en el .env: me salto el personal.")
         return 0
     creados = 0
-    for nombre, rol, email, matricula in STAFF_DEMO:
+    for nombre, rol, email, matricula in STAFF:
         if db.query(Usuario).filter_by(email=email).first():
             continue
         db.add(
@@ -135,12 +113,10 @@ def main():
     try:
         n_esp = sembrar_especialidades(db)
         n_serv = sembrar_servicios(db)
-        n_admin = sembrar_admin(db)
-        n_staff = sembrar_staff_demo(db)
+        n_staff = sembrar_staff(db)
         db.commit()
         print(
-            f"Seed OK: +{n_esp} especialidades, +{n_serv} servicios, "
-            f"+{n_admin} admin, +{n_staff} staff."
+            f"Seed OK: +{n_esp} especialidades, +{n_serv} servicios, +{n_staff} personal."
         )
     finally:
         db.close()
