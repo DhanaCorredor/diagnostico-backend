@@ -82,8 +82,8 @@ gantt
     section Desarrollo
     Fase 0 · Andamiaje         :done,   f0, 2026-07-09, 1d
     Fase 1 · Datos             :done,   f1, after f0, 2d
-    Fase 2 · Auth y roles      :active, f2, after f1, 2d
-    Fase 3 · Citas (core)      :crit,   f3, after f2, 3d
+    Fase 2 · Auth y roles      :done,   f2, after f1, 2d
+    Fase 3 · Citas (core)      :active, crit, f3, after f2, 3d
     Fase 4 · UI                :        f4, after f3, 3d
     Fase 5 · Historia + cierre :        f5, after f4, 2d
 
@@ -95,12 +95,12 @@ gantt
 ## 6. Tablero de tareas (Kanban orientativo)
 
 **Por hacer**
-- Servicio de citas: upsert de paciente + disponibilidad + anti-solapamiento por médico + tests (Fase 3)
+- Citas: endpoints de **listar/consultar agenda** y **cancelar cita** (libera cupo) (Fase 3)
 - Calendario, vistas Pacientes/Médicos y formulario de cita (Fase 4)
 - Historia clínica mínima + pulido + despliegue (Fase 5)
 
 **En curso**
-- _(nada activo — Fase 1 recién cerrada; siguiente: **Login JWT, guardas por rol y usuario admin**, Fase 2)_
+- **Fase 3 — Citas (core):** servicio de citas con reglas de negocio validadas y probadas; afinando endpoints restantes.
 
 **Hecho**
 - Planificación y decisiones de arquitectura
@@ -110,6 +110,8 @@ gantt
 - Documentación actualizada al stack React + Python
 - **Fase 0** — Andamiaje backend FastAPI + conexión a PostgreSQL (frontend React/Vite en repo aparte)
 - **Fase 1** — Modelos SQLAlchemy (7 tablas) + Alembic + migración inicial + seed de catálogos (12 especialidades, 16 servicios)
+- **Fase 2** — Auth JWT (bcrypt), dependencia `requiere_rol` y guardas por rol (ADMIN/RECEPCION/MEDICO)
+- **Fase 3 (parcial)** — Servicio `crear_cita`: upsert de paciente + disponibilidad + anti-solapamiento por médico + **rejilla de inicio (:00/:15/:30/:45)** + suite de tests en verde
 
 ## 7. Riesgos y mitigación
 
