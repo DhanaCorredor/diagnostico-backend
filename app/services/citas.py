@@ -5,7 +5,7 @@ para poder probarlas de forma aislada.
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
 from sqlalchemy.orm import Session
 
@@ -35,6 +35,14 @@ class Solapamiento(Exception):
 
 class HorarioNoAlineado(Exception):
     """El inicio no cae en la rejilla de minutos permitida (:00, :15, :30, :45)."""
+
+
+class CitaNoEncontrada(Exception):
+    """No existe ninguna cita con ese id."""
+
+
+class CitaNoCancelable(Exception):
+    """La cita no se puede cancelar (ya está cancelada o completada)."""
 
 
 def esta_alineado(starts_at: datetime) -> bool:
@@ -167,4 +175,43 @@ def crear_cita(
     )
     db.add(cita)
     db.flush()  # asigna el id; el commit lo hace quien llama (el endpoint)
+    return cita
+
+
+def listar_citas(
+    db: Session,
+    *,
+    medico_id: uuid.UUID | None = None,
+    fecha: date | None = None,
+) -> list[Cita]:
+    """Devuelve las citas (agenda), opcionalmente filtradas por médico y/o día.
+
+    - medico_id: solo las de ese médico (recepción filtra; al médico se le fija el suyo).
+    - fecha: solo las que empiezan ese día (desde las 00:00 hasta las 00:00 del día siguiente).
+    Ordenadas por hora de inicio.
+    """
+    q = db.query(Cita)
+    if medico_id is not None:
+        q = q.filter(Cita.medico_id == medico_id)
+    if fecha is not None:
+        inicio_dia = datetime.combine(fecha, time.min)
+        q = q.filter(Cita.starts_at >= inicio_dia).filter(
+            Cita.starts_at < inicio_dia + timedelta(days=1)
+        )
+    return q.order_by(Cita.starts_at).all()
+
+
+def cancelar_cita(db: Session, cita_id: uuid.UUID) -> Cita:
+    """Cancela una cita: pone su estado en CANCELLED y con ello libera el cupo.
+
+    Solo se pueden cancelar citas activas (SCHEDULED/CONFIRMED); una ya cancelada
+    o completada no. Hace flush (no commit): el commit lo hace el endpoint.
+    """
+    cita = db.get(Cita, cita_id)
+    if cita is None:
+        raise CitaNoEncontrada()
+    if cita.estado not in (EstadoCita.SCHEDULED, EstadoCita.CONFIRMED):
+        raise CitaNoCancelable()
+    cita.estado = EstadoCita.CANCELLED
+    db.flush()
     return cita

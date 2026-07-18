@@ -1,4 +1,7 @@
-"""Router de citas: agendar (crear) una cita."""
+"""Router de citas: agendar, listar (agenda) y cancelar."""
+
+import uuid
+from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -58,4 +61,41 @@ def agendar_cita(
         )
 
     db.commit()  # todo válido: se confirma la transacción (cita + posible paciente nuevo)
+    return cita
+
+
+@router.get("", response_model=list[CitaOut])
+def listar_citas(
+    medico_id: uuid.UUID | None = None,
+    fecha: date | None = None,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION, Rol.MEDICO)),
+):
+    """Lista la agenda de citas, con filtros opcionales por médico y por día.
+
+    Un MÉDICO solo ve su propia agenda: se le fija el filtro a su id, ignorando
+    cualquier medico_id que envíe. ADMIN y RECEPCIÓN ven la de cualquiera.
+    """
+    if usuario.rol == Rol.MEDICO:
+        medico_id = usuario.id
+    return citas_service.listar_citas(db, medico_id=medico_id, fecha=fecha)
+
+
+@router.post("/{cita_id}/cancelar", response_model=CitaOut)
+def cancelar_cita(
+    cita_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION)),
+):
+    """Cancela una cita (libera el cupo). Solo ADMIN o RECEPCIÓN."""
+    try:
+        cita = citas_service.cancelar_cita(db, cita_id)
+    except citas_service.CitaNoEncontrada:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada")
+    except citas_service.CitaNoCancelable:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "La cita no se puede cancelar (ya está cancelada o completada)",
+        )
+    db.commit()
     return cita

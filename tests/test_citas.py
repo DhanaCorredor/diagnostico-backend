@@ -1,7 +1,7 @@
 """Tests de las reglas de citas (R2, R3, R4) y del orquestador crear_cita."""
 
 import uuid
-from datetime import datetime, time
+from datetime import date, datetime, time
 
 import pytest
 
@@ -184,3 +184,69 @@ def test_crear_cita_servicio_invalido(db, medico, admin):
             starts_at=LUNES_10,
             creado_por_id=admin.id,
         )
+
+
+# --- Listar agenda -----------------------------------------------------------
+
+
+def _cita(db, medico, servicio, admin, starts_at):
+    """Crea y devuelve una cita ya agendada (con franja disponible)."""
+    _franja(db, medico)
+    return C.crear_cita(
+        db,
+        nombre_completo=f"P {uuid.uuid4()}",
+        edad=1,
+        medico_id=medico.id,
+        servicio_id=servicio.id,
+        starts_at=starts_at,
+        creado_por_id=admin.id,
+    )
+
+
+def test_listar_filtra_por_medico(db, medico, servicio, admin):
+    _cita(db, medico, servicio, admin, LUNES_10)
+    del_medico = C.listar_citas(db, medico_id=medico.id)
+    de_otro = C.listar_citas(db, medico_id=uuid.uuid4())
+    assert len(del_medico) == 1
+    assert de_otro == []
+
+
+def test_listar_filtra_por_fecha_y_ordena(db, medico, servicio, admin):
+    _cita(db, medico, servicio, admin, datetime(2026, 7, 20, 11, 0))
+    _cita(db, medico, servicio, admin, datetime(2026, 7, 20, 9, 0))
+    del_dia = C.listar_citas(db, medico_id=medico.id, fecha=date(2026, 7, 20))
+    otro_dia = C.listar_citas(db, medico_id=medico.id, fecha=date(2026, 7, 21))
+    assert [c.starts_at.hour for c in del_dia] == [9, 11]  # ordenadas por inicio
+    assert otro_dia == []
+
+
+# --- Cancelar cita -----------------------------------------------------------
+
+
+def test_cancelar_cita_libera_cupo(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    C.cancelar_cita(db, cita.id)
+    assert cita.estado == EstadoCita.CANCELLED
+    # el hueco queda libre: agendar otra a la misma hora ya no solapa
+    otra = C.crear_cita(
+        db,
+        nombre_completo=f"Q {uuid.uuid4()}",
+        edad=2,
+        medico_id=medico.id,
+        servicio_id=servicio.id,
+        starts_at=LUNES_10,
+        creado_por_id=admin.id,
+    )
+    assert otra.estado == EstadoCita.SCHEDULED
+
+
+def test_cancelar_cita_inexistente(db):
+    with pytest.raises(C.CitaNoEncontrada):
+        C.cancelar_cita(db, uuid.uuid4())
+
+
+def test_cancelar_cita_ya_cancelada(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    C.cancelar_cita(db, cita.id)
+    with pytest.raises(C.CitaNoCancelable):
+        C.cancelar_cita(db, cita.id)  # segunda vez -> no cancelable
