@@ -33,6 +33,33 @@ def test_calcular_ends_at(servicio):
     assert fin == datetime(2026, 7, 20, 10, 45)  # servicio de 45 min
 
 
+# --- R0: rejilla de minutos (:00, :15, :30, :45) -----------------------------
+
+
+def test_esta_alineado():
+    # múltiplos de 15 (incluye 60=en punto y 90=:30) -> válidos
+    assert C.esta_alineado(datetime(2026, 7, 20, 10, 0)) is True
+    assert C.esta_alineado(datetime(2026, 7, 20, 10, 30)) is True
+    assert C.esta_alineado(datetime(2026, 7, 20, 11, 45)) is True
+    # fuera de rejilla o con segundos sueltos -> inválidos
+    assert C.esta_alineado(datetime(2026, 7, 20, 10, 7)) is False
+    assert C.esta_alineado(datetime(2026, 7, 20, 10, 15, 30)) is False
+
+
+def test_crear_cita_horario_no_alineado(db, medico, servicio, admin):
+    _franja(db, medico)
+    with pytest.raises(C.HorarioNoAlineado):
+        C.crear_cita(
+            db,
+            nombre_completo=f"X {uuid.uuid4()}",
+            edad=1,
+            medico_id=medico.id,
+            servicio_id=servicio.id,
+            starts_at=datetime(2026, 7, 20, 10, 7),  # minuto :07 no está en la rejilla
+            creado_por_id=admin.id,
+        )
+
+
 # --- R3: disponibilidad ------------------------------------------------------
 
 

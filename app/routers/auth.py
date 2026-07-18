@@ -30,7 +30,7 @@ def login(datos: LoginRequest, db: Session = Depends(get_db)):
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuario desactivado",
         )
-    token = crear_token(usuario.id, usuario.rol.value)
+    token = crear_token(usuario.id)
     return TokenResponse(access_token=token)
 
 
