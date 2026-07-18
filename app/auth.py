@@ -22,6 +22,9 @@ load_dotenv()
 
 # Secreto para firmar los tokens: viene del .env (nunca hardcodeado).
 JWT_SECRET = os.getenv("JWT_SECRET")
+if not JWT_SECRET:
+    # Sin secreto no se pueden firmar ni verificar tokens de forma segura.
+    raise RuntimeError("Falta JWT_SECRET en el .env (secreto para firmar los tokens JWT).")
 JWT_ALGORITHM = "HS256"        # algoritmo de firma (HMAC + SHA-256)
 JWT_EXPIRA_MINUTOS = 60 * 8    # el token dura 8 horas (una jornada laboral)
 
@@ -95,7 +98,9 @@ def usuario_actual(
     except (jwt.InvalidTokenError, KeyError, ValueError):
         raise no_autorizado
     usuario = db.get(Usuario, usuario_id)
-    if usuario is None:
+    # El usuario debe existir Y seguir activo: si un admin lo dio de baja, su token
+    # (que dura horas) deja de servir de inmediato, no hasta que caduque.
+    if usuario is None or not usuario.activo:
         raise no_autorizado
     return usuario
 
