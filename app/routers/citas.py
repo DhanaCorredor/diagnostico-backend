@@ -50,6 +50,11 @@ def agendar_cita(
             status.HTTP_400_BAD_REQUEST,
             "La cita debe empezar en :00, :15, :30 o :45",
         )
+    except citas_service.CitaEnElPasado:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "No se puede agendar una cita en el pasado",
+        )
     except PacientesAmbiguos as e:
         raise HTTPException(status.HTTP_409_CONFLICT, str(e))
     except citas_service.FueraDeDisponibilidad:

@@ -11,6 +11,10 @@ from app.services import citas as C
 # Un lunes cualquiera, y su día en la convención del modelo (0=domingo).
 LUNES_10 = datetime(2026, 7, 20, 10, 0)
 DIA_LUNES = (LUNES_10.weekday() + 1) % 7
+# Instante "actual" fijo para los tests: la medianoche de ese día, anterior a
+# todas las citas de prueba. Se inyecta como `ahora` para que la regla de
+# "no agendar en el pasado" sea determinista (no depende del reloj real).
+ANTES = datetime(2026, 7, 20, 0, 0)
 
 
 def _franja(db, medico, hora_inicio=time(8, 0), hora_fin=time(14, 0)):
@@ -117,6 +121,7 @@ def test_crear_cita_feliz(db, medico, servicio, admin):
         servicio_id=servicio.id,
         starts_at=LUNES_10,
         creado_por_id=admin.id,
+        ahora=ANTES,
     )
     assert cita.ends_at == datetime(2026, 7, 20, 10, 45)
     assert cita.estado == EstadoCita.SCHEDULED
@@ -133,6 +138,7 @@ def test_crear_cita_fuera_de_disponibilidad(db, medico, servicio, admin):
             servicio_id=servicio.id,
             starts_at=LUNES_10,
             creado_por_id=admin.id,
+            ahora=ANTES,
         )
 
 
@@ -146,6 +152,7 @@ def test_crear_cita_bloquea_solapamiento(db, medico, servicio, admin):
         servicio_id=servicio.id,
         starts_at=LUNES_10,
         creado_por_id=admin.id,
+        ahora=ANTES,
     )
     with pytest.raises(C.Solapamiento):
         C.crear_cita(
@@ -156,6 +163,7 @@ def test_crear_cita_bloquea_solapamiento(db, medico, servicio, admin):
             servicio_id=servicio.id,
             starts_at=datetime(2026, 7, 20, 10, 30),
             creado_por_id=admin.id,
+            ahora=ANTES,
         )
 
 
@@ -186,6 +194,45 @@ def test_crear_cita_servicio_invalido(db, medico, admin):
         )
 
 
+def test_crear_cita_en_el_pasado(db, medico, servicio, admin):
+    _franja(db, medico)
+    # 'ahora' posterior al inicio -> la cita queda en el pasado
+    with pytest.raises(C.CitaEnElPasado):
+        C.crear_cita(
+            db,
+            nombre_completo=f"X {uuid.uuid4()}",
+            edad=1,
+            medico_id=medico.id,
+            servicio_id=servicio.id,
+            starts_at=LUNES_10,
+            creado_por_id=admin.id,
+            ahora=datetime(2026, 7, 20, 11, 0),  # ya pasaron las 10:00
+        )
+
+
+def test_crear_cita_medico_inactivo(db, servicio, admin):
+    # médico con rol correcto pero dado de baja (activo=False) -> no agendable
+    inactivo = Usuario(
+        nombre_completo=f"Dr. Baja {uuid.uuid4()}",
+        rol=Rol.MEDICO,
+        email=f"baja-{uuid.uuid4()}@test.local",
+        activo=False,
+    )
+    db.add(inactivo)
+    db.flush()
+    with pytest.raises(C.MedicoNoEncontrado):
+        C.crear_cita(
+            db,
+            nombre_completo="X",
+            edad=1,
+            medico_id=inactivo.id,
+            servicio_id=servicio.id,
+            starts_at=LUNES_10,
+            creado_por_id=admin.id,
+            ahora=ANTES,
+        )
+
+
 # --- Listar agenda -----------------------------------------------------------
 
 
@@ -200,6 +247,7 @@ def _cita(db, medico, servicio, admin, starts_at):
         servicio_id=servicio.id,
         starts_at=starts_at,
         creado_por_id=admin.id,
+        ahora=ANTES,
     )
 
 
@@ -252,6 +300,7 @@ def test_cancelar_cita_libera_cupo(db, medico, servicio, admin):
         servicio_id=servicio.id,
         starts_at=LUNES_10,
         creado_por_id=admin.id,
+        ahora=ANTES,
     )
     assert otra.estado == EstadoCita.SCHEDULED
 

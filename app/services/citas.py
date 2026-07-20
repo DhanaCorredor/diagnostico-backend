@@ -37,6 +37,10 @@ class HorarioNoAlineado(Exception):
     """El inicio no cae en la rejilla de minutos permitida (:00, :15, :30, :45)."""
 
 
+class CitaEnElPasado(Exception):
+    """El inicio de la cita ya pasó; no se puede agendar en el pasado."""
+
+
 class CitaNoEncontrada(Exception):
     """No existe ninguna cita con ese id."""
 
@@ -127,25 +131,36 @@ def crear_cita(
     creado_por_id: uuid.UUID,
     motivo: str | None = None,
     permitir_sobrecupo: bool = False,
+    ahora: datetime | None = None,
 ) -> Cita:
     """Orquesta las reglas y prepara la cita. Hace flush (no commit): el commit lo hace el endpoint.
 
-    Orden: valida servicio y médico -> upsert del paciente -> calcula ends_at ->
-    valida disponibilidad (salvo sobrecupo) -> valida anti-solapamiento (siempre).
+    Orden: valida servicio y médico -> rejilla y no-pasado -> upsert del paciente ->
+    calcula ends_at -> valida disponibilidad (salvo sobrecupo) -> valida anti-solapamiento.
     Lanza una excepción de dominio si alguna regla falla.
+
+    `ahora` se inyecta (por defecto la hora actual) para poder probar la regla del pasado.
     """
     servicio = db.get(Servicio, servicio_id)
     if servicio is None:
         raise ServicioNoEncontrado()
 
+    # El médico debe existir, tener rol MEDICO y estar activo (un médico dado de
+    # baja no es agendable, aunque conserve su rol).
     medico = db.get(Usuario, medico_id)
-    if medico is None or medico.rol != Rol.MEDICO:
+    if medico is None or medico.rol != Rol.MEDICO or not medico.activo:
         raise MedicoNoEncontrado()
 
     # R0: el inicio debe caer en la rejilla de minutos (:00, :15, :30, :45).
     # Se valida antes de tocar al paciente para no crear datos por una hora inválida.
     if not esta_alineado(starts_at):
         raise HorarioNoAlineado()
+
+    # R0.b: no se puede agendar en el pasado (comparamos con 'ahora', inyectable).
+    if ahora is None:
+        ahora = datetime.now()
+    if starts_at < ahora:
+        raise CitaEnElPasado()
 
     # R1: buscar o crear al paciente (puede lanzar PacientesAmbiguos)
     paciente = buscar_o_crear_paciente(db, nombre_completo, edad)
