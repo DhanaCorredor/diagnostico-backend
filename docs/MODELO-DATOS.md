@@ -14,22 +14,22 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 
 ## Alcance del MVP
 
-**7 tablas.** Se prioriza lo demostrable y las validaciones que pidió la profe.
+**7 tablas** (una, `notas_clinicas`, **reservada para fase 2**). Se prioriza lo demostrable y las validaciones que pidió la profe.
 
 | Núcleo (MVP) | Fuera del MVP (→ fase 2) |
 |--------------|--------------------------|
-| `usuarios`, `especialidades`, `usuario_especialidad`, `servicios`, `disponibilidad`, `citas`, `notas_clinicas` | Reportes · recordatorios WhatsApp · auditoría · visitas (agrupar estudios) · duración por médico · recursos/salas + anti-solapamiento por recurso · holter colocación+retiro · constraint `gist` en BD · PWA offline |
+| `usuarios`, `especialidades`, `usuario_especialidad`, `servicios`, `disponibilidad`, `citas` | historia clínica / notas (`notas_clinicas`, tabla creada como andamiaje) · Reportes · recordatorios WhatsApp · auditoría · visitas (agrupar estudios) · duración por médico · recursos/salas + anti-solapamiento por recurso · holter colocación+retiro · constraint `gist` en BD · PWA offline |
 
 ## Decisiones cerradas (con datos reales del centro)
 
 - **Usuarios:** solo personal interno hace login (`ADMIN`, `RECEPCION`, `MEDICO`). Las citas las agenda **recepción**. Los pacientes son registros, no usuarios con acceso.
-- **Roles:** ADMIN todo · RECEPCION agenda/pacientes/médicos pero **sin** usuarios, configuración ni reportes · MEDICO su agenda + notas clínicas.
+- **Roles:** ADMIN todo · RECEPCION agenda/pacientes/médicos pero **sin** usuarios, configuración ni reportes · MEDICO su agenda (solo lectura en el MVP; las notas clínicas quedan para fase 2).
 - **Paciente:** al agendar se identifica por **nombre + apellido + edad** (lo que pide recepción). La **cédula** la solicitan los especialistas al realizar la consulta/estudio (para el informe): es **opcional** y se añade **después** (única si se indica).
 - **Alta de paciente al agendar (upsert):** al crear una cita el sistema **busca al paciente por nombre + apellido + edad**; si **existe** lo reutiliza, si **no existe** lo **crea** con `rol = PACIENTE`; si **varios coinciden** (nombres repetidos), recepción **elige** de una lista. Nunca se duplica.
-- **Duración de la cita:** la marca el **servicio** (`servicios.duracion_min`). `ends_at = starts_at + duracion_min`.
+- **Duración de la cita:** la **elige recepción** al agendar, de una lista fija ({15, 30, 45, 60, 90} min). `ends_at = starts_at + duracion_min`. El servicio ya no la marca.
 - **Disponibilidad y sobrecupo:** cada médico define sus franjas semanales (`disponibilidad`); el calendario **bloquea** por defecto los días/horas fuera de ellas. Recepción puede **forzar un cupo extra** (sobrecupo, de mutuo acuerdo con el médico) con una confirmación. El **solapamiento exacto** (mismo médico a la misma hora) **sí se bloquea siempre**.
 - **Cero solapamientos (MVP): solo por médico.** Un médico no puede tener dos citas activas que se solapen en el tiempo. *(El anti-solapamiento por recurso/sala queda para fase 2.)*
-- **Historia clínica mínima:** notas de texto por paciente (`notas_clinicas`), que escribe el médico; da contenido a la vista del rol MEDICO.
+- **Historia clínica (fase 2, fuera del MVP):** notas de texto por paciente (`notas_clinicas`), que escribiría el médico. La tabla ya existe como andamiaje, pero en el MVP el rol MEDICO solo consulta su agenda.
 - **Pagos y facturación:** **fuera del sistema**. **Sede:** una sola.
 
 ---
@@ -49,8 +49,8 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 | fecha_nacimiento | date? | opcional; se completa luego (con la cédula/informe) |
 | telefono | string? | (varios pacientes pueden compartir número) |
 | matricula | string? | nº de colegiado (solo médico) |
-| alergias | text? | historia clínica (solo paciente) |
-| antecedentes | text? | historia clínica (solo paciente) |
+| alergias | text? | dato clínico del paciente (opcional; uso ampliado en fase 2) |
+| antecedentes | text? | dato clínico del paciente (opcional; uso ampliado en fase 2) |
 | activo | bool (def. true) | baja lógica |
 | created_at / updated_at | datetime | |
 
@@ -71,7 +71,6 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 | id | uuid (PK) | |
 | nombre | string, único | ej. Consulta cardiología, Ecocardiograma, Holter, Eco abdominal, Doppler… |
 | categoria | `ServicioCategoria` | CONSULTA · ECOGRAFIA · ESTUDIO_CARDIACO · OTRO |
-| duracion_min | int | duración → fuente del `ends_at` de la cita |
 | activo | bool (def. true) | |
 
 ### `disponibilidad` — franjas semanales del médico
@@ -87,13 +86,15 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 | medico_id | uuid (FK → usuarios) | rol MEDICO |
 | servicio_id | uuid (FK → servicios) | |
 | starts_at | datetime | |
-| ends_at | datetime | = starts_at + `servicios.duracion_min` |
+| ends_at | datetime | = starts_at + la duración elegida al agendar |
 | estado | `EstadoCita` | SCHEDULED · CONFIRMED · CANCELLED · COMPLETED · NO_SHOW |
 | motivo | string? | |
 | creado_por_id | uuid (FK → usuarios) | recepción que la agendó |
 | created_at / updated_at | datetime | |
 
-### `notas_clinicas` — historia clínica (versión mínima)
+### `notas_clinicas` — historia clínica (**reservada para fase 2, fuera del MVP**)
+> La tabla existe como andamiaje; su funcionalidad no forma parte del MVP.
+
 | Campo | Tipo | Nota |
 |-------|------|------|
 | id | uuid (PK) | |
@@ -123,7 +124,7 @@ Toda la validación vive en la **capa de servicio** del backend (Python), antes 
 
 ```python
 # Anti-solapamiento por médico (pseudocódigo del servicio de citas)
-def hay_solapamiento(db, medico_id, starts_at, ends_at, excluir_cita_id=None):
+def hay_solapamiento(db, medico_id, starts_at, ends_at):
     q = (
         db.query(Cita)
         .filter(Cita.medico_id == medico_id)
@@ -131,8 +132,6 @@ def hay_solapamiento(db, medico_id, starts_at, ends_at, excluir_cita_id=None):
         .filter(Cita.starts_at < ends_at)   # se cruzan en el tiempo
         .filter(Cita.ends_at > starts_at)
     )
-    if excluir_cita_id:                      # al editar, ignora la propia cita
-        q = q.filter(Cita.id != excluir_cita_id)
     return db.query(q.exists()).scalar()
 ```
 
@@ -165,8 +164,7 @@ erDiagram
         uuid especialidad_id FK }
     servicios { uuid id PK
         string nombre UK
-        ServicioCategoria categoria
-        int duracion_min }
+        ServicioCategoria categoria }
     disponibilidad { uuid id PK
         uuid usuario_id FK
         int dia_semana
@@ -196,7 +194,7 @@ erDiagram
 | `usuarios` (médico) – `disponibilidad` | 1 : N | Franjas horarias semanales. |
 | `usuarios` (paciente) – `citas` | 1 : N | Citas del paciente. |
 | `usuarios` (médico) – `citas` | 1 : N | Citas que atiende (anti-solapamiento por médico). |
-| `servicios` – `citas` | 1 : N | Servicio de la cita (fuente de la duración). |
-| `usuarios` – `notas_clinicas` | 1 : N | Historia clínica (paciente y médico). |
+| `servicios` – `citas` | 1 : N | Servicio de la cita. |
+| `usuarios` – `notas_clinicas` | 1 : N | Historia clínica (paciente y médico). **Reservada para fase 2, fuera del MVP.** |
 
-> **Fase 2** (si sobra tiempo): recursos/salas + anti-solapamiento por recurso, duración por médico (`medico_servicio`), visitas para agrupar estudios, recordatorios WhatsApp, auditoría, reportes y PWA. El diseño actual permite añadirlas sin romper lo existente.
+> **Fase 2** (si sobra tiempo): historia clínica / notas del médico (`notas_clinicas`, ya creada como andamiaje), recursos/salas + anti-solapamiento por recurso, duración por médico (`medico_servicio`), visitas para agrupar estudios, recordatorios WhatsApp, auditoría, reportes y PWA. El diseño actual permite añadirlas sin romper lo existente.

@@ -46,7 +46,7 @@ src/
 | `TarjetaKPI` | título + número + delta | panel |
 | `SelectorVista` | toggle Día / Semana | agenda |
 | `FranjaHoraria` | día + hora inicio/fin | disponibilidad del médico |
-| `ItemNota` | fecha + médico + texto | historia clínica |
+| `ItemNota` | fecha + médico + texto | historia clínica (**fase 2, fuera del MVP**) |
 
 ## 🦠 Organismos
 
@@ -61,8 +61,8 @@ src/
 | `FormularioPaciente` | alta/edición: **nombre + apellido + edad** (cédula opcional) |
 | `TarjetaMedico` | avatar + **especialidades (N:M)** + servicios + disponibilidad |
 | `FichaCabecera` | datos del paciente + alergias/antecedentes |
-| `FichaTabs` | pestañas: Datos · Historial de citas · Historia clínica |
-| `ListaNotasClinicas` | notas de evolución (`ItemNota`) |
+| `FichaTabs` | pestañas: Datos · Historial de citas (la pestaña **Historia clínica** llega en **fase 2**) |
+| `ListaNotasClinicas` | notas de evolución (`ItemNota`) — **fase 2, fuera del MVP** |
 | `TablaUsuarios` | usuarios del sistema (solo ADMIN) |
 | `FormularioUsuario` | nuevo acceso: nombre + email + rol |
 
@@ -81,12 +81,12 @@ src/
 | `PanelPage` | `/` | todos | `PanelResumen` |
 | `AgendaPage` | `/agenda` | todos | `Calendario` (+ `FormularioCita`) |
 | `PacientesPage` | `/pacientes` | ADMIN · RECEPCION | `TablaPacientes` + `FormularioPaciente` |
-| `FichaPacientePage` | `/pacientes/:id` | ADMIN · RECEPCION · MEDICO | `FichaCabecera` + `FichaTabs` + `ListaNotasClinicas` |
+| `FichaPacientePage` | `/pacientes/:id` | ADMIN · RECEPCION · MEDICO | `FichaCabecera` + `FichaTabs` (`ListaNotasClinicas` → **fase 2**) |
 | `MedicosPage` | `/medicos` | ADMIN · RECEPCION | `TarjetaMedico` (grid) |
 | `UsuariosPage` | `/usuarios` | **solo ADMIN** | `TablaUsuarios` + `FormularioUsuario` |
 | `ConfiguracionPage` | `/config` | **solo ADMIN** | formularios de centro/servicios |
 
-> **Guardas por rol** (en `App.jsx`): RECEPCIÓN **no** ve `/usuarios` ni `/config`; MEDICO ve su agenda y las fichas para las notas clínicas.
+> **Guardas por rol** (en `App.jsx`): RECEPCIÓN **no** ve `/usuarios` ni `/config`; MEDICO ve su agenda (**solo lectura**). Las notas clínicas en la ficha del paciente llegan en **fase 2**.
 
 ## 🔑 Comportamientos clave (dónde vive la lógica)
 

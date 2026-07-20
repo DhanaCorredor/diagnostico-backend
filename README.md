@@ -33,9 +33,8 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 - 👤 **Patients** — registration and management (national ID unique when provided; **optional**), with **automatic upsert when booking** (detect if exists, create if not).
 - 🩺 **Doctors** — specialties (**N:M**) and **weekly availability**.
 - 📅 **Appointments & calendar** — book with **overlap validation per doctor** and **availability-based blocking** (days/hours the doctor is off are not selectable).
-- 📋 **Minimal clinical history** — the doctor reads/adds text notes per patient.
 
-> **Out of MVP (phase 2):** reports, WhatsApp reminders, audit log, visits (grouped studies), per-doctor duration, rooms/resources + resource overlap, Holter placement/removal, PWA offline. · **Billing** is handled separately (SENIAT); **direct payment only**.
+> **Out of MVP (phase 2):** clinical history / doctor's notes, reports, WhatsApp reminders, audit log, visits (grouped studies), per-doctor duration, rooms/resources + resource overlap, Holter placement/removal, PWA offline. · **Billing** is handled separately (SENIAT); **direct payment only**.
 
 ## 👥 Roles and permissions
 
@@ -43,7 +42,7 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 |------|-------------|
 | **ADMIN** | Full control: users, doctors, specialties, services, configuration. |
 | **RECEPCION** | Books appointments; manages patients and doctors; sees agendas. **No** access to **users**, **configuration** or **reports**. |
-| **MEDICO** | Sees their own agenda; marks attendance/no-show; reads and adds notes to the **clinical history**. |
+| **MEDICO** | Sees their own agenda (read-only); marks attendance/no-show. *(Clinical history notes are phase 2.)* |
 
 > Patients do **not** log in (they are records managed by reception).
 
@@ -70,7 +69,7 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 
 ## 🗃️ Data model
 
-Core entities (7 tables): `usuarios` (unified), `especialidades` + `usuario_especialidad` (N:M), `servicios` (with duration), `disponibilidad`, `citas` (zero overlaps per doctor), `notas_clinicas` (minimal clinical history).
+Core entities (7 tables): `usuarios` (unified), `especialidades` + `usuario_especialidad` (N:M), `servicios`, `disponibilidad`, `citas` (zero overlaps per doctor), `notas_clinicas` (reserved for phase 2, out of MVP).
 
 📄 Full detail and ER diagram in [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md).
 
@@ -137,7 +136,7 @@ pnpm dev                     # http://localhost:5173
 - [ ] **Phase 2** — Authentication (JWT) and roles
 - [ ] **Phase 3** — Appointments core (patient upsert + availability + overlap per doctor) + tests
 - [ ] **Phase 4** — UI (login, calendar, Patients/Doctors views, appointment form)
-- [ ] **Phase 5** — Minimal clinical history + polish + deployment
+- [ ] **Phase 5** — Polish + deployment
 
 Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 

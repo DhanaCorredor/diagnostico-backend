@@ -80,7 +80,7 @@ package.json        # pnpm
 1. Recepción rellena el formulario en la **SPA** y envía la petición con el **token JWT**.
 2. El **router** de citas valida el cuerpo (Pydantic) y la **dependencia de auth** comprueba sesión y rol.
 3. El **servicio de pacientes** hace el **upsert**: busca al paciente por cédula (o nombre + fecha de nacimiento); si no existe, lo crea con `rol = PACIENTE`.
-4. El **servicio de citas** calcula `ends_at` (según `servicios.duracion_min`), valida que la hora cae **dentro de la disponibilidad** del médico y que **no se solapa** con otra cita activa del mismo médico.
+4. El **servicio de citas** calcula `ends_at` (según la duración elegida al agendar), valida que la hora cae **dentro de la disponibilidad** del médico y que **no se solapa** con otra cita activa del mismo médico.
 5. Si es válido, **SQLAlchemy** persiste la cita y responde en JSON; la SPA refresca la agenda.
 
 ## 5. Decisiones técnicas
