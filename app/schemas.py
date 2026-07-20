@@ -10,7 +10,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models import EstadoCita, Rol
+from app.models import EstadoCita, Rol, ServicioCategoria
 
 
 class LoginRequest(BaseModel):
@@ -36,6 +36,16 @@ class UsuarioOut(BaseModel):
     rol: Rol
 
     # Permite construir el esquema a partir de un objeto ORM (usuario.id, .rol...).
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ServicioOut(BaseModel):
+    """Un servicio del catálogo (para el formulario de cita)."""
+
+    id: uuid.UUID
+    nombre: str
+    categoria: ServicioCategoria
+
     model_config = ConfigDict(from_attributes=True)
 
 
