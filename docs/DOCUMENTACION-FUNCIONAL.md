@@ -14,17 +14,17 @@ Dar al centro **Diagnóstico** una herramienta para **gestionar citas médicas**
 1. **Autenticación con roles** (ADMIN, RECEPCION, MEDICO) mediante login (JWT).
 2. Gestión de **usuarios/médicos** (ADMIN): médicos con **especialidades (N:M)** y **disponibilidad** semanal.
 3. Gestión de **pacientes** (cédula única si se indica; opcional) con **alta automática al agendar** (upsert).
-4. Catálogo de **servicios** con **duración** por servicio.
+4. Catálogo de **servicios** (consultas y estudios).
 5. Gestión de **citas** con **anti-solapamiento por médico** y **bloqueo por disponibilidad** del médico.
 6. **Calendario / agenda** del día por médico.
-7. **Historia clínica mínima** (notas de texto del médico por paciente).
 
 **Fuera del alcance (→ fase 2 / si sobra tiempo):**
+- **Historia clínica / notas del médico** (la tabla `notas_clinicas` queda como andamiaje; sin funcionalidad en el MVP).
 - **Reportes / métricas**.
 - **Recordatorios por WhatsApp**.
 - **Auditoría** detallada.
 - **Visitas** (agrupar varios estudios en un paso).
-- **Duración por médico** (se usa la del servicio).
+- **Duración por médico** automática (hoy la elige recepción a mano).
 - **Recursos** (consultorios/salas/equipos) y anti-solapamiento por recurso.
 - **Holter/MAPA** colocación + retiro enlazados.
 - Facturación y cobros (máquinas fiscales del SENIAT; **solo pago directo, sin seguros**).
@@ -38,7 +38,7 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 |-----|----------|
 | **ADMIN** | **Todo**: usuarios, médicos, especialidades, servicios, configuración. |
 | **RECEPCION** | Agenda las citas; gestiona pacientes y médicos; ve las agendas. **No** accede a **usuarios**, **configuración** ni **reportes**. |
-| **MEDICO** | Ve su agenda; marca asistencia/no-show; **consulta y añade notas a la historia clínica** de sus pacientes. |
+| **MEDICO** | Ve su agenda; marca asistencia/no-show. *(Las notas de historia clínica quedan para fase 2.)* |
 
 > Los **pacientes no acceden** al sistema (son registros que gestiona recepción).
 
@@ -54,11 +54,11 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 | RF-06 | Al **agendar**, el sistema **detecta** al paciente por **nombre + apellido + edad** (o lo **crea** si no existe, upsert); si hay varias coincidencias, recepción **elige**. |
 | RF-07 | RECEPCION crea, edita, mueve y cancela **citas**. |
 | RF-08 | El sistema **impide solapar** dos citas activas del **mismo médico**. |
-| RF-09 | La duración/fin de la cita se calcula según el **servicio** elegido (`duracion_min`). |
+| RF-09 | La duración/fin de la cita se calcula con la **duración que elige recepción** al agendar (15/30/45/60/90 min). |
 | RF-10 | El **calendario bloquea** los días/horas fuera de la **disponibilidad** del médico, **salvo que recepción fuerce un cupo extra** (sobrecupo) con confirmación. |
 | RF-11 | Al **cancelar** una cita, su cupo queda libre. |
 | RF-12 | El MEDICO ve su agenda y marca **atendida / no-show**. |
-| RF-13 | El MEDICO consulta y añade **notas de historia clínica** del paciente. |
+| RF-13 | *(Fase 2, fuera del MVP)* El MEDICO consultará y añadirá **notas de historia clínica** del paciente. |
 
 ## 5. Requisitos no funcionales (RNF)
 
@@ -80,18 +80,18 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 
 **Médico**
 - *Quiero ver mi agenda del día y marcar asistencia.*
-- *Quiero revisar y añadir notas a la historia del paciente.*
+- *(Fase 2) Quiero revisar y añadir notas a la historia del paciente.*
 
 **Administrador**
 - *Quiero crear accesos para el personal y dar de alta médicos con sus especialidades y disponibilidad.*
-- *Quiero mantener el catálogo de servicios y sus duraciones.*
+- *Quiero mantener el catálogo de servicios.*
 
 ## 7. Reglas de negocio
 
 | ID | Regla |
 |----|-------|
 | RN-01 | **Cero solapamientos por médico**: dos citas activas del mismo médico no pueden intersectar en el tiempo. |
-| RN-02 | La **duración** de la cita la define el **servicio** (`servicios.duracion_min`). |
+| RN-02 | La **duración** de la cita la **elige recepción** al agendar, de una lista fija (15/30/45/60/90 min). |
 | RN-03 | La **cédula** es **opcional** (única si se indica); los especialistas la añaden **después** del agendado, para el informe. |
 | RN-04 | Un médico puede tener **varias especialidades** (N:M). |
 | RN-05 | Al **agendar** se hace **upsert** del paciente por **nombre + apellido + edad** (detectar o crear; si hay varios, recepción elige). |
@@ -102,4 +102,4 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 
 ## 8. Flujo principal: crear una cita
 
-El recorrido completo está en el **flowchart** de [`FLUJO-USUARIO.md`](FLUJO-USUARIO.md). En resumen: **login** → elegir médico y servicio → el calendario muestra los días/horas **disponibles** (recepción puede forzar un **sobrecupo**) → introducir al paciente por **nombre + apellido + edad** (**upsert**) → el sistema calcula la duración y **valida el solapamiento por médico** → guardar la cita.
+El recorrido completo está en el **flowchart** de [`FLUJO-USUARIO.md`](FLUJO-USUARIO.md). En resumen: **login** → elegir médico y servicio → el calendario muestra los días/horas **disponibles** (recepción puede forzar un **sobrecupo**) → introducir al paciente por **nombre + apellido + edad** (**upsert**) → el sistema calcula el fin con la **duración elegida** y **valida el solapamiento por médico** → guardar la cita.

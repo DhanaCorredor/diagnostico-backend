@@ -1,18 +1,18 @@
 # ERP Diagnóstico — Roadmap y Planificación
 
-Plan de proyecto, decisiones, fases, cronograma y riesgos del **MVP** (entrega/presentación: **27 jul 2026**). Basado en `CLAUDE.md` + decisiones acordadas.
+Plan de proyecto, decisiones, fases, cronograma y riesgos del **MVP** (entrega/presentación: **27 jul 2026**). Basado en las guías y decisiones acordadas del proyecto.
 
 ## 0. Decisiones acordadas (con datos reales del centro)
 
 - **Usuarios:** solo **personal interno** hace login (ADMIN, RECEPCION, MEDICO). Las citas las agenda **recepción**. Los pacientes son registros, no acceden.
 - **Tabla `usuarios` unificada:** personal, médicos y pacientes comparten el mismo diseño de tabla (campo `rol`), para **ahorrar código**. En la UI, **dos vistas** (Pacientes / Médicos) que filtran por rol.
-- **Roles:** ADMIN todo · **RECEPCION sin acceso a usuarios, configuración ni reportes** · MEDICO su agenda + notas clínicas.
+- **Roles:** ADMIN todo · **RECEPCION sin acceso a usuarios, configuración ni reportes** · MEDICO su agenda (solo lectura en el MVP).
 - **Volumen:** ~60 citas/día · 18 médicos · ~11-13 especialidades.
-- **Duración de cita:** la marca el **servicio** (`servicios.duracion_min`).
+- **Duración de cita:** la **elige recepción** al agendar, de una lista fija ({15, 30, 45, 60, 90} min).
 - **Disponibilidad:** el calendario **bloquea** los días/horas fuera de la disponibilidad del médico.
 - **Upsert de paciente al agendar:** si el paciente no existe se crea, si existe se detecta (por cédula o nombre + fecha de nacimiento).
 - **Cero solapamientos:** en el MVP, **solo por médico** (por recurso → fase 2).
-- **Historia clínica:** versión **mínima** (notas de texto del médico).
+- **Historia clínica:** **fuera del MVP → fase 2** (notas de texto del médico). En el MVP el médico solo consulta su agenda.
 - **Facturación y cobros:** **fuera** del sistema. **Sede:** una sola.
 - **Idioma UI:** español. · **Gestor de paquetes (frontend):** pnpm.
 
@@ -40,17 +40,17 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 1. **Autenticación y roles** — login JWT + `ADMIN`, `RECEPCION`, `MEDICO` (guardas por rol).
 2. **Usuarios** — CRUD del personal y médicos (ADMIN). Médicos con **especialidades (N:M)** y **disponibilidad**.
 3. **Pacientes** — CRUD (cédula única si se indica, opcional) + **upsert al agendar**.
-4. **Servicios** — catálogo con **duración** (`duracion_min`).
+4. **Servicios** — catálogo de consultas y estudios (la duración de la cita la elige recepción al agendar).
 5. **Citas y calendario** — agendar con **anti-solapamiento por médico** y **bloqueo por disponibilidad**; estados y cancelación (libera cupo).
-6. **Historia clínica mínima** — el médico ve su agenda y añade **notas** al paciente.
+6. **Agenda del médico (solo lectura)** — el médico consulta su propia agenda (sin escribir notas clínicas en el MVP).
 
-> **Fuera del MVP (→ fase 2):** reportes, recordatorios WhatsApp, auditoría, visitas (agrupar estudios), duración por médico (`medico_servicio`), recursos/salas + anti-solapamiento por recurso, holter colocación+retiro, constraint `gist` en BD, PWA offline, portal de pacientes, Google Calendar, facturación (SENIAT).
+> **Fuera del MVP (→ fase 2):** historia clínica / notas clínicas del médico, reportes, recordatorios WhatsApp, auditoría, visitas (agrupar estudios), duración por médico (`medico_servicio`), recursos/salas + anti-solapamiento por recurso, holter colocación+retiro, constraint `gist` en BD, PWA offline, portal de pacientes, Google Calendar, facturación (SENIAT).
 
 ## 4. Modelo de datos
 
 **Definido** → ver [`MODELO-DATOS.md`](MODELO-DATOS.md) (incluye el diagrama entidad-relación).
 
-Resumen (7 tablas): `usuarios` (unificada), `especialidades` + `usuario_especialidad` (N:M), `servicios` (con duración), `disponibilidad`, `citas` (cero solapamientos por médico), `notas_clinicas` (historia mínima).
+Resumen (7 tablas): `usuarios` (unificada), `especialidades` + `usuario_especialidad` (N:M), `servicios`, `disponibilidad`, `citas` (cero solapamientos por médico), `notas_clinicas` (**reservada para fase 2, fuera del MVP**).
 
 > **Estructura de carpetas** y detalle técnico → ver [`ARQUITECTURA.md`](ARQUITECTURA.md).
 
@@ -64,7 +64,7 @@ Resumen (7 tablas): `usuarios` (unificada), `especialidades` + `usuario_especial
 | **Fase 2 — Auth y roles** | Login JWT, hash de contraseñas, dependencia `requiere_rol` | Acceso por rol funcionando | 2 d |
 | **Fase 3 — Citas (core)** | Servicio de citas: upsert de paciente + disponibilidad + anti-solapamiento por médico + tests | Reglas de negocio validadas | 3 d |
 | **Fase 4 — UI** | Login, calendario/agenda, vistas Pacientes y Médicos, formulario de cita | Flujo de citas usable | 3 d |
-| **Fase 5 — Historia clínica + cierre** | Notas clínicas + pulido, pruebas manuales, despliegue | MVP demostrable | 2 d |
+| **Fase 5 — Cierre y despliegue** | Pulido, pruebas manuales, despliegue | MVP demostrable | 2 d |
 
 ### Cronograma (Gantt)
 
@@ -82,10 +82,10 @@ gantt
     section Desarrollo
     Fase 0 · Andamiaje         :done,   f0, 2026-07-09, 1d
     Fase 1 · Datos             :done,   f1, after f0, 2d
-    Fase 2 · Auth y roles      :active, f2, after f1, 2d
-    Fase 3 · Citas (core)      :crit,   f3, after f2, 3d
-    Fase 4 · UI                :        f4, after f3, 3d
-    Fase 5 · Historia + cierre :        f5, after f4, 2d
+    Fase 2 · Auth y roles      :done,   f2, after f1, 2d
+    Fase 3 · Citas (core)      :done,   f3, after f2, 3d
+    Fase 4 · UI                :active, f4, after f3, 3d
+    Fase 5 · Cierre y despliegue :        f5, after f4, 2d
 
     section Cierre
     Pruebas, pulido y margen   :        qa, after f5, 5d
@@ -95,12 +95,11 @@ gantt
 ## 6. Tablero de tareas (Kanban orientativo)
 
 **Por hacer**
-- Servicio de citas: upsert de paciente + disponibilidad + anti-solapamiento por médico + tests (Fase 3)
 - Calendario, vistas Pacientes/Médicos y formulario de cita (Fase 4)
-- Historia clínica mínima + pulido + despliegue (Fase 5)
+- Pulido, pruebas manuales y despliegue (Fase 5)
 
 **En curso**
-- _(nada activo — Fase 1 recién cerrada; siguiente: **Login JWT, guardas por rol y usuario admin**, Fase 2)_
+- **Fase 4 — UI:** login, calendario/agenda y formulario de cita en el frontend (repo aparte).
 
 **Hecho**
 - Planificación y decisiones de arquitectura
@@ -110,6 +109,8 @@ gantt
 - Documentación actualizada al stack React + Python
 - **Fase 0** — Andamiaje backend FastAPI + conexión a PostgreSQL (frontend React/Vite en repo aparte)
 - **Fase 1** — Modelos SQLAlchemy (7 tablas) + Alembic + migración inicial + seed de catálogos (12 especialidades, 16 servicios)
+- **Fase 2** — Auth JWT (bcrypt), dependencia `requiere_rol` y guardas por rol (ADMIN/RECEPCION/MEDICO)
+- **Fase 3 (parcial)** — Servicio `crear_cita`: upsert de paciente + disponibilidad + anti-solapamiento por médico + **rejilla de inicio (:00/:15/:30/:45)** + suite de tests en verde
 
 ## 7. Riesgos y mitigación
 

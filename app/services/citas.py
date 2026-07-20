@@ -5,12 +5,16 @@ para poder probarlas de forma aislada.
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
 from sqlalchemy.orm import Session
 
 from app.models import Cita, Disponibilidad, EstadoCita, Rol, Servicio, Usuario
 from app.services.pacientes import buscar_o_crear_paciente
+
+# La cita solo puede empezar en un minuto "de rejilla" (:00, :15, :30, :45).
+# Cambiar este valor mueve la rejilla (p. ej. 10 o 20 min) sin tocar la lógica.
+GRID_MINUTOS = 15
 
 
 class ServicioNoEncontrado(Exception):
@@ -29,13 +33,45 @@ class Solapamiento(Exception):
     """El médico ya tiene una cita activa que se cruza con este horario."""
 
 
-def calcular_ends_at(starts_at: datetime, servicio: Servicio) -> datetime:
-    """Calcula cuándo termina la cita: inicio + la duración que marca el servicio.
+class HorarioNoAlineado(Exception):
+    """El inicio no cae en la rejilla de minutos permitida (:00, :15, :30, :45)."""
 
-    La cita no guarda su propia duración; la hereda del servicio en este momento.
-    Ej.: 10:00 + Consulta (45 min) -> 10:45.
+
+class CitaEnElPasado(Exception):
+    """El inicio de la cita ya pasó; no se puede agendar en el pasado."""
+
+
+class CitaNoEncontrada(Exception):
+    """No existe ninguna cita con ese id."""
+
+
+class CitaNoCancelable(Exception):
+    """La cita no se puede cancelar (ya está cancelada o completada)."""
+
+
+class CitaNoActiva(Exception):
+    """La cita no está activa (SCHEDULED/CONFIRMED): no se puede marcar su asistencia."""
+
+
+def esta_alineado(starts_at: datetime) -> bool:
+    """True si el inicio cae justo en la rejilla de GRID_MINUTOS y sin segundos sueltos.
+
+    Ej. con rejilla de 15: 10:00 y 10:30 valen; 10:07 o 10:15:30 no.
     """
-    return starts_at + timedelta(minutes=servicio.duracion_min)
+    return (
+        starts_at.minute % GRID_MINUTOS == 0
+        and starts_at.second == 0
+        and starts_at.microsecond == 0
+    )
+
+
+def calcular_ends_at(starts_at: datetime, duracion_min: int) -> datetime:
+    """Calcula cuándo termina la cita: inicio + la duración elegida (en minutos).
+
+    La duración la elige recepción al agendar (ya no la marca el servicio).
+    Ej.: 10:00 + 45 min -> 10:45.
+    """
+    return starts_at + timedelta(minutes=duracion_min)
 
 
 def dentro_de_disponibilidad(
@@ -67,14 +103,12 @@ def hay_solapamiento(
     medico_id: uuid.UUID,
     starts_at: datetime,
     ends_at: datetime,
-    excluir_cita_id: uuid.UUID | None = None,
 ) -> bool:
     """Indica si el médico ya tiene una cita ACTIVA que se cruza con este horario.
 
     Dos citas se cruzan si:  nueva.inicio < existente.fin  Y  nueva.fin > existente.inicio.
     - Solo cuentan las activas (SCHEDULED / CONFIRMED); una CANCELLED libera el hueco.
     - Citas pegadas (una acaba justo cuando empieza la otra) NO se solapan.
-    - excluir_cita_id: al editar una cita, se ignora ella misma.
     """
     q = (
         db.query(Cita)
@@ -83,8 +117,6 @@ def hay_solapamiento(
         .filter(Cita.starts_at < ends_at)  # la existente empieza antes de que acabe la nueva
         .filter(Cita.ends_at > starts_at)  # y termina después de que empiece la nueva
     )
-    if excluir_cita_id is not None:
-        q = q.filter(Cita.id != excluir_cita_id)
     return db.query(q.exists()).scalar()
 
 
@@ -96,29 +128,46 @@ def crear_cita(
     medico_id: uuid.UUID,
     servicio_id: uuid.UUID,
     starts_at: datetime,
+    duracion_min: int,
     creado_por_id: uuid.UUID,
     motivo: str | None = None,
     permitir_sobrecupo: bool = False,
+    ahora: datetime | None = None,
 ) -> Cita:
     """Orquesta las reglas y prepara la cita. Hace flush (no commit): el commit lo hace el endpoint.
 
-    Orden: valida servicio y médico -> upsert del paciente -> calcula ends_at ->
-    valida disponibilidad (salvo sobrecupo) -> valida anti-solapamiento (siempre).
+    Orden: valida servicio y médico -> rejilla y no-pasado -> upsert del paciente ->
+    calcula ends_at -> valida disponibilidad (salvo sobrecupo) -> valida anti-solapamiento.
     Lanza una excepción de dominio si alguna regla falla.
+
+    `ahora` se inyecta (por defecto la hora actual) para poder probar la regla del pasado.
     """
     servicio = db.get(Servicio, servicio_id)
     if servicio is None:
         raise ServicioNoEncontrado()
 
+    # R0.c: el médico debe existir, tener rol MEDICO y estar activo (un médico dado
+    # de baja no es agendable, aunque conserve su rol).
     medico = db.get(Usuario, medico_id)
-    if medico is None or medico.rol != Rol.MEDICO:
+    if medico is None or medico.rol != Rol.MEDICO or not medico.activo:
         raise MedicoNoEncontrado()
+
+    # R0: el inicio debe caer en la rejilla de minutos (:00, :15, :30, :45).
+    # Se valida antes de tocar al paciente para no crear datos por una hora inválida.
+    if not esta_alineado(starts_at):
+        raise HorarioNoAlineado()
+
+    # R0.b: no se puede agendar en el pasado (comparamos con 'ahora', inyectable).
+    if ahora is None:
+        ahora = datetime.now()
+    if starts_at < ahora:
+        raise CitaEnElPasado()
 
     # R1: buscar o crear al paciente (puede lanzar PacientesAmbiguos)
     paciente = buscar_o_crear_paciente(db, nombre_completo, edad)
 
-    # R2: la duración la marca el servicio
-    ends_at = calcular_ends_at(starts_at, servicio)
+    # R2: la duración la elige recepción (viene validada del schema)
+    ends_at = calcular_ends_at(starts_at, duracion_min)
 
     # R3: disponibilidad (salvo que recepción fuerce un sobrecupo)
     if not permitir_sobrecupo and not dentro_de_disponibilidad(
@@ -142,4 +191,68 @@ def crear_cita(
     )
     db.add(cita)
     db.flush()  # asigna el id; el commit lo hace quien llama (el endpoint)
+    return cita
+
+
+def listar_citas(
+    db: Session,
+    *,
+    desde: date,
+    hasta: date,
+    medico_id: uuid.UUID | None = None,
+    incluir_canceladas: bool = False,
+) -> list[Cita]:
+    """Devuelve las citas del rango de días [desde, hasta] (ambos incluidos), ordenadas por inicio.
+
+    - desde/hasta: acotan la consulta a un rango concreto; nunca se lista "todo el histórico".
+    - medico_id: solo las de ese médico (recepción filtra; al médico se le fija el suyo).
+    - incluir_canceladas: por defecto solo las vigentes; con True, también las canceladas.
+    """
+    inicio = datetime.combine(desde, time.min)
+    fin = datetime.combine(hasta, time.min) + timedelta(days=1)  # exclusivo: fin del día 'hasta'
+    q = db.query(Cita).filter(Cita.starts_at >= inicio).filter(Cita.starts_at < fin)
+    if medico_id is not None:
+        q = q.filter(Cita.medico_id == medico_id)
+    if not incluir_canceladas:
+        q = q.filter(Cita.estado != EstadoCita.CANCELLED)
+    return q.order_by(Cita.starts_at).all()
+
+
+def _obtener_cita_activa(
+    db: Session, cita_id: uuid.UUID, exc_no_activa: type[Exception]
+) -> Cita:
+    """Devuelve la cita si existe y está activa (SCHEDULED/CONFIRMED).
+
+    Lanza CitaNoEncontrada si no existe, o `exc_no_activa` si no está activa
+    (ya cancelada, completada o no-show).
+    """
+    cita = db.get(Cita, cita_id)
+    if cita is None:
+        raise CitaNoEncontrada()
+    if cita.estado not in (EstadoCita.SCHEDULED, EstadoCita.CONFIRMED):
+        raise exc_no_activa()
+    return cita
+
+
+def cancelar_cita(db: Session, cita_id: uuid.UUID) -> Cita:
+    """Cancela una cita: pone su estado en CANCELLED y con ello libera el cupo.
+
+    Solo se pueden cancelar citas activas; una ya cancelada o completada no.
+    Hace flush (no commit): el commit lo hace el endpoint.
+    """
+    cita = _obtener_cita_activa(db, cita_id, CitaNoCancelable)
+    cita.estado = EstadoCita.CANCELLED
+    db.flush()
+    return cita
+
+
+def marcar_asistencia(db: Session, cita_id: uuid.UUID, estado: EstadoCita) -> Cita:
+    """Marca una cita como atendida (COMPLETED) o no-show (NO_SHOW).
+
+    Solo sobre citas activas; una cancelada o ya cerrada no.
+    Hace flush (no commit): el commit lo hace el endpoint.
+    """
+    cita = _obtener_cita_activa(db, cita_id, CitaNoActiva)
+    cita.estado = estado
+    db.flush()
     return cita

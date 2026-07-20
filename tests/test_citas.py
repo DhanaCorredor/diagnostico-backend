@@ -1,7 +1,7 @@
 """Tests de las reglas de citas (R2, R3, R4) y del orquestador crear_cita."""
 
 import uuid
-from datetime import datetime, time
+from datetime import date, datetime, time
 
 import pytest
 
@@ -11,6 +11,10 @@ from app.services import citas as C
 # Un lunes cualquiera, y su día en la convención del modelo (0=domingo).
 LUNES_10 = datetime(2026, 7, 20, 10, 0)
 DIA_LUNES = (LUNES_10.weekday() + 1) % 7
+# Instante "actual" fijo para los tests: la medianoche de ese día, anterior a
+# todas las citas de prueba. Se inyecta como `ahora` para que la regla de
+# "no agendar en el pasado" sea determinista (no depende del reloj real).
+ANTES = datetime(2026, 7, 20, 0, 0)
 
 
 def _franja(db, medico, hora_inicio=time(8, 0), hora_fin=time(14, 0)):
@@ -28,9 +32,37 @@ def _franja(db, medico, hora_inicio=time(8, 0), hora_fin=time(14, 0)):
 # --- R2: duración ------------------------------------------------------------
 
 
-def test_calcular_ends_at(servicio):
-    fin = C.calcular_ends_at(datetime(2026, 7, 20, 10, 0), servicio)
-    assert fin == datetime(2026, 7, 20, 10, 45)  # servicio de 45 min
+def test_calcular_ends_at():
+    fin = C.calcular_ends_at(datetime(2026, 7, 20, 10, 0), 45)
+    assert fin == datetime(2026, 7, 20, 10, 45)  # 45 minutos de duración
+
+
+# --- R0: rejilla de minutos (:00, :15, :30, :45) -----------------------------
+
+
+def test_esta_alineado():
+    # múltiplos de 15 (incluye 60=en punto y 90=:30) -> válidos
+    assert C.esta_alineado(datetime(2026, 7, 20, 10, 0)) is True
+    assert C.esta_alineado(datetime(2026, 7, 20, 10, 30)) is True
+    assert C.esta_alineado(datetime(2026, 7, 20, 11, 45)) is True
+    # fuera de rejilla o con segundos sueltos -> inválidos
+    assert C.esta_alineado(datetime(2026, 7, 20, 10, 7)) is False
+    assert C.esta_alineado(datetime(2026, 7, 20, 10, 15, 30)) is False
+
+
+def test_crear_cita_horario_no_alineado(db, medico, servicio, admin):
+    _franja(db, medico)
+    with pytest.raises(C.HorarioNoAlineado):
+        C.crear_cita(
+            db,
+            nombre_completo=f"X {uuid.uuid4()}",
+            edad=1,
+            medico_id=medico.id,
+            servicio_id=servicio.id,
+            starts_at=datetime(2026, 7, 20, 10, 7),  # minuto :07 no está en la rejilla
+            duracion_min=45,
+            creado_por_id=admin.id,
+        )
 
 
 # --- R3: disponibilidad ------------------------------------------------------
@@ -89,10 +121,29 @@ def test_crear_cita_feliz(db, medico, servicio, admin):
         medico_id=medico.id,
         servicio_id=servicio.id,
         starts_at=LUNES_10,
+        duracion_min=45,
         creado_por_id=admin.id,
+        ahora=ANTES,
     )
     assert cita.ends_at == datetime(2026, 7, 20, 10, 45)
     assert cita.estado == EstadoCita.SCHEDULED
+
+
+def test_crear_cita_usa_la_duracion_elegida(db, medico, servicio, admin):
+    # con una duración distinta de 45 se comprueba que el valor elegido SÍ se usa
+    _franja(db, medico)
+    cita = C.crear_cita(
+        db,
+        nombre_completo=f"Dur {uuid.uuid4()}",
+        edad=1,
+        medico_id=medico.id,
+        servicio_id=servicio.id,
+        starts_at=LUNES_10,
+        duracion_min=90,
+        creado_por_id=admin.id,
+        ahora=ANTES,
+    )
+    assert cita.ends_at == datetime(2026, 7, 20, 11, 30)  # 10:00 + 90 min
 
 
 def test_crear_cita_fuera_de_disponibilidad(db, medico, servicio, admin):
@@ -105,7 +156,9 @@ def test_crear_cita_fuera_de_disponibilidad(db, medico, servicio, admin):
             medico_id=medico.id,
             servicio_id=servicio.id,
             starts_at=LUNES_10,
+            duracion_min=45,
             creado_por_id=admin.id,
+            ahora=ANTES,
         )
 
 
@@ -118,7 +171,9 @@ def test_crear_cita_bloquea_solapamiento(db, medico, servicio, admin):
         medico_id=medico.id,
         servicio_id=servicio.id,
         starts_at=LUNES_10,
+        duracion_min=45,
         creado_por_id=admin.id,
+        ahora=ANTES,
     )
     with pytest.raises(C.Solapamiento):
         C.crear_cita(
@@ -128,7 +183,9 @@ def test_crear_cita_bloquea_solapamiento(db, medico, servicio, admin):
             medico_id=medico.id,
             servicio_id=servicio.id,
             starts_at=datetime(2026, 7, 20, 10, 30),
+            duracion_min=45,
             creado_por_id=admin.id,
+            ahora=ANTES,
         )
 
 
@@ -142,6 +199,7 @@ def test_crear_cita_medico_invalido(db, servicio, admin):
             medico_id=admin.id,
             servicio_id=servicio.id,
             starts_at=LUNES_10,
+            duracion_min=45,
             creado_por_id=admin.id,
         )
 
@@ -155,5 +213,160 @@ def test_crear_cita_servicio_invalido(db, medico, admin):
             medico_id=medico.id,
             servicio_id=uuid.uuid4(),
             starts_at=LUNES_10,
+            duracion_min=45,
             creado_por_id=admin.id,
         )
+
+
+def test_crear_cita_en_el_pasado(db, medico, servicio, admin):
+    _franja(db, medico)
+    # 'ahora' posterior al inicio -> la cita queda en el pasado
+    with pytest.raises(C.CitaEnElPasado):
+        C.crear_cita(
+            db,
+            nombre_completo=f"X {uuid.uuid4()}",
+            edad=1,
+            medico_id=medico.id,
+            servicio_id=servicio.id,
+            starts_at=LUNES_10,
+            duracion_min=45,
+            creado_por_id=admin.id,
+            ahora=datetime(2026, 7, 20, 11, 0),  # ya pasaron las 10:00
+        )
+
+
+def test_crear_cita_medico_inactivo(db, servicio, admin):
+    # médico con rol correcto pero dado de baja (activo=False) -> no agendable
+    inactivo = Usuario(
+        nombre_completo=f"Dr. Baja {uuid.uuid4()}",
+        rol=Rol.MEDICO,
+        email=f"baja-{uuid.uuid4()}@test.local",
+        activo=False,
+    )
+    db.add(inactivo)
+    db.flush()
+    with pytest.raises(C.MedicoNoEncontrado):
+        C.crear_cita(
+            db,
+            nombre_completo="X",
+            edad=1,
+            medico_id=inactivo.id,
+            servicio_id=servicio.id,
+            starts_at=LUNES_10,
+            duracion_min=45,
+            creado_por_id=admin.id,
+            ahora=ANTES,
+        )
+
+
+# --- Listar agenda -----------------------------------------------------------
+
+
+def _cita(db, medico, servicio, admin, starts_at):
+    """Crea y devuelve una cita ya agendada (con franja disponible)."""
+    _franja(db, medico)
+    return C.crear_cita(
+        db,
+        nombre_completo=f"P {uuid.uuid4()}",
+        edad=1,
+        medico_id=medico.id,
+        servicio_id=servicio.id,
+        starts_at=starts_at,
+        duracion_min=45,
+        creado_por_id=admin.id,
+        ahora=ANTES,
+    )
+
+
+FECHA_LUNES = LUNES_10.date()  # date(2026, 7, 20)
+
+
+def test_listar_filtra_por_medico(db, medico, servicio, admin):
+    _cita(db, medico, servicio, admin, LUNES_10)
+    del_medico = C.listar_citas(db, desde=FECHA_LUNES, hasta=FECHA_LUNES, medico_id=medico.id)
+    de_otro = C.listar_citas(db, desde=FECHA_LUNES, hasta=FECHA_LUNES, medico_id=uuid.uuid4())
+    assert len(del_medico) == 1
+    assert de_otro == []
+
+
+def test_listar_por_rango_y_ordena(db, medico, servicio, admin):
+    _cita(db, medico, servicio, admin, datetime(2026, 7, 20, 11, 0))
+    _cita(db, medico, servicio, admin, datetime(2026, 7, 20, 9, 0))
+    del_dia = C.listar_citas(db, desde=FECHA_LUNES, hasta=FECHA_LUNES, medico_id=medico.id)
+    otro_dia = C.listar_citas(
+        db, desde=date(2026, 7, 21), hasta=date(2026, 7, 21), medico_id=medico.id
+    )
+    assert [c.starts_at.hour for c in del_dia] == [9, 11]  # ordenadas por inicio
+    assert otro_dia == []
+
+
+def test_listar_excluye_canceladas_por_defecto(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    C.cancelar_cita(db, cita.id)
+    vigentes = C.listar_citas(db, desde=FECHA_LUNES, hasta=FECHA_LUNES, medico_id=medico.id)
+    con_canceladas = C.listar_citas(
+        db, desde=FECHA_LUNES, hasta=FECHA_LUNES, medico_id=medico.id, incluir_canceladas=True
+    )
+    assert vigentes == []          # la cancelada no aparece por defecto
+    assert len(con_canceladas) == 1  # con el flag, sí
+
+
+# --- Cancelar cita -----------------------------------------------------------
+
+
+def test_cancelar_cita_libera_cupo(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    C.cancelar_cita(db, cita.id)
+    assert cita.estado == EstadoCita.CANCELLED
+    # el hueco queda libre: agendar otra a la misma hora ya no solapa
+    otra = C.crear_cita(
+        db,
+        nombre_completo=f"Q {uuid.uuid4()}",
+        edad=2,
+        medico_id=medico.id,
+        servicio_id=servicio.id,
+        starts_at=LUNES_10,
+        duracion_min=45,
+        creado_por_id=admin.id,
+        ahora=ANTES,
+    )
+    assert otra.estado == EstadoCita.SCHEDULED
+
+
+def test_cancelar_cita_inexistente(db):
+    with pytest.raises(C.CitaNoEncontrada):
+        C.cancelar_cita(db, uuid.uuid4())
+
+
+def test_cancelar_cita_ya_cancelada(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    C.cancelar_cita(db, cita.id)
+    with pytest.raises(C.CitaNoCancelable):
+        C.cancelar_cita(db, cita.id)  # segunda vez -> no cancelable
+
+
+# --- Asistencia (atendida / no-show) -----------------------------------------
+
+
+def test_marcar_asistencia_atendida(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    C.marcar_asistencia(db, cita.id, EstadoCita.COMPLETED)
+    assert cita.estado == EstadoCita.COMPLETED
+
+
+def test_marcar_asistencia_no_show(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    C.marcar_asistencia(db, cita.id, EstadoCita.NO_SHOW)
+    assert cita.estado == EstadoCita.NO_SHOW
+
+
+def test_marcar_asistencia_inexistente(db):
+    with pytest.raises(C.CitaNoEncontrada):
+        C.marcar_asistencia(db, uuid.uuid4(), EstadoCita.COMPLETED)
+
+
+def test_marcar_asistencia_cita_no_activa(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    C.cancelar_cita(db, cita.id)  # cancelada -> ya no está activa
+    with pytest.raises(C.CitaNoActiva):
+        C.marcar_asistencia(db, cita.id, EstadoCita.COMPLETED)

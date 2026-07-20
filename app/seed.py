@@ -12,11 +12,10 @@ from app.auth import hashear_password
 from app.db import SessionLocal
 from app.models import Especialidad, Rol, Servicio, ServicioCategoria, Usuario
 
-ADMIN_EMAIL = "admin@diagnostico.com"
-
-# Personal de ejemplo para desarrollo: (nombre, rol, email, matrícula).
-# Comparten la contraseña de desarrollo (ADMIN_PASSWORD); son solo para probar roles.
-STAFF_DEMO = [
+# Personal interno que hace login: (nombre, rol, email, matrícula).
+# Todos comparten la contraseña del .env (ADMIN_PASSWORD); sin ella, se saltan.
+STAFF = [
+    ("Administrador", "ADMIN", "admin@diagnostico.com", None),
     ("Recepción Demo", "RECEPCION", "recepcion@diagnostico.com", None),
     ("Dra. Ana Médico", "MEDICO", "medico@diagnostico.com", "MAT-0001"),
 ]
@@ -37,28 +36,28 @@ ESPECIALIDADES = [
     "Gastroenterología",
 ]
 
-# --- Catálogo de servicios: (nombre, categoría, duración en minutos) ---------
-# La duración es la que marca el `ends_at` de cada cita.
+# --- Catálogo de servicios: (nombre, categoría) ------------------------------
+# La duración ya no vive en el servicio: la elige recepción al agendar la cita.
 SERVICIOS = [
-    # Consultas (45 min)
-    ("Consulta cardiología", ServicioCategoria.CONSULTA, 45),
-    ("Consulta medicina interna", ServicioCategoria.CONSULTA, 45),
-    ("Consulta ginecología", ServicioCategoria.CONSULTA, 45),
-    ("Consulta pediátrica", ServicioCategoria.CONSULTA, 45),
-    ("Consulta dermatología", ServicioCategoria.CONSULTA, 45),
-    ("Consulta traumatología", ServicioCategoria.CONSULTA, 45),
+    # Consultas
+    ("Consulta cardiología", ServicioCategoria.CONSULTA),
+    ("Consulta medicina interna", ServicioCategoria.CONSULTA),
+    ("Consulta ginecología", ServicioCategoria.CONSULTA),
+    ("Consulta pediátrica", ServicioCategoria.CONSULTA),
+    ("Consulta dermatología", ServicioCategoria.CONSULTA),
+    ("Consulta traumatología", ServicioCategoria.CONSULTA),
     # Ecografías
-    ("Ecografía abdominal", ServicioCategoria.ECOGRAFIA, 20),
-    ("Ecografía obstétrica", ServicioCategoria.ECOGRAFIA, 30),
-    ("Ecografía mamaria", ServicioCategoria.ECOGRAFIA, 20),
-    ("Ecografía tiroidea", ServicioCategoria.ECOGRAFIA, 15),
-    ("Eco-doppler carotídeo", ServicioCategoria.ECOGRAFIA, 30),
+    ("Ecografía abdominal", ServicioCategoria.ECOGRAFIA),
+    ("Ecografía obstétrica", ServicioCategoria.ECOGRAFIA),
+    ("Ecografía mamaria", ServicioCategoria.ECOGRAFIA),
+    ("Ecografía tiroidea", ServicioCategoria.ECOGRAFIA),
+    ("Eco-doppler carotídeo", ServicioCategoria.ECOGRAFIA),
     # Estudios cardíacos
-    ("Ecocardiograma", ServicioCategoria.ESTUDIO_CARDIACO, 30),
-    ("Electrocardiograma (ECG)", ServicioCategoria.ESTUDIO_CARDIACO, 15),
-    ("Holter 24h (colocación)", ServicioCategoria.ESTUDIO_CARDIACO, 15),
-    ("MAPA 24h (colocación)", ServicioCategoria.ESTUDIO_CARDIACO, 15),
-    ("Prueba de esfuerzo", ServicioCategoria.ESTUDIO_CARDIACO, 45),
+    ("Ecocardiograma", ServicioCategoria.ESTUDIO_CARDIACO),
+    ("Electrocardiograma (ECG)", ServicioCategoria.ESTUDIO_CARDIACO),
+    ("Holter 24h (colocación)", ServicioCategoria.ESTUDIO_CARDIACO),
+    ("MAPA 24h (colocación)", ServicioCategoria.ESTUDIO_CARDIACO),
+    ("Prueba de esfuerzo", ServicioCategoria.ESTUDIO_CARDIACO),
 ]
 
 
@@ -74,47 +73,26 @@ def sembrar_servicios(db):
     """Inserta los servicios que aún no existan. Devuelve cuántos añadió."""
     existentes = {s.nombre for s in db.query(Servicio.nombre).all()}
     nuevos = [
-        Servicio(nombre=nombre, categoria=categoria, duracion_min=duracion)
-        for (nombre, categoria, duracion) in SERVICIOS
+        Servicio(nombre=nombre, categoria=categoria)
+        for (nombre, categoria) in SERVICIOS
         if nombre not in existentes
     ]
     db.add_all(nuevos)
     return len(nuevos)
 
 
-def sembrar_admin(db):
-    """Crea el usuario ADMIN si no existe. Devuelve 1 si lo creó, 0 si no.
+def sembrar_staff(db):
+    """Crea el personal interno (admin, recepción, médico) que no exista. Devuelve cuántos creó.
 
-    La contraseña sale del .env (ADMIN_PASSWORD); nunca se escribe en el código.
-    Si no está definida, se salta el admin con un aviso (no inventa contraseñas).
-    """
-    if db.query(Usuario).filter_by(email=ADMIN_EMAIL).first():
-        return 0  # ya existe
-    password = os.getenv("ADMIN_PASSWORD")
-    if not password:
-        print("  (aviso) ADMIN_PASSWORD no está en el .env: me salto el admin.")
-        return 0
-    db.add(
-        Usuario(
-            nombre_completo="Administrador",
-            rol=Rol.ADMIN,
-            email=ADMIN_EMAIL,
-            password_hash=hashear_password(password),
-        )
-    )
-    return 1
-
-
-def sembrar_staff_demo(db):
-    """Crea el personal de ejemplo (RECEPCION, MEDICO) que no exista. Devuelve cuántos creó.
-
-    Usan la contraseña de desarrollo (ADMIN_PASSWORD). Si no está definida, se saltan.
+    Todos usan la contraseña del .env (ADMIN_PASSWORD); nunca se escribe en el código.
+    Si no está definida, no crea a nadie (no inventa contraseñas).
     """
     password = os.getenv("ADMIN_PASSWORD")
     if not password:
+        print("  (aviso) ADMIN_PASSWORD no está en el .env: me salto el personal.")
         return 0
     creados = 0
-    for nombre, rol, email, matricula in STAFF_DEMO:
+    for nombre, rol, email, matricula in STAFF:
         if db.query(Usuario).filter_by(email=email).first():
             continue
         db.add(
@@ -135,12 +113,10 @@ def main():
     try:
         n_esp = sembrar_especialidades(db)
         n_serv = sembrar_servicios(db)
-        n_admin = sembrar_admin(db)
-        n_staff = sembrar_staff_demo(db)
+        n_staff = sembrar_staff(db)
         db.commit()
         print(
-            f"Seed OK: +{n_esp} especialidades, +{n_serv} servicios, "
-            f"+{n_admin} admin, +{n_staff} staff."
+            f"Seed OK: +{n_esp} especialidades, +{n_serv} servicios, +{n_staff} personal."
         )
     finally:
         db.close()

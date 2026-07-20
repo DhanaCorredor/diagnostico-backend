@@ -1,16 +1,36 @@
 """Punto de entrada del backend: crea la aplicación FastAPI y monta los routers."""
 
-from fastapi import FastAPI
+import os
 
-from app.routers import auth, citas, usuarios
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.routers import auth, catalogo, citas, disponibilidad, pacientes, usuarios
+
+load_dotenv()
 
 # 'app' es la aplicación. El servidor (uvicorn) la busca por este nombre.
 app = FastAPI(title="Diagnóstico API")
+
+# CORS: el navegador solo deja al frontend (otro origen) llamar a esta API si el
+# servidor lo autoriza. El origen sale del .env para poder cambiarlo en producción.
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[FRONTEND_ORIGIN],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Monta los routers (agrupan los endpoints).
 app.include_router(auth.router)      # POST /auth/login, GET /auth/me
 app.include_router(usuarios.router)  # GET /usuarios (solo ADMIN)
 app.include_router(citas.router)     # POST /citas (recepción/admin)
+app.include_router(catalogo.router)  # GET /servicios, /medicos (autenticado)
+app.include_router(disponibilidad.router)  # GET/POST /disponibilidad
+app.include_router(pacientes.router)  # GET/PUT /pacientes (admin/recepción)
 
 
 @app.get("/health")

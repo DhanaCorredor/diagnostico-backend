@@ -25,10 +25,9 @@ flowchart TD
     F --> G[Crear / editar cita]
 
     %% MÉDICO
-    D -- MÉDICO --> H[Mi agenda]
+    D -- MÉDICO --> H[Mi agenda (solo lectura)]
     H --> H1[Ver mis citas del día]
     H --> H2[Marcar atendida / no asistió]
-    H --> H3[Consultar / añadir historia clínica]
 
     %% Cierre
     E --> Z([Cerrar sesión])
@@ -43,7 +42,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     S([Nueva cita]) --> R[Elegir médico y servicio]
-    R --> R1[Duración = servicio.duracion_min]
+    R --> R1[Duración = la que elige recepción]
     R1 --> C1[Introducir paciente<br/>nombre + apellido + edad]
     C1 --> P{¿El paciente existe?}
     P -- No --> P1[Crear paciente<br/>rol PACIENTE]
@@ -66,4 +65,4 @@ flowchart TD
 - La validación (disponibilidad del médico + **cero solapamientos por médico**) y el **upsert de paciente** se ejecutan en la **capa de servicio** del backend (FastAPI) antes de guardar.
 - El calendario **bloquea** (grisa) los días/horas fuera de la disponibilidad del médico; recepción puede **forzar un cupo extra** (sobrecupo) con confirmación.
 - Los pacientes **no acceden** al sistema; toda gestión la realiza el personal.
-- **Fase 2:** anti-solapamiento por recurso/sala, agrupar varios estudios (visita), recordatorios WhatsApp, auditoría y refuerzo con restricciones a nivel de base de datos.
+- **Fase 2:** historia clínica (notas del médico), anti-solapamiento por recurso/sala, agrupar varios estudios (visita), recordatorios WhatsApp, auditoría y refuerzo con restricciones a nivel de base de datos.
