@@ -49,6 +49,10 @@ class CitaNoCancelable(Exception):
     """La cita no se puede cancelar (ya está cancelada o completada)."""
 
 
+class CitaNoActiva(Exception):
+    """La cita no está activa (SCHEDULED/CONFIRMED): no se puede marcar su asistencia."""
+
+
 def esta_alineado(starts_at: datetime) -> bool:
     """True si el inicio cae justo en la rejilla de GRID_MINUTOS y sin segundos sueltos.
 
@@ -226,5 +230,21 @@ def cancelar_cita(db: Session, cita_id: uuid.UUID) -> Cita:
     if cita.estado not in (EstadoCita.SCHEDULED, EstadoCita.CONFIRMED):
         raise CitaNoCancelable()
     cita.estado = EstadoCita.CANCELLED
+    db.flush()
+    return cita
+
+
+def marcar_asistencia(db: Session, cita_id: uuid.UUID, estado: EstadoCita) -> Cita:
+    """Marca una cita como atendida (COMPLETED) o no-show (NO_SHOW).
+
+    Solo sobre citas activas (SCHEDULED/CONFIRMED); una cancelada o ya cerrada no.
+    Hace flush (no commit): el commit lo hace el endpoint.
+    """
+    cita = db.get(Cita, cita_id)
+    if cita is None:
+        raise CitaNoEncontrada()
+    if cita.estado not in (EstadoCita.SCHEDULED, EstadoCita.CONFIRMED):
+        raise CitaNoActiva()
+    cita.estado = estado
     db.flush()
     return cita
