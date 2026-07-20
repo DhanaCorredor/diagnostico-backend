@@ -81,3 +81,38 @@ def test_actualizar_usuario_cambia_password(db):
     hash_original = u.password_hash
     U.actualizar_usuario(db, u.id, {"password": "nuevopass1"})
     assert u.password_hash != hash_original  # nueva contraseña -> nuevo hash
+
+
+def test_actualizar_usuario_email_duplicado(db):
+    otro = _crear(db, rol=Rol.RECEPCION)
+    u = _crear(db, rol=Rol.MEDICO)
+    with pytest.raises(U.EmailDuplicado):
+        U.actualizar_usuario(db, u.id, {"email": otro.email})
+
+
+def test_actualizar_usuario_especialidades(db):
+    esp = Especialidad(nombre=f"Neuro {uuid.uuid4()}")
+    db.add(esp)
+    db.flush()
+    u = _crear(db, rol=Rol.MEDICO)
+    U.actualizar_usuario(db, u.id, {"especialidades": [esp.id]})
+    assert esp.id in [e.id for e in u.especialidades]
+
+
+def test_actualizar_usuario_no_encontrado(db):
+    with pytest.raises(U.UsuarioNoEncontrado):
+        U.actualizar_usuario(db, uuid.uuid4(), {"nombre_completo": "X"})
+
+
+def test_desactivar_usuario(db):
+    u = _crear(db, rol=Rol.MEDICO)
+    assert u.activo is True
+    U.desactivar_usuario(db, u.id)
+    assert u.activo is False
+
+
+def test_reactivar_usuario_por_put(db):
+    u = _crear(db, rol=Rol.MEDICO)
+    U.desactivar_usuario(db, u.id)
+    U.actualizar_usuario(db, u.id, {"activo": True})
+    assert u.activo is True
