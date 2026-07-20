@@ -142,8 +142,8 @@ def crear_cita(
     if servicio is None:
         raise ServicioNoEncontrado()
 
-    # El médico debe existir, tener rol MEDICO y estar activo (un médico dado de
-    # baja no es agendable, aunque conserve su rol).
+    # R0.c: el médico debe existir, tener rol MEDICO y estar activo (un médico dado
+    # de baja no es agendable, aunque conserve su rol).
     medico = db.get(Usuario, medico_id)
     if medico is None or medico.rol != Rol.MEDICO or not medico.activo:
         raise MedicoNoEncontrado()

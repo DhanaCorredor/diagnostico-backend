@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models import EstadoCita, Rol
 
@@ -42,8 +42,8 @@ class UsuarioOut(BaseModel):
 class CitaCreate(BaseModel):
     """Cuerpo del POST /citas. El paciente se identifica por nombre + edad (upsert)."""
 
-    nombre_completo: str
-    edad: int
+    nombre_completo: str = Field(min_length=1)  # no puede ir vacío
+    edad: int = Field(ge=0, le=120)             # 0 (lactantes) a 120
     medico_id: uuid.UUID
     servicio_id: uuid.UUID
     starts_at: datetime
