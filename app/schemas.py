@@ -5,12 +5,12 @@ documentación automática de /docs).
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, time
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models import EstadoCita, Rol
+from app.models import EstadoCita, Rol, ServicioCategoria
 
 
 class LoginRequest(BaseModel):
@@ -37,6 +37,56 @@ class UsuarioOut(BaseModel):
 
     # Permite construir el esquema a partir de un objeto ORM (usuario.id, .rol...).
     model_config = ConfigDict(from_attributes=True)
+
+
+class ServicioOut(BaseModel):
+    """Un servicio del catálogo (para el formulario de cita)."""
+
+    id: uuid.UUID
+    nombre: str
+    categoria: ServicioCategoria
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EspecialidadOut(BaseModel):
+    """Una especialidad médica."""
+
+    id: uuid.UUID
+    nombre: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MedicoOut(BaseModel):
+    """Un médico con sus especialidades (para elegir médico al agendar)."""
+
+    id: uuid.UUID
+    nombre_completo: str
+    especialidades: list[EspecialidadOut]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DisponibilidadOut(BaseModel):
+    """Una franja de disponibilidad semanal de un médico."""
+
+    id: uuid.UUID
+    medico_id: uuid.UUID = Field(validation_alias="usuario_id")  # el modelo la guarda como usuario_id
+    dia_semana: int
+    hora_inicio: time
+    hora_fin: time
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
+class DisponibilidadCreate(BaseModel):
+    """Cuerpo del POST /disponibilidad (definir una franja de un médico)."""
+
+    medico_id: uuid.UUID
+    dia_semana: int = Field(ge=0, le=6)  # 0=domingo ... 6=sábado
+    hora_inicio: time
+    hora_fin: time
 
 
 class CitaCreate(BaseModel):
