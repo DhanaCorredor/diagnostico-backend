@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth, catalogo, citas, disponibilidad, usuarios
+from app.routers import auth, catalogo, citas, disponibilidad, pacientes, usuarios
 
 load_dotenv()
 
@@ -30,6 +30,7 @@ app.include_router(usuarios.router)  # GET /usuarios (solo ADMIN)
 app.include_router(citas.router)     # POST /citas (recepción/admin)
 app.include_router(catalogo.router)  # GET /servicios, /medicos (autenticado)
 app.include_router(disponibilidad.router)  # GET/POST /disponibilidad
+app.include_router(pacientes.router)  # GET/PUT /pacientes (admin/recepción)
 
 
 @app.get("/health")
