@@ -64,6 +64,18 @@ def crear_usuario(datos: UsuarioCreate, db: Session = Depends(get_db)):
     return usuario
 
 
+@router.delete("/{usuario_id}", response_model=UsuarioDetalle)
+def desactivar_usuario(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
+    """Da de baja (lógica) a un usuario: `activo=False`. Reactivar con PUT {"activo": true}."""
+    try:
+        usuario = usr_service.desactivar_usuario(db, usuario_id)
+    except usr_service.UsuarioNoEncontrado:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")
+
+    db.commit()
+    return usuario
+
+
 @router.put("/{usuario_id}", response_model=UsuarioDetalle)
 def actualizar_usuario(
     usuario_id: uuid.UUID,

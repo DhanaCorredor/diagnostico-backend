@@ -121,6 +121,7 @@ class UsuarioDetalle(BaseModel):
     rol: Rol
     matricula: str | None
     especialidades: list[EspecialidadOut]
+    activo: bool
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -144,6 +145,7 @@ class UsuarioUpdate(BaseModel):
     password: str | None = Field(default=None, min_length=8)
     matricula: str | None = None
     especialidades: list[uuid.UUID] | None = None
+    activo: bool | None = None  # PUT {"activo": true} reactiva un usuario dado de baja
 
 
 class CitaCreate(BaseModel):

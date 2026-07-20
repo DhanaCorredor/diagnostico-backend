@@ -110,9 +110,17 @@ def actualizar_usuario(db: Session, usuario_id: uuid.UUID, cambios: dict) -> Usu
         usuario.especialidades = _resolver_especialidades(db, cambios["especialidades"] or [])
     if cambios.get("password") is not None:
         usuario.password_hash = hashear_password(cambios["password"])
-    for campo in ("nombre_completo", "email", "matricula"):
+    for campo in ("nombre_completo", "email", "matricula", "activo"):
         if campo in cambios:
             setattr(usuario, campo, cambios[campo])
 
+    db.flush()
+    return usuario
+
+
+def desactivar_usuario(db: Session, usuario_id: uuid.UUID) -> Usuario:
+    """Baja lógica de un usuario de personal: `activo=False`. Flush (no commit)."""
+    usuario = obtener_usuario(db, usuario_id)
+    usuario.activo = False
     db.flush()
     return usuario
