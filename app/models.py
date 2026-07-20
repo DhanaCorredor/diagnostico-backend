@@ -133,14 +133,13 @@ class Especialidad(Base):
 
 
 class Servicio(Base):
-    """Catálogo de consultas y estudios. La duración marca el `ends_at` de la cita."""
+    """Catálogo de consultas y estudios (la duración de cada cita la elige recepción al agendar)."""
 
     __tablename__ = "servicios"
 
     id = _uuid_pk()
     nombre = Column(String, unique=True, nullable=False)
     categoria = Column(Enum(ServicioCategoria), nullable=False)
-    duracion_min = Column(Integer, nullable=False)
     activo = Column(Boolean, nullable=False, default=True)
 
 
@@ -166,7 +165,7 @@ class Cita(Base):
     medico_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id"), nullable=False)
     servicio_id = Column(UUID(as_uuid=True), ForeignKey("servicios.id"), nullable=False)
     starts_at = Column(DateTime, nullable=False)
-    ends_at = Column(DateTime, nullable=False)  # = starts_at + servicios.duracion_min
+    ends_at = Column(DateTime, nullable=False)  # = starts_at + la duración elegida al agendar
     estado = Column(Enum(EstadoCita), nullable=False, default=EstadoCita.SCHEDULED)
     motivo = Column(String)
     creado_por_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id"), nullable=False)  # recepción

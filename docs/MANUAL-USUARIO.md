@@ -12,14 +12,14 @@ Guía de uso del sistema para el personal del centro (alcance **MVP**). La inter
 
 ## 2. El panel según tu rol
 
-- **Administrador:** acceso a todo — usuarios, médicos, especialidades y servicios (con duraciones).
+- **Administrador:** acceso a todo — usuarios, médicos, especialidades y servicios.
 - **Recepción:** pacientes, agenda y citas. **No** ve usuarios, configuración ni reportes.
-- **Médico:** tu agenda, tus citas y la historia clínica.
+- **Médico:** tu agenda y tus citas (**solo lectura**). La historia clínica llegará en una fase posterior (fase 2).
 
 ## 3. Agendar una cita (Recepción / Admin)
 
 1. Pulsa **Nueva cita** (botón superior).
-2. **Médico y servicio:** elige el médico y el servicio (consulta o estudio). La **duración se calcula sola** según el servicio.
+2. **Médico, servicio y duración:** elige el médico, el servicio (consulta o estudio) y la **duración** de la cita (15, 30, 45, 60 o 90 min).
 3. **Paciente:** escribe su **cédula** (o nombre + fecha de nacimiento). Si ya existe, el sistema lo **detecta**; si no, lo **crea** automáticamente al guardar.
 4. **Fecha y hora:** el calendario muestra solo los **días/horas disponibles** del médico. Si el médico ya está ocupado a esa hora, el sistema **avisa** y no deja guardar; elige otro hueco.
 5. Pulsa **Guardar**. La cita queda como **agendada**.
@@ -34,14 +34,14 @@ Guía de uso del sistema para el personal del centro (alcance **MVP**). La inter
 
 1. Entra en **Pacientes**.
 2. **Nuevo paciente:** rellena nombre, **cédula** (única; **opcional** si no tiene, p. ej. niños o extranjeros), fecha de nacimiento y teléfono.
-3. Desde la **ficha** del paciente puedes ver su historial de citas y su historia clínica.
+3. Desde la **ficha** del paciente puedes ver su historial de citas.
 
 ## 6. Gestionar médicos y servicios (Admin)
 
 1. Entra en **Médicos**.
 2. Da de alta un médico con su nombre, matrícula y **una o varias especialidades**.
 3. Define su **disponibilidad** (días y horas de atención).
-4. En **Servicios**, define cada servicio y su **duración** (ej. consulta 45 min, ecocardiograma 30 min).
+4. En **Servicios**, define cada servicio del catálogo (consultas y estudios).
 
 ## 7. Crear accesos para el personal (Admin)
 
@@ -56,11 +56,9 @@ Guía de uso del sistema para el personal del centro (alcance **MVP**). La inter
 2. Consulta tus citas del día.
 3. Marca cada cita como **Atendida** o **No asistió** según corresponda.
 
-## 9. Historia clínica (Médico)
+## 9. Historia clínica (Médico) — próximamente (fase 2)
 
-1. Desde una cita o la **ficha del paciente**, entra en **Historia clínica**.
-2. Consulta las **notas anteriores**.
-3. Pulsa **Nueva nota** para registrar la evolución de hoy.
+En el MVP el médico tiene una **agenda de solo lectura**: consulta sus citas y marca asistencia, pero **todavía no** escribe notas clínicas. La **historia clínica** está planificada para una **fase 2** posterior.
 
 ## 10. Cerrar sesión
 

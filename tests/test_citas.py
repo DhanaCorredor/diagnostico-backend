@@ -32,9 +32,9 @@ def _franja(db, medico, hora_inicio=time(8, 0), hora_fin=time(14, 0)):
 # --- R2: duración ------------------------------------------------------------
 
 
-def test_calcular_ends_at(servicio):
-    fin = C.calcular_ends_at(datetime(2026, 7, 20, 10, 0), servicio)
-    assert fin == datetime(2026, 7, 20, 10, 45)  # servicio de 45 min
+def test_calcular_ends_at():
+    fin = C.calcular_ends_at(datetime(2026, 7, 20, 10, 0), 45)
+    assert fin == datetime(2026, 7, 20, 10, 45)  # 45 minutos de duración
 
 
 # --- R0: rejilla de minutos (:00, :15, :30, :45) -----------------------------
@@ -60,6 +60,7 @@ def test_crear_cita_horario_no_alineado(db, medico, servicio, admin):
             medico_id=medico.id,
             servicio_id=servicio.id,
             starts_at=datetime(2026, 7, 20, 10, 7),  # minuto :07 no está en la rejilla
+            duracion_min=45,
             creado_por_id=admin.id,
         )
 
@@ -120,11 +121,29 @@ def test_crear_cita_feliz(db, medico, servicio, admin):
         medico_id=medico.id,
         servicio_id=servicio.id,
         starts_at=LUNES_10,
+        duracion_min=45,
         creado_por_id=admin.id,
         ahora=ANTES,
     )
     assert cita.ends_at == datetime(2026, 7, 20, 10, 45)
     assert cita.estado == EstadoCita.SCHEDULED
+
+
+def test_crear_cita_usa_la_duracion_elegida(db, medico, servicio, admin):
+    # con una duración distinta de 45 se comprueba que el valor elegido SÍ se usa
+    _franja(db, medico)
+    cita = C.crear_cita(
+        db,
+        nombre_completo=f"Dur {uuid.uuid4()}",
+        edad=1,
+        medico_id=medico.id,
+        servicio_id=servicio.id,
+        starts_at=LUNES_10,
+        duracion_min=90,
+        creado_por_id=admin.id,
+        ahora=ANTES,
+    )
+    assert cita.ends_at == datetime(2026, 7, 20, 11, 30)  # 10:00 + 90 min
 
 
 def test_crear_cita_fuera_de_disponibilidad(db, medico, servicio, admin):
@@ -137,6 +156,7 @@ def test_crear_cita_fuera_de_disponibilidad(db, medico, servicio, admin):
             medico_id=medico.id,
             servicio_id=servicio.id,
             starts_at=LUNES_10,
+            duracion_min=45,
             creado_por_id=admin.id,
             ahora=ANTES,
         )
@@ -151,6 +171,7 @@ def test_crear_cita_bloquea_solapamiento(db, medico, servicio, admin):
         medico_id=medico.id,
         servicio_id=servicio.id,
         starts_at=LUNES_10,
+        duracion_min=45,
         creado_por_id=admin.id,
         ahora=ANTES,
     )
@@ -162,6 +183,7 @@ def test_crear_cita_bloquea_solapamiento(db, medico, servicio, admin):
             medico_id=medico.id,
             servicio_id=servicio.id,
             starts_at=datetime(2026, 7, 20, 10, 30),
+            duracion_min=45,
             creado_por_id=admin.id,
             ahora=ANTES,
         )
@@ -177,6 +199,7 @@ def test_crear_cita_medico_invalido(db, servicio, admin):
             medico_id=admin.id,
             servicio_id=servicio.id,
             starts_at=LUNES_10,
+            duracion_min=45,
             creado_por_id=admin.id,
         )
 
@@ -190,6 +213,7 @@ def test_crear_cita_servicio_invalido(db, medico, admin):
             medico_id=medico.id,
             servicio_id=uuid.uuid4(),
             starts_at=LUNES_10,
+            duracion_min=45,
             creado_por_id=admin.id,
         )
 
@@ -205,6 +229,7 @@ def test_crear_cita_en_el_pasado(db, medico, servicio, admin):
             medico_id=medico.id,
             servicio_id=servicio.id,
             starts_at=LUNES_10,
+            duracion_min=45,
             creado_por_id=admin.id,
             ahora=datetime(2026, 7, 20, 11, 0),  # ya pasaron las 10:00
         )
@@ -228,6 +253,7 @@ def test_crear_cita_medico_inactivo(db, servicio, admin):
             medico_id=inactivo.id,
             servicio_id=servicio.id,
             starts_at=LUNES_10,
+            duracion_min=45,
             creado_por_id=admin.id,
             ahora=ANTES,
         )
@@ -246,6 +272,7 @@ def _cita(db, medico, servicio, admin, starts_at):
         medico_id=medico.id,
         servicio_id=servicio.id,
         starts_at=starts_at,
+        duracion_min=45,
         creado_por_id=admin.id,
         ahora=ANTES,
     )
@@ -299,6 +326,7 @@ def test_cancelar_cita_libera_cupo(db, medico, servicio, admin):
         medico_id=medico.id,
         servicio_id=servicio.id,
         starts_at=LUNES_10,
+        duracion_min=45,
         creado_por_id=admin.id,
         ahora=ANTES,
     )
