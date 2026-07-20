@@ -15,6 +15,9 @@ from app.services.pacientes import PacientesAmbiguos
 
 router = APIRouter(prefix="/citas", tags=["citas"])
 
+# Tope del rango de listado: evita consultas enormes (la agenda se mira por día o semanas).
+MAX_RANGO_DIAS = 60
+
 
 @router.post("", response_model=CitaOut, status_code=status.HTTP_201_CREATED)
 def agendar_cita(
@@ -66,19 +69,47 @@ def agendar_cita(
 
 @router.get("", response_model=list[CitaOut])
 def listar_citas(
-    medico_id: uuid.UUID | None = None,
     fecha: date | None = None,
+    desde: date | None = None,
+    hasta: date | None = None,
+    medico_id: uuid.UUID | None = None,
+    incluir_canceladas: bool = False,
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION, Rol.MEDICO)),
 ):
-    """Lista la agenda de citas, con filtros opcionales por médico y por día.
+    """Lista la agenda de un día ('fecha') o de un rango ('desde'..'hasta'), ambos incluidos.
 
-    Un MÉDICO solo ve su propia agenda: se le fija el filtro a su id, ignorando
-    cualquier medico_id que envíe. ADMIN y RECEPCIÓN ven la de cualquiera.
+    Hay que indicar 'fecha' o bien 'desde' y 'hasta' (no se lista todo el histórico).
+    Por defecto solo devuelve citas vigentes; con incluir_canceladas=true, también las canceladas.
+    Un MÉDICO solo ve su propia agenda (se le fija su id, ignorando el medico_id que envíe).
     """
+    # 'fecha' es un atajo cómodo para un rango de un solo día.
+    if fecha is not None:
+        desde = hasta = fecha
+    if desde is None or hasta is None:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Indica 'fecha' (un día) o 'desde' y 'hasta' (un rango).",
+        )
+    if hasta < desde:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "'hasta' no puede ser anterior a 'desde'.",
+        )
+    if (hasta - desde).days > MAX_RANGO_DIAS:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            f"El rango no puede superar los {MAX_RANGO_DIAS} días.",
+        )
     if usuario.rol == Rol.MEDICO:
         medico_id = usuario.id
-    return citas_service.listar_citas(db, medico_id=medico_id, fecha=fecha)
+    return citas_service.listar_citas(
+        db,
+        desde=desde,
+        hasta=hasta,
+        medico_id=medico_id,
+        incluir_canceladas=incluir_canceladas,
+    )
 
 
 @router.post("/{cita_id}/cancelar", response_model=CitaOut)

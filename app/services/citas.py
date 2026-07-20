@@ -181,23 +181,24 @@ def crear_cita(
 def listar_citas(
     db: Session,
     *,
+    desde: date,
+    hasta: date,
     medico_id: uuid.UUID | None = None,
-    fecha: date | None = None,
+    incluir_canceladas: bool = False,
 ) -> list[Cita]:
-    """Devuelve las citas (agenda), opcionalmente filtradas por médico y/o día.
+    """Devuelve las citas del rango de días [desde, hasta] (ambos incluidos), ordenadas por inicio.
 
+    - desde/hasta: acotan la consulta a un rango concreto; nunca se lista "todo el histórico".
     - medico_id: solo las de ese médico (recepción filtra; al médico se le fija el suyo).
-    - fecha: solo las que empiezan ese día (desde las 00:00 hasta las 00:00 del día siguiente).
-    Ordenadas por hora de inicio.
+    - incluir_canceladas: por defecto solo las vigentes; con True, también las canceladas.
     """
-    q = db.query(Cita)
+    inicio = datetime.combine(desde, time.min)
+    fin = datetime.combine(hasta, time.min) + timedelta(days=1)  # exclusivo: fin del día 'hasta'
+    q = db.query(Cita).filter(Cita.starts_at >= inicio).filter(Cita.starts_at < fin)
     if medico_id is not None:
         q = q.filter(Cita.medico_id == medico_id)
-    if fecha is not None:
-        inicio_dia = datetime.combine(fecha, time.min)
-        q = q.filter(Cita.starts_at >= inicio_dia).filter(
-            Cita.starts_at < inicio_dia + timedelta(days=1)
-        )
+    if not incluir_canceladas:
+        q = q.filter(Cita.estado != EstadoCita.CANCELLED)
     return q.order_by(Cita.starts_at).all()
 
 

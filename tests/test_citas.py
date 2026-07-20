@@ -203,21 +203,37 @@ def _cita(db, medico, servicio, admin, starts_at):
     )
 
 
+FECHA_LUNES = LUNES_10.date()  # date(2026, 7, 20)
+
+
 def test_listar_filtra_por_medico(db, medico, servicio, admin):
     _cita(db, medico, servicio, admin, LUNES_10)
-    del_medico = C.listar_citas(db, medico_id=medico.id)
-    de_otro = C.listar_citas(db, medico_id=uuid.uuid4())
+    del_medico = C.listar_citas(db, desde=FECHA_LUNES, hasta=FECHA_LUNES, medico_id=medico.id)
+    de_otro = C.listar_citas(db, desde=FECHA_LUNES, hasta=FECHA_LUNES, medico_id=uuid.uuid4())
     assert len(del_medico) == 1
     assert de_otro == []
 
 
-def test_listar_filtra_por_fecha_y_ordena(db, medico, servicio, admin):
+def test_listar_por_rango_y_ordena(db, medico, servicio, admin):
     _cita(db, medico, servicio, admin, datetime(2026, 7, 20, 11, 0))
     _cita(db, medico, servicio, admin, datetime(2026, 7, 20, 9, 0))
-    del_dia = C.listar_citas(db, medico_id=medico.id, fecha=date(2026, 7, 20))
-    otro_dia = C.listar_citas(db, medico_id=medico.id, fecha=date(2026, 7, 21))
+    del_dia = C.listar_citas(db, desde=FECHA_LUNES, hasta=FECHA_LUNES, medico_id=medico.id)
+    otro_dia = C.listar_citas(
+        db, desde=date(2026, 7, 21), hasta=date(2026, 7, 21), medico_id=medico.id
+    )
     assert [c.starts_at.hour for c in del_dia] == [9, 11]  # ordenadas por inicio
     assert otro_dia == []
+
+
+def test_listar_excluye_canceladas_por_defecto(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    C.cancelar_cita(db, cita.id)
+    vigentes = C.listar_citas(db, desde=FECHA_LUNES, hasta=FECHA_LUNES, medico_id=medico.id)
+    con_canceladas = C.listar_citas(
+        db, desde=FECHA_LUNES, hasta=FECHA_LUNES, medico_id=medico.id, incluir_canceladas=True
+    )
+    assert vigentes == []          # la cancelada no aparece por defecto
+    assert len(con_canceladas) == 1  # con el flag, sí
 
 
 # --- Cancelar cita -----------------------------------------------------------
