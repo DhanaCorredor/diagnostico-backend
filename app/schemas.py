@@ -5,7 +5,7 @@ documentación automática de /docs).
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, time
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -66,6 +66,27 @@ class MedicoOut(BaseModel):
     especialidades: list[EspecialidadOut]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class DisponibilidadOut(BaseModel):
+    """Una franja de disponibilidad semanal de un médico."""
+
+    id: uuid.UUID
+    medico_id: uuid.UUID = Field(validation_alias="usuario_id")  # el modelo la guarda como usuario_id
+    dia_semana: int
+    hora_inicio: time
+    hora_fin: time
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
+class DisponibilidadCreate(BaseModel):
+    """Cuerpo del POST /disponibilidad (definir una franja de un médico)."""
+
+    medico_id: uuid.UUID
+    dia_semana: int = Field(ge=0, le=6)  # 0=domingo ... 6=sábado
+    hora_inicio: time
+    hora_fin: time
 
 
 class CitaCreate(BaseModel):
