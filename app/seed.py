@@ -110,13 +110,16 @@ def sembrar_staff(db):
 
 
 # --- Disponibilidad por defecto de los médicos ------------------------------
-# Cada médico sin franjas recibe una jornada estándar de lunes a viernes 08:00-14:00,
-# para que la agenda tenga huecos utilizables sin depender de sobrecupos.
-DIAS_LABORABLES = (1, 2, 3, 4, 5)  # lunes a viernes (0=domingo ... 6=sábado)
+# Horario real del centro: lunes a sábado, 07:30-17:30 (domingo cerrado).
+# Cada médico sin franjas recibe esa jornada, para que la agenda tenga huecos
+# utilizables sin depender de sobrecupos.
+DIAS_LABORABLES = (1, 2, 3, 4, 5, 6)  # lunes a sábado (0=domingo, cerrado)
+HORA_APERTURA = time(7, 30)
+HORA_CIERRE = time(17, 30)
 
 
 def sembrar_disponibilidad(db):
-    """Da a cada médico SIN franjas una disponibilidad por defecto (L-V 08:00-14:00).
+    """Da a cada médico SIN franjas la jornada del centro (L-S 07:30-17:30).
 
     Idempotente: si el médico ya tiene alguna franja, no la toca. Devuelve cuántas creó.
     """
@@ -134,8 +137,8 @@ def sembrar_disponibilidad(db):
                 Disponibilidad(
                     usuario_id=medico.id,
                     dia_semana=dia,
-                    hora_inicio=time(8, 0),
-                    hora_fin=time(14, 0),
+                    hora_inicio=HORA_APERTURA,
+                    hora_fin=HORA_CIERRE,
                 )
             )
             creadas += 1
