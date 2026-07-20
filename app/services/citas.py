@@ -218,17 +218,29 @@ def listar_citas(
     return q.order_by(Cita.starts_at).all()
 
 
-def cancelar_cita(db: Session, cita_id: uuid.UUID) -> Cita:
-    """Cancela una cita: pone su estado en CANCELLED y con ello libera el cupo.
+def _obtener_cita_activa(
+    db: Session, cita_id: uuid.UUID, exc_no_activa: type[Exception]
+) -> Cita:
+    """Devuelve la cita si existe y está activa (SCHEDULED/CONFIRMED).
 
-    Solo se pueden cancelar citas activas (SCHEDULED/CONFIRMED); una ya cancelada
-    o completada no. Hace flush (no commit): el commit lo hace el endpoint.
+    Lanza CitaNoEncontrada si no existe, o `exc_no_activa` si no está activa
+    (ya cancelada, completada o no-show).
     """
     cita = db.get(Cita, cita_id)
     if cita is None:
         raise CitaNoEncontrada()
     if cita.estado not in (EstadoCita.SCHEDULED, EstadoCita.CONFIRMED):
-        raise CitaNoCancelable()
+        raise exc_no_activa()
+    return cita
+
+
+def cancelar_cita(db: Session, cita_id: uuid.UUID) -> Cita:
+    """Cancela una cita: pone su estado en CANCELLED y con ello libera el cupo.
+
+    Solo se pueden cancelar citas activas; una ya cancelada o completada no.
+    Hace flush (no commit): el commit lo hace el endpoint.
+    """
+    cita = _obtener_cita_activa(db, cita_id, CitaNoCancelable)
     cita.estado = EstadoCita.CANCELLED
     db.flush()
     return cita
@@ -237,14 +249,10 @@ def cancelar_cita(db: Session, cita_id: uuid.UUID) -> Cita:
 def marcar_asistencia(db: Session, cita_id: uuid.UUID, estado: EstadoCita) -> Cita:
     """Marca una cita como atendida (COMPLETED) o no-show (NO_SHOW).
 
-    Solo sobre citas activas (SCHEDULED/CONFIRMED); una cancelada o ya cerrada no.
+    Solo sobre citas activas; una cancelada o ya cerrada no.
     Hace flush (no commit): el commit lo hace el endpoint.
     """
-    cita = db.get(Cita, cita_id)
-    if cita is None:
-        raise CitaNoEncontrada()
-    if cita.estado not in (EstadoCita.SCHEDULED, EstadoCita.CONFIRMED):
-        raise CitaNoActiva()
+    cita = _obtener_cita_activa(db, cita_id, CitaNoActiva)
     cita.estado = estado
     db.flush()
     return cita
