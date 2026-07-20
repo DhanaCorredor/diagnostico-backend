@@ -6,7 +6,6 @@ permite listarlos, ver la ficha y editarla.
 """
 
 import uuid
-from datetime import date
 
 from sqlalchemy.orm import Session
 
@@ -81,33 +80,26 @@ def obtener_paciente(db: Session, paciente_id: uuid.UUID) -> Usuario:
     return paciente
 
 
-def actualizar_paciente(
-    db: Session,
-    paciente_id: uuid.UUID,
-    *,
-    nombre_completo: str,
-    edad: int,
-    cedula: str | None,
-    telefono: str | None,
-    fecha_nacimiento: date | None,
-) -> Usuario:
-    """Edita un paciente. La cédula (si se indica) debe ser única. Hace flush (no commit)."""
+def actualizar_paciente(db: Session, paciente_id: uuid.UUID, cambios: dict) -> Usuario:
+    """Actualiza SOLO los campos presentes en `cambios`. Hace flush (no commit).
+
+    `cambios` viene del schema con `exclude_unset`, así que un campo **omitido** no
+    se toca (no se borra). La cédula, si se cambia, debe ser única.
+    """
     paciente = obtener_paciente(db, paciente_id)
-    # cédula única: no puede coincidir con la de OTRA persona
-    if cedula is not None:
+
+    nueva_cedula = cambios.get("cedula")
+    if nueva_cedula is not None:  # cédula única solo si se está cambiando
         otro = (
             db.query(Usuario)
-            .filter(Usuario.cedula == cedula)
+            .filter(Usuario.cedula == nueva_cedula)
             .filter(Usuario.id != paciente_id)
             .first()
         )
         if otro is not None:
             raise CedulaDuplicada()
 
-    paciente.nombre_completo = nombre_completo
-    paciente.edad = edad
-    paciente.cedula = cedula
-    paciente.telefono = telefono
-    paciente.fecha_nacimiento = fecha_nacimiento
+    for campo, valor in cambios.items():
+        setattr(paciente, campo, valor)
     db.flush()
     return paciente

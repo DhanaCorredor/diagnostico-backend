@@ -64,17 +64,20 @@ def test_obtener_paciente_ok_y_no_encontrado(db):
 
 def test_actualizar_paciente(db):
     pac = buscar_o_crear_paciente(db, f"Pac {uuid.uuid4()}", 40)
-    actualizado = actualizar_paciente(
-        db,
-        pac.id,
-        nombre_completo="Nuevo Nombre",
-        edad=41,
-        cedula=f"CED-{uuid.uuid4()}",
-        telefono="12345",
-        fecha_nacimiento=None,
-    )
+    actualizado = actualizar_paciente(db, pac.id, {"nombre_completo": "Nuevo Nombre", "edad": 41})
     assert actualizado.nombre_completo == "Nuevo Nombre"
     assert actualizado.edad == 41
+
+
+def test_actualizar_paciente_parcial_no_borra_cedula(db):
+    pac = buscar_o_crear_paciente(db, f"Pac {uuid.uuid4()}", 40)
+    pac.cedula = f"V-{uuid.uuid4()}"
+    db.flush()
+    ced_original = pac.cedula
+    # actualizo solo el teléfono -> la cédula NO se toca (footgun resuelto)
+    actualizar_paciente(db, pac.id, {"telefono": "555-9999"})
+    assert pac.cedula == ced_original
+    assert pac.telefono == "555-9999"
 
 
 def test_actualizar_paciente_cedula_duplicada(db):
@@ -84,12 +87,4 @@ def test_actualizar_paciente_cedula_duplicada(db):
     db.flush()
     pac = buscar_o_crear_paciente(db, f"Pac {uuid.uuid4()}", 40)
     with pytest.raises(CedulaDuplicada):
-        actualizar_paciente(
-            db,
-            pac.id,
-            nombre_completo="X",
-            edad=40,
-            cedula=ced,
-            telefono=None,
-            fecha_nacimiento=None,
-        )
+        actualizar_paciente(db, pac.id, {"cedula": ced})
