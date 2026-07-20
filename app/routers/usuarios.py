@@ -59,6 +59,10 @@ def crear_usuario(datos: UsuarioCreate, db: Session = Depends(get_db)):
         raise HTTPException(status.HTTP_409_CONFLICT, "El email ya está en uso")
     except usr_service.EspecialidadNoEncontrada:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Alguna especialidad no existe")
+    except usr_service.DatosSoloDeMedico:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Especialidades y matrícula son solo para médicos"
+        )
 
     db.commit()
     return usuario
@@ -92,6 +96,10 @@ def actualizar_usuario(
         raise HTTPException(status.HTTP_409_CONFLICT, "El email ya está en uso")
     except usr_service.EspecialidadNoEncontrada:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Alguna especialidad no existe")
+    except usr_service.DatosSoloDeMedico:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Especialidades y matrícula son solo para médicos"
+        )
 
     db.commit()
     return usuario

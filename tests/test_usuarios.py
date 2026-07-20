@@ -53,6 +53,19 @@ def test_crear_usuario_especialidad_inexistente(db):
         _crear(db, especialidades=[uuid.uuid4()])
 
 
+def test_no_medico_con_especialidades_falla(db):
+    esp = Especialidad(nombre=f"E {uuid.uuid4()}")
+    db.add(esp)
+    db.flush()
+    with pytest.raises(U.DatosSoloDeMedico):
+        _crear(db, rol=Rol.RECEPCION, especialidades=[esp.id])
+
+
+def test_no_medico_con_matricula_falla(db):
+    with pytest.raises(U.DatosSoloDeMedico):
+        _crear(db, rol=Rol.ADMIN, matricula="MAT-1")
+
+
 def test_listar_personal_excluye_pacientes(db):
     med = _crear(db, rol=Rol.MEDICO)
     pac = Usuario(nombre_completo=f"Pac {uuid.uuid4()}", edad=30, rol=Rol.PACIENTE)

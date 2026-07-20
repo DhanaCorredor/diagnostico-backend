@@ -32,6 +32,10 @@ class EspecialidadNoEncontrada(Exception):
     """Alguna de las especialidades indicadas no existe."""
 
 
+class DatosSoloDeMedico(Exception):
+    """Se han indicado especialidades o matrícula para un usuario que no es médico."""
+
+
 def _email_en_uso(db: Session, email: str, excluir_id: uuid.UUID | None = None) -> bool:
     q = db.query(Usuario).filter(Usuario.email == email)
     if excluir_id is not None:
@@ -80,6 +84,8 @@ def crear_usuario(
     """Crea un usuario de personal. Valida rol y email, hashea la contraseña. Flush (no commit)."""
     if rol not in ROLES_STAFF:
         raise RolNoPermitido()
+    if rol != Rol.MEDICO and (especialidades or matricula is not None):
+        raise DatosSoloDeMedico()  # especialidades y matrícula solo para médicos
     if _email_en_uso(db, email):
         raise EmailDuplicado()
     esp = _resolver_especialidades(db, especialidades)
@@ -100,6 +106,11 @@ def crear_usuario(
 def actualizar_usuario(db: Session, usuario_id: uuid.UUID, cambios: dict) -> Usuario:
     """Actualiza SOLO los campos enviados. La contraseña se hashea; especialidades se resuelven."""
     usuario = obtener_usuario(db, usuario_id)
+
+    if usuario.rol != Rol.MEDICO and (
+        cambios.get("especialidades") or cambios.get("matricula") is not None
+    ):
+        raise DatosSoloDeMedico()  # especialidades y matrícula solo para médicos
 
     if cambios.get("email") is not None and _email_en_uso(
         db, cambios["email"], excluir_id=usuario_id
