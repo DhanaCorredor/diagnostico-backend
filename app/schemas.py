@@ -49,6 +49,25 @@ class ServicioOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class EspecialidadOut(BaseModel):
+    """Una especialidad médica."""
+
+    id: uuid.UUID
+    nombre: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MedicoOut(BaseModel):
+    """Un médico con sus especialidades (para elegir médico al agendar)."""
+
+    id: uuid.UUID
+    nombre_completo: str
+    especialidades: list[EspecialidadOut]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class CitaCreate(BaseModel):
     """Cuerpo del POST /citas. El paciente se identifica por nombre + edad (upsert)."""
 

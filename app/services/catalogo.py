@@ -7,7 +7,7 @@ servicio para poder probarlas sin levantar la API.
 
 from sqlalchemy.orm import Session
 
-from app.models import Servicio
+from app.models import Rol, Servicio, Usuario
 
 
 def listar_servicios(db: Session) -> list[Servicio]:
@@ -16,5 +16,16 @@ def listar_servicios(db: Session) -> list[Servicio]:
         db.query(Servicio)
         .filter(Servicio.activo.is_(True))
         .order_by(Servicio.nombre)
+        .all()
+    )
+
+
+def listar_medicos(db: Session) -> list[Usuario]:
+    """Devuelve los médicos activos, ordenados por nombre, con sus especialidades."""
+    return (
+        db.query(Usuario)
+        .filter(Usuario.rol == Rol.MEDICO)
+        .filter(Usuario.activo.is_(True))
+        .order_by(Usuario.nombre_completo)
         .all()
     )

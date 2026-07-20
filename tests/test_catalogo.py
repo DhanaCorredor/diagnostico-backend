@@ -2,7 +2,7 @@
 
 import uuid
 
-from app.models import Servicio, ServicioCategoria
+from app.models import Especialidad, Rol, Servicio, ServicioCategoria, Usuario
 from app.services import catalogo as C
 
 
@@ -21,3 +21,23 @@ def test_listar_servicios_solo_activos_y_ordenados(db):
     assert inactivo.nombre not in nombres          # los inactivos no salen
     # ordenados por nombre: 'A...' aparece antes que 'B...'
     assert nombres.index(activo_a.nombre) < nombres.index(activo_b.nombre)
+
+
+def test_listar_medicos_activos_con_especialidades(db):
+    esp = Especialidad(nombre=f"Cardio {uuid.uuid4()}")
+    activo = Usuario(
+        nombre_completo=f"Dr. Activo {uuid.uuid4()}", rol=Rol.MEDICO, especialidades=[esp]
+    )
+    inactivo = Usuario(nombre_completo=f"Dr. Baja {uuid.uuid4()}", rol=Rol.MEDICO, activo=False)
+    paciente = Usuario(nombre_completo=f"Paciente {uuid.uuid4()}", rol=Rol.PACIENTE)
+    db.add_all([esp, activo, inactivo, paciente])
+    db.flush()
+
+    medicos = C.listar_medicos(db)
+    ids = [m.id for m in medicos]
+    assert activo.id in ids            # médico activo -> sí
+    assert inactivo.id not in ids      # médico dado de baja -> no
+    assert paciente.id not in ids      # un paciente -> no
+    # trae sus especialidades
+    m = next(x for x in medicos if x.id == activo.id)
+    assert esp.nombre in [e.nombre for e in m.especialidades]
