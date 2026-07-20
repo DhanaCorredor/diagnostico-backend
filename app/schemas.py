@@ -112,6 +112,42 @@ class PacienteUpdate(BaseModel):
     fecha_nacimiento: date | None = None
 
 
+class UsuarioDetalle(BaseModel):
+    """Datos de un usuario del personal (lista y ficha). Con especialidades si es médico."""
+
+    id: uuid.UUID
+    nombre_completo: str
+    email: str | None
+    rol: Rol
+    matricula: str | None
+    especialidades: list[EspecialidadOut]
+    activo: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UsuarioCreate(BaseModel):
+    """Alta de personal/médico (ADMIN). El rol no puede ser PACIENTE (se valida en el servicio)."""
+
+    nombre_completo: str = Field(min_length=1)
+    rol: Rol
+    email: str = Field(min_length=3)
+    password: str = Field(min_length=8)
+    matricula: str | None = None
+    especialidades: list[uuid.UUID] = []
+
+
+class UsuarioUpdate(BaseModel):
+    """Edición parcial de un usuario del personal. Solo se cambian los campos enviados."""
+
+    nombre_completo: str | None = Field(default=None, min_length=1)
+    email: str | None = Field(default=None, min_length=3)
+    password: str | None = Field(default=None, min_length=8)
+    matricula: str | None = None
+    especialidades: list[uuid.UUID] | None = None
+    activo: bool | None = None  # PUT {"activo": true} reactiva un usuario dado de baja
+
+
 class CitaCreate(BaseModel):
     """Cuerpo del POST /citas. El paciente se identifica por nombre + edad (upsert)."""
 
