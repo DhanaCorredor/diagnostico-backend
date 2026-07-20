@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.auth import requiere_rol
 from app.db import get_db
 from app.models import Rol, Usuario
-from app.schemas import CitaCreate, CitaOut
+from app.schemas import AsistenciaUpdate, CitaCreate, CitaOut
 from app.services import citas as citas_service
 from app.services.pacientes import PacientesAmbiguos
 
@@ -122,9 +122,9 @@ def listar_citas(
 def cancelar_cita(
     cita_id: uuid.UUID,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION)),
+    _: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION, Rol.MEDICO)),
 ):
-    """Cancela una cita (libera el cupo). Solo ADMIN o RECEPCIÓN."""
+    """Cancela una cita (libera el cupo). ADMIN, RECEPCIÓN o MEDICO."""
     try:
         cita = citas_service.cancelar_cita(db, cita_id)
     except citas_service.CitaNoEncontrada:
@@ -133,6 +133,27 @@ def cancelar_cita(
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "La cita no se puede cancelar (ya está cancelada o completada)",
+        )
+    db.commit()
+    return cita
+
+
+@router.post("/{cita_id}/asistencia", response_model=CitaOut)
+def marcar_asistencia(
+    cita_id: uuid.UUID,
+    datos: AsistenciaUpdate,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION, Rol.MEDICO)),
+):
+    """Marca una cita como **atendida** (COMPLETED) o **no-show** (NO_SHOW)."""
+    try:
+        cita = citas_service.marcar_asistencia(db, cita_id, datos.estado)
+    except citas_service.CitaNoEncontrada:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada")
+    except citas_service.CitaNoActiva:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Solo se puede marcar asistencia de una cita activa",
         )
     db.commit()
     return cita
