@@ -174,3 +174,9 @@ class CitaOut(BaseModel):
     motivo: str | None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AsistenciaUpdate(BaseModel):
+    """Cuerpo del POST /citas/{id}/asistencia: marcar atendida o no-show."""
+
+    estado: Literal[EstadoCita.COMPLETED, EstadoCita.NO_SHOW]
