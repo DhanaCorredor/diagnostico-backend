@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import usuario_actual
 from app.db import get_db
-from app.schemas import MedicoOut, ServicioOut
+from app.schemas import EspecialidadOut, MedicoOut, ServicioOut
 from app.services import catalogo as catalogo_service
 
 router = APIRouter(tags=["catálogos"])
@@ -31,3 +31,12 @@ def listar_medicos(
 ):
     """Devuelve los médicos activos con sus especialidades (para elegir al agendar)."""
     return catalogo_service.listar_medicos(db)
+
+
+@router.get("/especialidades", response_model=list[EspecialidadOut])
+def listar_especialidades(
+    db: Session = Depends(get_db),
+    _: object = Depends(usuario_actual),  # solo exige estar autenticado
+):
+    """Devuelve el catálogo de especialidades médicas."""
+    return catalogo_service.listar_especialidades(db)
