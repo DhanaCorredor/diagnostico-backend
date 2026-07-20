@@ -99,14 +99,12 @@ def hay_solapamiento(
     medico_id: uuid.UUID,
     starts_at: datetime,
     ends_at: datetime,
-    excluir_cita_id: uuid.UUID | None = None,
 ) -> bool:
     """Indica si el médico ya tiene una cita ACTIVA que se cruza con este horario.
 
     Dos citas se cruzan si:  nueva.inicio < existente.fin  Y  nueva.fin > existente.inicio.
     - Solo cuentan las activas (SCHEDULED / CONFIRMED); una CANCELLED libera el hueco.
     - Citas pegadas (una acaba justo cuando empieza la otra) NO se solapan.
-    - excluir_cita_id: al editar una cita, se ignora ella misma.
     """
     q = (
         db.query(Cita)
@@ -115,8 +113,6 @@ def hay_solapamiento(
         .filter(Cita.starts_at < ends_at)  # la existente empieza antes de que acabe la nueva
         .filter(Cita.ends_at > starts_at)  # y termina después de que empiece la nueva
     )
-    if excluir_cita_id is not None:
-        q = q.filter(Cita.id != excluir_cita_id)
     return db.query(q.exists()).scalar()
 
 
