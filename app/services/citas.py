@@ -5,7 +5,7 @@ para poder probarlas de forma aislada.
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
 from sqlalchemy.orm import Session
 
@@ -35,6 +35,18 @@ class Solapamiento(Exception):
 
 class HorarioNoAlineado(Exception):
     """El inicio no cae en la rejilla de minutos permitida (:00, :15, :30, :45)."""
+
+
+class CitaEnElPasado(Exception):
+    """El inicio de la cita ya pasó; no se puede agendar en el pasado."""
+
+
+class CitaNoEncontrada(Exception):
+    """No existe ninguna cita con ese id."""
+
+
+class CitaNoCancelable(Exception):
+    """La cita no se puede cancelar (ya está cancelada o completada)."""
 
 
 def esta_alineado(starts_at: datetime) -> bool:
@@ -87,14 +99,12 @@ def hay_solapamiento(
     medico_id: uuid.UUID,
     starts_at: datetime,
     ends_at: datetime,
-    excluir_cita_id: uuid.UUID | None = None,
 ) -> bool:
     """Indica si el médico ya tiene una cita ACTIVA que se cruza con este horario.
 
     Dos citas se cruzan si:  nueva.inicio < existente.fin  Y  nueva.fin > existente.inicio.
     - Solo cuentan las activas (SCHEDULED / CONFIRMED); una CANCELLED libera el hueco.
     - Citas pegadas (una acaba justo cuando empieza la otra) NO se solapan.
-    - excluir_cita_id: al editar una cita, se ignora ella misma.
     """
     q = (
         db.query(Cita)
@@ -103,8 +113,6 @@ def hay_solapamiento(
         .filter(Cita.starts_at < ends_at)  # la existente empieza antes de que acabe la nueva
         .filter(Cita.ends_at > starts_at)  # y termina después de que empiece la nueva
     )
-    if excluir_cita_id is not None:
-        q = q.filter(Cita.id != excluir_cita_id)
     return db.query(q.exists()).scalar()
 
 
@@ -119,25 +127,36 @@ def crear_cita(
     creado_por_id: uuid.UUID,
     motivo: str | None = None,
     permitir_sobrecupo: bool = False,
+    ahora: datetime | None = None,
 ) -> Cita:
     """Orquesta las reglas y prepara la cita. Hace flush (no commit): el commit lo hace el endpoint.
 
-    Orden: valida servicio y médico -> upsert del paciente -> calcula ends_at ->
-    valida disponibilidad (salvo sobrecupo) -> valida anti-solapamiento (siempre).
+    Orden: valida servicio y médico -> rejilla y no-pasado -> upsert del paciente ->
+    calcula ends_at -> valida disponibilidad (salvo sobrecupo) -> valida anti-solapamiento.
     Lanza una excepción de dominio si alguna regla falla.
+
+    `ahora` se inyecta (por defecto la hora actual) para poder probar la regla del pasado.
     """
     servicio = db.get(Servicio, servicio_id)
     if servicio is None:
         raise ServicioNoEncontrado()
 
+    # El médico debe existir, tener rol MEDICO y estar activo (un médico dado de
+    # baja no es agendable, aunque conserve su rol).
     medico = db.get(Usuario, medico_id)
-    if medico is None or medico.rol != Rol.MEDICO:
+    if medico is None or medico.rol != Rol.MEDICO or not medico.activo:
         raise MedicoNoEncontrado()
 
     # R0: el inicio debe caer en la rejilla de minutos (:00, :15, :30, :45).
     # Se valida antes de tocar al paciente para no crear datos por una hora inválida.
     if not esta_alineado(starts_at):
         raise HorarioNoAlineado()
+
+    # R0.b: no se puede agendar en el pasado (comparamos con 'ahora', inyectable).
+    if ahora is None:
+        ahora = datetime.now()
+    if starts_at < ahora:
+        raise CitaEnElPasado()
 
     # R1: buscar o crear al paciente (puede lanzar PacientesAmbiguos)
     paciente = buscar_o_crear_paciente(db, nombre_completo, edad)
@@ -167,4 +186,44 @@ def crear_cita(
     )
     db.add(cita)
     db.flush()  # asigna el id; el commit lo hace quien llama (el endpoint)
+    return cita
+
+
+def listar_citas(
+    db: Session,
+    *,
+    desde: date,
+    hasta: date,
+    medico_id: uuid.UUID | None = None,
+    incluir_canceladas: bool = False,
+) -> list[Cita]:
+    """Devuelve las citas del rango de días [desde, hasta] (ambos incluidos), ordenadas por inicio.
+
+    - desde/hasta: acotan la consulta a un rango concreto; nunca se lista "todo el histórico".
+    - medico_id: solo las de ese médico (recepción filtra; al médico se le fija el suyo).
+    - incluir_canceladas: por defecto solo las vigentes; con True, también las canceladas.
+    """
+    inicio = datetime.combine(desde, time.min)
+    fin = datetime.combine(hasta, time.min) + timedelta(days=1)  # exclusivo: fin del día 'hasta'
+    q = db.query(Cita).filter(Cita.starts_at >= inicio).filter(Cita.starts_at < fin)
+    if medico_id is not None:
+        q = q.filter(Cita.medico_id == medico_id)
+    if not incluir_canceladas:
+        q = q.filter(Cita.estado != EstadoCita.CANCELLED)
+    return q.order_by(Cita.starts_at).all()
+
+
+def cancelar_cita(db: Session, cita_id: uuid.UUID) -> Cita:
+    """Cancela una cita: pone su estado en CANCELLED y con ello libera el cupo.
+
+    Solo se pueden cancelar citas activas (SCHEDULED/CONFIRMED); una ya cancelada
+    o completada no. Hace flush (no commit): el commit lo hace el endpoint.
+    """
+    cita = db.get(Cita, cita_id)
+    if cita is None:
+        raise CitaNoEncontrada()
+    if cita.estado not in (EstadoCita.SCHEDULED, EstadoCita.CONFIRMED):
+        raise CitaNoCancelable()
+    cita.estado = EstadoCita.CANCELLED
+    db.flush()
     return cita

@@ -83,8 +83,8 @@ gantt
     Fase 0 · Andamiaje         :done,   f0, 2026-07-09, 1d
     Fase 1 · Datos             :done,   f1, after f0, 2d
     Fase 2 · Auth y roles      :done,   f2, after f1, 2d
-    Fase 3 · Citas (core)      :active, crit, f3, after f2, 3d
-    Fase 4 · UI                :        f4, after f3, 3d
+    Fase 3 · Citas (core)      :done,   f3, after f2, 3d
+    Fase 4 · UI                :active, f4, after f3, 3d
     Fase 5 · Historia + cierre :        f5, after f4, 2d
 
     section Cierre
@@ -95,12 +95,11 @@ gantt
 ## 6. Tablero de tareas (Kanban orientativo)
 
 **Por hacer**
-- Citas: endpoints de **listar/consultar agenda** y **cancelar cita** (libera cupo) (Fase 3)
 - Calendario, vistas Pacientes/Médicos y formulario de cita (Fase 4)
 - Historia clínica mínima + pulido + despliegue (Fase 5)
 
 **En curso**
-- **Fase 3 — Citas (core):** servicio de citas con reglas de negocio validadas y probadas; afinando endpoints restantes.
+- **Fase 4 — UI:** login, calendario/agenda y formulario de cita en el frontend (repo aparte).
 
 **Hecho**
 - Planificación y decisiones de arquitectura

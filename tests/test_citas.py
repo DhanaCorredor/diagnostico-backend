@@ -1,7 +1,7 @@
 """Tests de las reglas de citas (R2, R3, R4) y del orquestador crear_cita."""
 
 import uuid
-from datetime import datetime, time
+from datetime import date, datetime, time
 
 import pytest
 
@@ -11,6 +11,10 @@ from app.services import citas as C
 # Un lunes cualquiera, y su día en la convención del modelo (0=domingo).
 LUNES_10 = datetime(2026, 7, 20, 10, 0)
 DIA_LUNES = (LUNES_10.weekday() + 1) % 7
+# Instante "actual" fijo para los tests: la medianoche de ese día, anterior a
+# todas las citas de prueba. Se inyecta como `ahora` para que la regla de
+# "no agendar en el pasado" sea determinista (no depende del reloj real).
+ANTES = datetime(2026, 7, 20, 0, 0)
 
 
 def _franja(db, medico, hora_inicio=time(8, 0), hora_fin=time(14, 0)):
@@ -117,6 +121,7 @@ def test_crear_cita_feliz(db, medico, servicio, admin):
         servicio_id=servicio.id,
         starts_at=LUNES_10,
         creado_por_id=admin.id,
+        ahora=ANTES,
     )
     assert cita.ends_at == datetime(2026, 7, 20, 10, 45)
     assert cita.estado == EstadoCita.SCHEDULED
@@ -133,6 +138,7 @@ def test_crear_cita_fuera_de_disponibilidad(db, medico, servicio, admin):
             servicio_id=servicio.id,
             starts_at=LUNES_10,
             creado_por_id=admin.id,
+            ahora=ANTES,
         )
 
 
@@ -146,6 +152,7 @@ def test_crear_cita_bloquea_solapamiento(db, medico, servicio, admin):
         servicio_id=servicio.id,
         starts_at=LUNES_10,
         creado_por_id=admin.id,
+        ahora=ANTES,
     )
     with pytest.raises(C.Solapamiento):
         C.crear_cita(
@@ -156,6 +163,7 @@ def test_crear_cita_bloquea_solapamiento(db, medico, servicio, admin):
             servicio_id=servicio.id,
             starts_at=datetime(2026, 7, 20, 10, 30),
             creado_por_id=admin.id,
+            ahora=ANTES,
         )
 
 
@@ -184,3 +192,126 @@ def test_crear_cita_servicio_invalido(db, medico, admin):
             starts_at=LUNES_10,
             creado_por_id=admin.id,
         )
+
+
+def test_crear_cita_en_el_pasado(db, medico, servicio, admin):
+    _franja(db, medico)
+    # 'ahora' posterior al inicio -> la cita queda en el pasado
+    with pytest.raises(C.CitaEnElPasado):
+        C.crear_cita(
+            db,
+            nombre_completo=f"X {uuid.uuid4()}",
+            edad=1,
+            medico_id=medico.id,
+            servicio_id=servicio.id,
+            starts_at=LUNES_10,
+            creado_por_id=admin.id,
+            ahora=datetime(2026, 7, 20, 11, 0),  # ya pasaron las 10:00
+        )
+
+
+def test_crear_cita_medico_inactivo(db, servicio, admin):
+    # médico con rol correcto pero dado de baja (activo=False) -> no agendable
+    inactivo = Usuario(
+        nombre_completo=f"Dr. Baja {uuid.uuid4()}",
+        rol=Rol.MEDICO,
+        email=f"baja-{uuid.uuid4()}@test.local",
+        activo=False,
+    )
+    db.add(inactivo)
+    db.flush()
+    with pytest.raises(C.MedicoNoEncontrado):
+        C.crear_cita(
+            db,
+            nombre_completo="X",
+            edad=1,
+            medico_id=inactivo.id,
+            servicio_id=servicio.id,
+            starts_at=LUNES_10,
+            creado_por_id=admin.id,
+            ahora=ANTES,
+        )
+
+
+# --- Listar agenda -----------------------------------------------------------
+
+
+def _cita(db, medico, servicio, admin, starts_at):
+    """Crea y devuelve una cita ya agendada (con franja disponible)."""
+    _franja(db, medico)
+    return C.crear_cita(
+        db,
+        nombre_completo=f"P {uuid.uuid4()}",
+        edad=1,
+        medico_id=medico.id,
+        servicio_id=servicio.id,
+        starts_at=starts_at,
+        creado_por_id=admin.id,
+        ahora=ANTES,
+    )
+
+
+FECHA_LUNES = LUNES_10.date()  # date(2026, 7, 20)
+
+
+def test_listar_filtra_por_medico(db, medico, servicio, admin):
+    _cita(db, medico, servicio, admin, LUNES_10)
+    del_medico = C.listar_citas(db, desde=FECHA_LUNES, hasta=FECHA_LUNES, medico_id=medico.id)
+    de_otro = C.listar_citas(db, desde=FECHA_LUNES, hasta=FECHA_LUNES, medico_id=uuid.uuid4())
+    assert len(del_medico) == 1
+    assert de_otro == []
+
+
+def test_listar_por_rango_y_ordena(db, medico, servicio, admin):
+    _cita(db, medico, servicio, admin, datetime(2026, 7, 20, 11, 0))
+    _cita(db, medico, servicio, admin, datetime(2026, 7, 20, 9, 0))
+    del_dia = C.listar_citas(db, desde=FECHA_LUNES, hasta=FECHA_LUNES, medico_id=medico.id)
+    otro_dia = C.listar_citas(
+        db, desde=date(2026, 7, 21), hasta=date(2026, 7, 21), medico_id=medico.id
+    )
+    assert [c.starts_at.hour for c in del_dia] == [9, 11]  # ordenadas por inicio
+    assert otro_dia == []
+
+
+def test_listar_excluye_canceladas_por_defecto(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    C.cancelar_cita(db, cita.id)
+    vigentes = C.listar_citas(db, desde=FECHA_LUNES, hasta=FECHA_LUNES, medico_id=medico.id)
+    con_canceladas = C.listar_citas(
+        db, desde=FECHA_LUNES, hasta=FECHA_LUNES, medico_id=medico.id, incluir_canceladas=True
+    )
+    assert vigentes == []          # la cancelada no aparece por defecto
+    assert len(con_canceladas) == 1  # con el flag, sí
+
+
+# --- Cancelar cita -----------------------------------------------------------
+
+
+def test_cancelar_cita_libera_cupo(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    C.cancelar_cita(db, cita.id)
+    assert cita.estado == EstadoCita.CANCELLED
+    # el hueco queda libre: agendar otra a la misma hora ya no solapa
+    otra = C.crear_cita(
+        db,
+        nombre_completo=f"Q {uuid.uuid4()}",
+        edad=2,
+        medico_id=medico.id,
+        servicio_id=servicio.id,
+        starts_at=LUNES_10,
+        creado_por_id=admin.id,
+        ahora=ANTES,
+    )
+    assert otra.estado == EstadoCita.SCHEDULED
+
+
+def test_cancelar_cita_inexistente(db):
+    with pytest.raises(C.CitaNoEncontrada):
+        C.cancelar_cita(db, uuid.uuid4())
+
+
+def test_cancelar_cita_ya_cancelada(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    C.cancelar_cita(db, cita.id)
+    with pytest.raises(C.CitaNoCancelable):
+        C.cancelar_cita(db, cita.id)  # segunda vez -> no cancelable
