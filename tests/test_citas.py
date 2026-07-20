@@ -343,3 +343,30 @@ def test_cancelar_cita_ya_cancelada(db, medico, servicio, admin):
     C.cancelar_cita(db, cita.id)
     with pytest.raises(C.CitaNoCancelable):
         C.cancelar_cita(db, cita.id)  # segunda vez -> no cancelable
+
+
+# --- Asistencia (atendida / no-show) -----------------------------------------
+
+
+def test_marcar_asistencia_atendida(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    C.marcar_asistencia(db, cita.id, EstadoCita.COMPLETED)
+    assert cita.estado == EstadoCita.COMPLETED
+
+
+def test_marcar_asistencia_no_show(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    C.marcar_asistencia(db, cita.id, EstadoCita.NO_SHOW)
+    assert cita.estado == EstadoCita.NO_SHOW
+
+
+def test_marcar_asistencia_inexistente(db):
+    with pytest.raises(C.CitaNoEncontrada):
+        C.marcar_asistencia(db, uuid.uuid4(), EstadoCita.COMPLETED)
+
+
+def test_marcar_asistencia_cita_no_activa(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    C.cancelar_cita(db, cita.id)  # cancelada -> ya no está activa
+    with pytest.raises(C.CitaNoActiva):
+        C.marcar_asistencia(db, cita.id, EstadoCita.COMPLETED)
