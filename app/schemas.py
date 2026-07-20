@@ -5,7 +5,7 @@ documentación automática de /docs).
 """
 
 import uuid
-from datetime import datetime, time
+from datetime import date, datetime, time
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -87,6 +87,29 @@ class DisponibilidadCreate(BaseModel):
     dia_semana: int = Field(ge=0, le=6)  # 0=domingo ... 6=sábado
     hora_inicio: time
     hora_fin: time
+
+
+class PacienteOut(BaseModel):
+    """Datos de un paciente (lista y ficha)."""
+
+    id: uuid.UUID
+    nombre_completo: str
+    edad: int | None
+    cedula: str | None
+    telefono: str | None
+    fecha_nacimiento: date | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PacienteUpdate(BaseModel):
+    """Cuerpo del PUT /pacientes/{id}. No incluye rol (fijo PACIENTE) ni datos clínicos."""
+
+    nombre_completo: str = Field(min_length=1)
+    edad: int = Field(ge=0, le=120)
+    cedula: str | None = None
+    telefono: str | None = None
+    fecha_nacimiento: date | None = None
 
 
 class CitaCreate(BaseModel):
