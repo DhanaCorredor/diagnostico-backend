@@ -54,11 +54,10 @@ def admin(db):
 
 @pytest.fixture
 def servicio(db):
-    """Un servicio de prueba de 45 minutos (nombre único)."""
+    """Un servicio de prueba del catálogo (nombre único)."""
     s = Servicio(
         nombre=f"Servicio {uuid.uuid4()}",
         categoria=ServicioCategoria.CONSULTA,
-        duracion_min=45,
     )
     db.add(s)
     db.flush()

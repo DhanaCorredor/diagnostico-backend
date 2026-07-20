@@ -37,6 +37,7 @@ def agendar_cita(
             medico_id=datos.medico_id,
             servicio_id=datos.servicio_id,
             starts_at=datos.starts_at,
+            duracion_min=datos.duracion_min,
             creado_por_id=usuario.id,
             motivo=datos.motivo,
             permitir_sobrecupo=datos.permitir_sobrecupo,

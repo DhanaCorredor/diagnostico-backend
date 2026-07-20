@@ -6,6 +6,7 @@ documentación automática de /docs).
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -46,6 +47,7 @@ class CitaCreate(BaseModel):
     medico_id: uuid.UUID
     servicio_id: uuid.UUID
     starts_at: datetime
+    duracion_min: Literal[15, 30, 45, 60, 90]  # la elige recepción; solo estos valores
     motivo: str | None = None
     permitir_sobrecupo: bool = False  # recepción puede forzar un cupo extra
 

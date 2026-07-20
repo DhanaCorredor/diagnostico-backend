@@ -61,13 +61,13 @@ def esta_alineado(starts_at: datetime) -> bool:
     )
 
 
-def calcular_ends_at(starts_at: datetime, servicio: Servicio) -> datetime:
-    """Calcula cuándo termina la cita: inicio + la duración que marca el servicio.
+def calcular_ends_at(starts_at: datetime, duracion_min: int) -> datetime:
+    """Calcula cuándo termina la cita: inicio + la duración elegida (en minutos).
 
-    La cita no guarda su propia duración; la hereda del servicio en este momento.
-    Ej.: 10:00 + Consulta (45 min) -> 10:45.
+    La duración la elige recepción al agendar (ya no la marca el servicio).
+    Ej.: 10:00 + 45 min -> 10:45.
     """
-    return starts_at + timedelta(minutes=servicio.duracion_min)
+    return starts_at + timedelta(minutes=duracion_min)
 
 
 def dentro_de_disponibilidad(
@@ -124,6 +124,7 @@ def crear_cita(
     medico_id: uuid.UUID,
     servicio_id: uuid.UUID,
     starts_at: datetime,
+    duracion_min: int,
     creado_por_id: uuid.UUID,
     motivo: str | None = None,
     permitir_sobrecupo: bool = False,
@@ -161,8 +162,8 @@ def crear_cita(
     # R1: buscar o crear al paciente (puede lanzar PacientesAmbiguos)
     paciente = buscar_o_crear_paciente(db, nombre_completo, edad)
 
-    # R2: la duración la marca el servicio
-    ends_at = calcular_ends_at(starts_at, servicio)
+    # R2: la duración la elige recepción (viene validada del schema)
+    ends_at = calcular_ends_at(starts_at, duracion_min)
 
     # R3: disponibilidad (salvo que recepción fuerce un sobrecupo)
     if not permitir_sobrecupo and not dentro_de_disponibilidad(

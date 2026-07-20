@@ -36,28 +36,28 @@ ESPECIALIDADES = [
     "Gastroenterología",
 ]
 
-# --- Catálogo de servicios: (nombre, categoría, duración en minutos) ---------
-# La duración es la que marca el `ends_at` de cada cita.
+# --- Catálogo de servicios: (nombre, categoría) ------------------------------
+# La duración ya no vive en el servicio: la elige recepción al agendar la cita.
 SERVICIOS = [
-    # Consultas (45 min)
-    ("Consulta cardiología", ServicioCategoria.CONSULTA, 45),
-    ("Consulta medicina interna", ServicioCategoria.CONSULTA, 45),
-    ("Consulta ginecología", ServicioCategoria.CONSULTA, 45),
-    ("Consulta pediátrica", ServicioCategoria.CONSULTA, 45),
-    ("Consulta dermatología", ServicioCategoria.CONSULTA, 45),
-    ("Consulta traumatología", ServicioCategoria.CONSULTA, 45),
+    # Consultas
+    ("Consulta cardiología", ServicioCategoria.CONSULTA),
+    ("Consulta medicina interna", ServicioCategoria.CONSULTA),
+    ("Consulta ginecología", ServicioCategoria.CONSULTA),
+    ("Consulta pediátrica", ServicioCategoria.CONSULTA),
+    ("Consulta dermatología", ServicioCategoria.CONSULTA),
+    ("Consulta traumatología", ServicioCategoria.CONSULTA),
     # Ecografías
-    ("Ecografía abdominal", ServicioCategoria.ECOGRAFIA, 20),
-    ("Ecografía obstétrica", ServicioCategoria.ECOGRAFIA, 30),
-    ("Ecografía mamaria", ServicioCategoria.ECOGRAFIA, 20),
-    ("Ecografía tiroidea", ServicioCategoria.ECOGRAFIA, 15),
-    ("Eco-doppler carotídeo", ServicioCategoria.ECOGRAFIA, 30),
+    ("Ecografía abdominal", ServicioCategoria.ECOGRAFIA),
+    ("Ecografía obstétrica", ServicioCategoria.ECOGRAFIA),
+    ("Ecografía mamaria", ServicioCategoria.ECOGRAFIA),
+    ("Ecografía tiroidea", ServicioCategoria.ECOGRAFIA),
+    ("Eco-doppler carotídeo", ServicioCategoria.ECOGRAFIA),
     # Estudios cardíacos
-    ("Ecocardiograma", ServicioCategoria.ESTUDIO_CARDIACO, 30),
-    ("Electrocardiograma (ECG)", ServicioCategoria.ESTUDIO_CARDIACO, 15),
-    ("Holter 24h (colocación)", ServicioCategoria.ESTUDIO_CARDIACO, 15),
-    ("MAPA 24h (colocación)", ServicioCategoria.ESTUDIO_CARDIACO, 15),
-    ("Prueba de esfuerzo", ServicioCategoria.ESTUDIO_CARDIACO, 45),
+    ("Ecocardiograma", ServicioCategoria.ESTUDIO_CARDIACO),
+    ("Electrocardiograma (ECG)", ServicioCategoria.ESTUDIO_CARDIACO),
+    ("Holter 24h (colocación)", ServicioCategoria.ESTUDIO_CARDIACO),
+    ("MAPA 24h (colocación)", ServicioCategoria.ESTUDIO_CARDIACO),
+    ("Prueba de esfuerzo", ServicioCategoria.ESTUDIO_CARDIACO),
 ]
 
 
@@ -73,8 +73,8 @@ def sembrar_servicios(db):
     """Inserta los servicios que aún no existan. Devuelve cuántos añadió."""
     existentes = {s.nombre for s in db.query(Servicio.nombre).all()}
     nuevos = [
-        Servicio(nombre=nombre, categoria=categoria, duracion_min=duracion)
-        for (nombre, categoria, duracion) in SERVICIOS
+        Servicio(nombre=nombre, categoria=categoria)
+        for (nombre, categoria) in SERVICIOS
         if nombre not in existentes
     ]
     db.add_all(nuevos)
