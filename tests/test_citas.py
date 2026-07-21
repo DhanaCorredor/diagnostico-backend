@@ -6,6 +6,7 @@ from datetime import date, datetime, time
 import pytest
 
 from app.models import Cita, Disponibilidad, EstadoCita, Rol, Usuario
+from app.schemas import CitaCreate, CitaUpdate
 from app.services import citas as C
 
 # Un lunes cualquiera, y su día en la convención del modelo (0=domingo).
@@ -27,6 +28,35 @@ def _franja(db, medico, hora_inicio=time(8, 0), hora_fin=time(14, 0)):
         )
     )
     db.flush()
+
+
+# --- Normalización de fecha con zona horaria (naive local) -------------------
+
+
+def test_citacreate_convierte_fecha_con_zona_a_naive():
+    # lo que manda el navegador con new Date().toISOString() lleva 'Z' (UTC)
+    datos = CitaCreate(
+        nombre_completo="Ana",
+        edad=30,
+        medico_id=uuid.uuid4(),
+        servicio_id=uuid.uuid4(),
+        starts_at="2026-07-20T10:00:00Z",
+        duracion_min=45,
+    )
+    assert datos.starts_at.tzinfo is None                 # sin zona -> no rompe la comparación
+    assert datos.starts_at == datetime(2026, 7, 20, 10, 0)  # se toma la hora tal cual (local)
+
+
+def test_citaupdate_convierte_fecha_con_zona_a_naive():
+    datos = CitaUpdate(starts_at="2026-07-20T11:30:00+00:00")
+    assert datos.starts_at.tzinfo is None
+    assert datos.starts_at == datetime(2026, 7, 20, 11, 30)
+
+
+def test_citaupdate_sin_starts_at_no_falla():
+    # el campo es opcional: si no viene, el validador no debe romper
+    datos = CitaUpdate(motivo="control")
+    assert datos.starts_at is None
 
 
 # --- R2: duración ------------------------------------------------------------

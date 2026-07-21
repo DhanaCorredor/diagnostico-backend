@@ -8,9 +8,23 @@ import uuid
 from datetime import date, datetime, time
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models import EstadoCita, Rol, ServicioCategoria
+
+
+def _a_hora_local_naive(v: datetime | None) -> datetime | None:
+    """Normaliza una fecha/hora a hora local 'naive' (sin zona horaria).
+
+    La API trabaja en la hora de reloj del centro (sede única) y las fechas se
+    guardan sin zona. Si llega una fecha con zona (p. ej. la 'Z' que añade
+    `Date.toISOString()` en el navegador), se descarta la zona y se toma la hora tal
+    cual. Así se evita el error de comparar fechas 'aware' con 'naive'. Contrato:
+    el frontend envía la hora local del centro.
+    """
+    if v is not None and v.tzinfo is not None:
+        return v.replace(tzinfo=None)
+    return v
 
 
 class LoginRequest(BaseModel):
@@ -202,6 +216,11 @@ class CitaCreate(BaseModel):
     motivo: str | None = None
     permitir_sobrecupo: bool = False  # recepción puede forzar un cupo extra
 
+    @field_validator("starts_at")
+    @classmethod
+    def _starts_at_local_naive(cls, v: datetime) -> datetime:
+        return _a_hora_local_naive(v)
+
 
 class CitaUpdate(BaseModel):
     """Cuerpo del PUT /citas/{id}: editar o mover una cita. Todos los campos son
@@ -213,6 +232,11 @@ class CitaUpdate(BaseModel):
     duracion_min: Literal[15, 30, 45, 60, 90] | None = None
     motivo: str | None = None
     permitir_sobrecupo: bool = False  # recepción puede forzar un cupo extra al mover
+
+    @field_validator("starts_at")
+    @classmethod
+    def _starts_at_local_naive(cls, v: datetime | None) -> datetime | None:
+        return _a_hora_local_naive(v)
 
 
 class CitaOut(BaseModel):
