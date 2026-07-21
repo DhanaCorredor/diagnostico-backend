@@ -25,9 +25,10 @@ flowchart TD
     F --> G[Crear / editar cita]
 
     %% MÉDICO
-    D -- MÉDICO --> H[Mi agenda (solo lectura)]
+    D -- MÉDICO --> H[Mi agenda]
     H --> H1[Ver mis citas del día]
     H --> H2[Marcar atendida / no asistió]
+    H --> H3[Cancelar una cita]
 
     %% Cierre
     E --> Z([Cerrar sesión])

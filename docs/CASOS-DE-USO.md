@@ -21,6 +21,7 @@ flowchart LR
         uAgenda(["Consultar agenda y calendario"])
         uMiAgenda(["Ver mi agenda"])
         uAsistencia(["Marcar asistencia / no-show"])
+        uCancelarMed(["Cancelar una cita"])
     end
 
     admin --- login
@@ -38,6 +39,7 @@ flowchart LR
 
     medico --- uMiAgenda
     medico --- uAsistencia
+    medico --- uCancelarMed
 ```
 
 > La **historia clínica** (notas del médico) queda **fuera del MVP → fase 2**; en el MVP el médico solo consulta su agenda.
@@ -58,6 +60,7 @@ flowchart LR
 | CU-08 Consultar agenda | Recepción | Ver la agenda del día y el calendario de los médicos (también desde el móvil). |
 | CU-09 Ver mi agenda | Médico | Consultar sus propias citas. |
 | CU-10 Marcar asistencia | Médico | Marcar una cita como atendida o no-show. |
+| CU-10b Cancelar cita | Médico | Cancelar una de sus citas (libera el cupo). |
 | CU-11 Historia clínica *(fase 2, fuera del MVP)* | Médico | Consultar y añadir notas de evolución del paciente. En el MVP no está disponible. |
 
 ## Caso de uso detallado: CU-07 Agendar cita

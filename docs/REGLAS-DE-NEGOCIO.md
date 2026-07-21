@@ -3,7 +3,7 @@
 > **Referencia canónica** de las reglas de negocio del sistema y de **cómo se implementan**.
 > Toda la validación vive en la **capa de servicio** del backend (`app/services/`), en Python,
 > **antes de guardar** en la base de datos, para dar mensajes de error claros y poder probarla aislada.
-> Estado a **21/07/2026** (MVP). Complementa [`MODELO-DATOS.md`](MODELO-DATOS.md) y [`ARQUITECTURA.md`](ARQUITECTURA.md).
+> Estado a **22/07/2026** (MVP). Complementa [`MODELO-DATOS.md`](MODELO-DATOS.md) y [`ARQUITECTURA.md`](ARQUITECTURA.md).
 
 ## Resumen
 

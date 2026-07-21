@@ -14,7 +14,7 @@ Guía de uso del sistema para el personal del centro (alcance **MVP**). La inter
 
 - **Administrador:** acceso a todo — usuarios, médicos, especialidades y servicios.
 - **Recepción:** pacientes, agenda y citas. **No** ve usuarios, configuración ni reportes.
-- **Médico:** tu agenda y tus citas (**solo lectura**). La historia clínica llegará en una fase posterior (fase 2).
+- **Médico:** tu agenda y tus citas. Puedes **marcar asistencia** y **cancelar** citas, pero **no** creas ni editas citas ni escribes notas clínicas (la historia clínica llega en fase 2).
 
 ## 3. Agendar una cita (Recepción / Admin)
 
@@ -50,15 +50,16 @@ Guía de uso del sistema para el personal del centro (alcance **MVP**). La inter
 3. Comparte la contraseña con la persona.
 4. Para dar de baja a alguien, márcalo como **inactivo** (no se borra, se conserva el historial).
 
-## 8. Ver mi agenda y marcar asistencia (Médico)
+## 8. Ver mi agenda, marcar asistencia y cancelar (Médico)
 
 1. Entra en **Mi agenda**.
 2. Consulta tus citas del día.
 3. Marca cada cita como **Atendida** o **No asistió** según corresponda.
+4. Si hace falta, **cancela** una cita (su hueco queda libre).
 
 ## 9. Historia clínica (Médico) — próximamente (fase 2)
 
-En el MVP el médico tiene una **agenda de solo lectura**: consulta sus citas y marca asistencia, pero **todavía no** escribe notas clínicas. La **historia clínica** está planificada para una **fase 2** posterior.
+En el MVP el médico **consulta** su agenda, **marca asistencia** y puede **cancelar** citas, pero **no** crea/edita citas ni escribe notas clínicas. La **historia clínica** está planificada para una **fase 2** posterior.
 
 ## 10. Cerrar sesión
 

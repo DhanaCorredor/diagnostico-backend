@@ -4,7 +4,7 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 
 > Bootcamp final project — MVP scoped to a 2-week deadline. Documentation in `docs/` (in Spanish).
 >
-> **Status:** the backend MVP is **complete and deployed** (release **v0.3.0** on Render, auto-deploy on push to `main`). 53 passing tests. The React frontend (`diagnostico-frontend`) is the remaining phase.
+> **Status:** the backend MVP is **complete and deployed** (release **v0.3.0** on Render, auto-deploy on push to `main`). 79 passing tests. The React frontend (`diagnostico-frontend`) is the remaining phase.
 
 ---
 
