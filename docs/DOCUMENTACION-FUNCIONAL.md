@@ -50,8 +50,8 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 | RF-02 | ADMIN gestiona usuarios, médicos, especialidades y servicios. |
 | RF-03 | RECEPCION **no** puede acceder a usuarios, configuración ni reportes. |
 | RF-04 | Cada médico define sus **especialidades (N:M)** y su **disponibilidad** semanal. |
-| RF-05 | RECEPCION registra **pacientes** con **nombre, apellido y edad**; la **cédula** es **opcional** (la añaden los especialistas al hacer la consulta/estudio). |
-| RF-06 | Al **agendar**, el sistema **detecta** al paciente por **nombre + apellido + edad** (o lo **crea** si no existe, upsert); si hay varias coincidencias, recepción **elige**. |
+| RF-05 | RECEPCION registra **pacientes** con **nombre completo y edad**; la **cédula** es **opcional** (la añaden los especialistas al hacer la consulta/estudio). |
+| RF-06 | Al **agendar**, el sistema **detecta** al paciente por **nombre completo + edad** (o lo **crea** si no existe, upsert); si hay varias coincidencias, recepción **elige**. |
 | RF-07 | RECEPCION crea, edita, mueve y cancela **citas**. |
 | RF-08 | El sistema **impide solapar** dos citas activas del **mismo médico**. |
 | RF-09 | La duración/fin de la cita se calcula con la **duración que elige recepción** al agendar (15/30/45/60/90 min). |
@@ -74,7 +74,7 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 ## 6. Historias de usuario
 
 **Recepción**
-- *Quiero registrar al paciente rápido con nombre, apellido y edad (la cédula se añade luego).*
+- *Quiero registrar al paciente rápido con nombre completo y edad (la cédula se añade luego).*
 - *Quiero que, al agendar, si el paciente ya existe se detecte solo y si no, se cree.*
 - *Quiero que el sistema me avise si el horario del médico está ocupado o fuera de su disponibilidad, para no solapar.*
 
@@ -94,7 +94,7 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 | RN-02 | La **duración** de la cita la **elige recepción** al agendar, de una lista fija (15/30/45/60/90 min). |
 | RN-03 | La **cédula** es **opcional** (única si se indica); los especialistas la añaden **después** del agendado, para el informe. |
 | RN-04 | Un médico puede tener **varias especialidades** (N:M). |
-| RN-05 | Al **agendar** se hace **upsert** del paciente por **nombre + apellido + edad** (detectar o crear; si hay varios, recepción elige). |
+| RN-05 | Al **agendar** se hace **upsert** del paciente por **nombre completo + edad** (detectar o crear; si hay varios, recepción elige). *(Identificación robusta por `fecha_nacimiento` obligatoria y/o `cédula` → fase 2.)* |
 | RN-06 | Se agenda dentro de la **disponibilidad** del médico; recepción puede **forzar un cupo extra** (sobrecupo) de mutuo acuerdo. |
 | RN-07 | Bajas **lógicas** (`activo`), nunca borrado físico. |
 | RN-08 | Estados de cita: `SCHEDULED` · `CONFIRMED` · `CANCELLED` · `COMPLETED` · `NO_SHOW`. |
@@ -102,4 +102,4 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 
 ## 8. Flujo principal: crear una cita
 
-El recorrido completo está en el **flowchart** de [`FLUJO-USUARIO.md`](FLUJO-USUARIO.md). En resumen: **login** → elegir médico y servicio → el calendario muestra los días/horas **disponibles** (recepción puede forzar un **sobrecupo**) → introducir al paciente por **nombre + apellido + edad** (**upsert**) → el sistema calcula el fin con la **duración elegida** y **valida el solapamiento por médico** → guardar la cita.
+El recorrido completo está en el **flowchart** de [`FLUJO-USUARIO.md`](FLUJO-USUARIO.md). En resumen: **login** → elegir médico y servicio → el calendario muestra los días/horas **disponibles** (recepción puede forzar un **sobrecupo**) → introducir al paciente por **nombre completo + edad** (**upsert**) → el sistema calcula el fin con la **duración elegida** y **valida el solapamiento por médico** → guardar la cita.

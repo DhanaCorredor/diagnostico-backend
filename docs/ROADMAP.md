@@ -10,7 +10,7 @@ Plan de proyecto, decisiones, fases, cronograma y riesgos del **MVP** (entrega/p
 - **Volumen:** ~60 citas/día · 18 médicos · ~11-13 especialidades.
 - **Duración de cita:** la **elige recepción** al agendar, de una lista fija ({15, 30, 45, 60, 90} min).
 - **Disponibilidad:** el calendario **bloquea** los días/horas fuera de la disponibilidad del médico.
-- **Upsert de paciente al agendar:** si el paciente no existe se crea, si existe se detecta (por cédula o nombre + fecha de nacimiento).
+- **Upsert de paciente al agendar:** si el paciente no existe se crea, si existe se detecta (por `nombre_completo + edad`).
 - **Cero solapamientos:** en el MVP, **solo por médico** (por recurso → fase 2).
 - **Historia clínica:** **fuera del MVP → fase 2** (notas de texto del médico). En el MVP el médico solo consulta su agenda.
 - **Facturación y cobros:** **fuera** del sistema. **Sede:** una sola.
@@ -44,7 +44,7 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 5. **Citas y calendario** — agendar con **anti-solapamiento por médico** y **bloqueo por disponibilidad**; estados y cancelación (libera cupo).
 6. **Agenda del médico (solo lectura)** — el médico consulta su propia agenda (sin escribir notas clínicas en el MVP).
 
-> **Fuera del MVP (→ fase 2):** historia clínica / notas clínicas del médico, reportes, recordatorios WhatsApp, auditoría, visitas (agrupar estudios), duración por médico (`medico_servicio`), recursos/salas + anti-solapamiento por recurso, holter colocación+retiro, constraint `gist` en BD, PWA offline, portal de pacientes, Google Calendar, facturación (SENIAT).
+> **Fuera del MVP (→ fase 2):** identificación robusta del paciente (por `fecha_nacimiento` obligatoria y/o `cédula`) — en el MVP se identifica por `nombre_completo + edad`, con la limitación conocida de posibles duplicados —, historia clínica / notas clínicas del médico, reportes, recordatorios WhatsApp, auditoría, visitas (agrupar estudios), duración por médico (`medico_servicio`), recursos/salas + anti-solapamiento por recurso, holter colocación+retiro, constraint `gist` en BD, PWA offline, portal de pacientes, Google Calendar, facturación (SENIAT).
 
 ## 4. Modelo de datos
 
@@ -85,7 +85,7 @@ gantt
     Fase 2 · Auth y roles      :done,   f2, after f1, 2d
     Fase 3 · Citas (core)      :done,   f3, after f2, 3d
     Fase 4 · UI                :active, f4, after f3, 3d
-    Fase 5 · Cierre y despliegue :        f5, after f4, 2d
+    Fase 5 · Cierre y despliegue :done,   f5, after f3, 2d
 
     section Cierre
     Pruebas, pulido y margen   :        qa, after f5, 5d
@@ -95,8 +95,8 @@ gantt
 ## 6. Tablero de tareas (Kanban orientativo)
 
 **Por hacer**
-- Calendario, vistas Pacientes/Médicos y formulario de cita (Fase 4)
-- Pulido, pruebas manuales y despliegue (Fase 5)
+- Calendario, vistas Pacientes/Médicos y formulario de cita (Fase 4, frontend en repo aparte)
+- (Opcional) endpoints de escritura de servicios (`POST`/`PUT /servicios`)
 
 **En curso**
 - **Fase 4 — UI:** login, calendario/agenda y formulario de cita en el frontend (repo aparte).
@@ -110,7 +110,8 @@ gantt
 - **Fase 0** — Andamiaje backend FastAPI + conexión a PostgreSQL (frontend React/Vite en repo aparte)
 - **Fase 1** — Modelos SQLAlchemy (7 tablas) + Alembic + migración inicial + seed de catálogos (12 especialidades, 16 servicios)
 - **Fase 2** — Auth JWT (bcrypt), dependencia `requiere_rol` y guardas por rol (ADMIN/RECEPCION/MEDICO)
-- **Fase 3 (parcial)** — Servicio `crear_cita`: upsert de paciente + disponibilidad + anti-solapamiento por médico + **rejilla de inicio (:00/:15/:30/:45)** + suite de tests en verde
+- **Fase 3 — Citas (completa)** — Servicio `crear_cita`: upsert de paciente + disponibilidad + anti-solapamiento por médico + **rejilla de inicio (:00/:15/:30/:45)**; endpoints de citas (crear, listar por fecha/rango, cancelar, marcar asistencia), catálogos de lectura (`servicios`, `medicos`, `especialidades`), disponibilidad, CRUD de pacientes y CRUD de usuarios/médicos; **53 tests en verde**
+- **Fase 5 — Despliegue** — Backend en producción en **Render** (release **v0.3.0**, auto-deploy en push a `main`, ejecuta `alembic upgrade head` y el seed)
 
 ## 7. Riesgos y mitigación
 

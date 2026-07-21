@@ -3,6 +3,8 @@
 Internal **medical appointment** management system for the **Diagnóstico** health center (Maracay, Venezuela). It lets the staff log in by role and manage patients, doctors and appointments, with **strict schedule validation (zero overlaps per doctor)** and **availability-aware scheduling**.
 
 > Bootcamp final project — MVP scoped to a 2-week deadline. Documentation in `docs/` (in Spanish).
+>
+> **Status:** the backend MVP is **complete and deployed** (release **v0.3.0** on Render, auto-deploy on push to `main`). 53 passing tests. The React frontend (`diagnostico-frontend`) is the remaining phase.
 
 ---
 
@@ -77,7 +79,7 @@ Core entities (7 tables): `usuarios` (unified), `especialidades` + `usuario_espe
 
 - **Zero overlaps (per doctor)** — a new/modified appointment cannot overlap in time with another active appointment (`SCHEDULED`/`CONFIRMED`) of the same doctor. Validated in the backend service layer before saving.
 - **Availability** — appointments can only be booked inside the doctor's weekly availability; the calendar blocks the rest.
-- **Patient upsert** — booking identifies the patient by **name + surname + age** and creates one if none exists (the national ID is optional, added later by specialists).
+- **Patient upsert** — booking identifies the patient by **full name + age** and creates one if none exists (the national ID is optional, added later by specialists).
 
 ## 🚀 Getting started
 
@@ -110,7 +112,7 @@ pnpm dev                     # http://localhost:5173
 │   ├── models.py        # SQLAlchemy models
 │   ├── schemas.py       # Pydantic schemas
 │   ├── auth.py          # JWT, hashing, role guard
-│   ├── routers/         # auth, usuarios, citas, servicios
+│   ├── routers/         # auth, usuarios, citas, catalogo, disponibilidad, pacientes
 │   └── services/        # appointment & patient logic
 ├── alembic/             # migrations
 ├── tests/               # pytest
@@ -131,12 +133,12 @@ pnpm dev                     # http://localhost:5173
 ## 🗺️ Roadmap
 
 - [x] Documentation, unified data model and visual prototype
-- [ ] **Phase 0** — Scaffolding (FastAPI backend here + React/Vite frontend in its own repo)
-- [ ] **Phase 1** — SQLAlchemy models + Alembic migration + seed
-- [ ] **Phase 2** — Authentication (JWT) and roles
-- [ ] **Phase 3** — Appointments core (patient upsert + availability + overlap per doctor) + tests
-- [ ] **Phase 4** — UI (login, calendar, Patients/Doctors views, appointment form)
-- [ ] **Phase 5** — Polish + deployment
+- [x] **Phase 0** — Scaffolding (FastAPI backend here + React/Vite frontend in its own repo)
+- [x] **Phase 1** — SQLAlchemy models + Alembic migration + seed
+- [x] **Phase 2** — Authentication (JWT) and roles
+- [x] **Phase 3** — Appointments core (patient upsert + availability + overlap per doctor) + tests
+- [ ] **Phase 4** — UI (login, calendar, Patients/Doctors views, appointment form) — frontend repo, pending
+- [x] **Phase 5** — Deployment (backend live on Render, release v0.3.0)
 
 Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 

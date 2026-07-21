@@ -14,7 +14,7 @@ flowchart LR
         login(["Iniciar sesión"])
         uUsuarios(["Gestionar usuarios y accesos"])
         uMedicos(["Gestionar médicos y especialidades"])
-        uServicios(["Gestionar servicios y duraciones"])
+        uServicios(["Gestionar servicios"])
         uDisp(["Definir disponibilidad de médicos"])
         uPacientes(["Gestionar pacientes"])
         uCitas(["Crear / editar / cancelar citas"])
