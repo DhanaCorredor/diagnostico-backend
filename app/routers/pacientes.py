@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 from app.auth import requiere_rol
 from app.db import get_db
 from app.models import Rol
-from app.schemas import PacienteCreate, PacienteOut, PacienteUpdate
+from app.schemas import CitaOut, PacienteCreate, PacienteOut, PacienteUpdate
+from app.services import citas as citas_service
 from app.services import pacientes as pac_service
 
 # Toda la gestión de pacientes es solo para ADMIN y RECEPCIÓN (guarda a nivel de router).
@@ -45,6 +46,16 @@ def obtener_paciente(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
         return pac_service.obtener_paciente(db, paciente_id)
     except pac_service.PacienteNoEncontrado:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado")
+
+
+@router.get("/{paciente_id}/citas", response_model=list[CitaOut])
+def historial_citas(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
+    """Devuelve el historial de citas de un paciente (de la más reciente a la más antigua)."""
+    try:
+        pac_service.obtener_paciente(db, paciente_id)  # 404 si el paciente no existe
+    except pac_service.PacienteNoEncontrado:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado")
+    return citas_service.listar_citas_de_paciente(db, paciente_id)
 
 
 @router.put("/{paciente_id}", response_model=PacienteOut)

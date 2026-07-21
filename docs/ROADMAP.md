@@ -85,7 +85,7 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 | `GET /pacientes` · `GET /pacientes/{id}` | Listar / ficha | ADMIN·RECEP | MANUAL §5 | ✅ |
 | `PUT /pacientes/{id}` | Editar ficha (parcial) | ADMIN·RECEP | MANUAL §5 | ✅ |
 | `POST /pacientes` | **Alta de paciente suelto** | ADMIN·RECEP | RF-05 · MANUAL §5.2 | ✅ |
-| `GET /pacientes/{id}/citas` | **Historial de citas del paciente** | ADMIN·RECEP | MANUAL §5.3 | ⬜ |
+| `GET /pacientes/{id}/citas` | **Historial de citas del paciente** | ADMIN·RECEP | MANUAL §5.3 | ✅ |
 
 **Citas**
 

@@ -370,3 +370,12 @@ def test_marcar_asistencia_cita_no_activa(db, medico, servicio, admin):
     C.cancelar_cita(db, cita.id)  # cancelada -> ya no está activa
     with pytest.raises(C.CitaNoActiva):
         C.marcar_asistencia(db, cita.id, EstadoCita.COMPLETED)
+
+
+# --- Historial de citas de un paciente ---------------------------------------
+
+
+def test_listar_citas_de_paciente_historial(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    historial = C.listar_citas_de_paciente(db, cita.paciente_id)
+    assert [c.id for c in historial] == [cita.id]  # solo su cita, y es la suya

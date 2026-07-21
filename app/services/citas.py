@@ -218,6 +218,20 @@ def listar_citas(
     return q.order_by(Cita.starts_at).all()
 
 
+def listar_citas_de_paciente(db: Session, paciente_id: uuid.UUID) -> list[Cita]:
+    """Historial de citas de un paciente: todas las suyas, de la más reciente a la más antigua.
+
+    A diferencia de `listar_citas` (agenda por día/rango), aquí no se acota por fecha
+    ni se filtran estados: es el historial completo del paciente (incluidas canceladas).
+    """
+    return (
+        db.query(Cita)
+        .filter(Cita.paciente_id == paciente_id)
+        .order_by(Cita.starts_at.desc())
+        .all()
+    )
+
+
 def _obtener_cita_activa(
     db: Session, cita_id: uuid.UUID, exc_no_activa: type[Exception]
 ) -> Cita:
