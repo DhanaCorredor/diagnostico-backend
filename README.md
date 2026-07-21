@@ -43,8 +43,8 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 | Role | Permissions |
 |------|-------------|
 | **ADMIN** | Full control: users, doctors, specialties, services, configuration. |
-| **RECEPCION** | Books appointments; manages patients and doctors; sees agendas. **No** access to **users**, **configuration** or **reports**. |
-| **MEDICO** | Sees their own agenda (read-only); marks attendance/no-show. *(Clinical history notes are phase 2.)* |
+| **RECEPCION** | Books and cancels appointments; marks attendance (attended/no-show); manages patients; **views** doctors and agendas. **No** access to **users**, **configuration** or **reports**. |
+| **MEDICO** | Sees their own agenda; can **cancel** and **mark attendance/no-show** on their appointments. *(Clinical history notes are phase 2.)* |
 
 > Patients do **not** log in (they are records managed by reception).
 
@@ -153,9 +153,11 @@ Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 | [`docs/CASOS-DE-USO.md`](docs/CASOS-DE-USO.md) | Use-case diagram and description (Mermaid) |
 | [`docs/FLUJO-USUARIO.md`](docs/FLUJO-USUARIO.md) | User-flow flowchart (Mermaid) |
 | [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md) | Entities, fields, relations, ER diagram and rules |
+| [`docs/REGLAS-DE-NEGOCIO.md`](docs/REGLAS-DE-NEGOCIO.md) | Canonical business rules and how they are implemented |
 | [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Architecture, layers, data flow and technical decisions |
 | [`docs/COMPONENTES.md`](docs/COMPONENTES.md) | Frontend component map (Atomic Design lite) |
 | [`docs/MANUAL-USUARIO.md`](docs/MANUAL-USUARIO.md) | Step-by-step usage guide for the staff |
+| [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) | Deployment guide (Render + PostgreSQL) |
 
 ---
 

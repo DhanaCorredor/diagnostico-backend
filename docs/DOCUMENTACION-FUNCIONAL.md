@@ -37,8 +37,8 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 | Rol | Permisos |
 |-----|----------|
 | **ADMIN** | **Todo**: usuarios, médicos, especialidades, servicios, configuración. |
-| **RECEPCION** | Agenda las citas; gestiona pacientes y médicos; ve las agendas. **No** accede a **usuarios**, **configuración** ni **reportes**. |
-| **MEDICO** | Ve su agenda; marca asistencia/no-show. *(Las notas de historia clínica quedan para fase 2.)* |
+| **RECEPCION** | Agenda y cancela citas; marca asistencia (atendida/no-show); gestiona pacientes; **consulta** médicos y agendas. **No** accede a **usuarios**, **configuración** ni **reportes**. |
+| **MEDICO** | Ve su agenda; puede **cancelar** y **marcar asistencia/no-show** en sus citas. *(Las notas de historia clínica quedan para fase 2.)* |
 
 > Los **pacientes no acceden** al sistema (son registros que gestiona recepción).
 
@@ -94,7 +94,7 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 | RN-02 | La **duración** de la cita la **elige recepción** al agendar, de una lista fija (15/30/45/60/90 min). |
 | RN-03 | La **cédula** es **opcional** (única si se indica); los especialistas la añaden **después** del agendado, para el informe. |
 | RN-04 | Un médico puede tener **varias especialidades** (N:M). |
-| RN-05 | Al **agendar** se hace **upsert** del paciente por **nombre completo + edad** (detectar o crear; si hay varios, recepción elige). *(Identificación robusta por `fecha_nacimiento` obligatoria y/o `cédula` → fase 2.)* |
+| RN-05 | Al **agendar** se hace **upsert** del paciente por **nombre completo + edad** (detectar o crear; si hay varios, recepción elige). |
 | RN-06 | Se agenda dentro de la **disponibilidad** del médico; recepción puede **forzar un cupo extra** (sobrecupo) de mutuo acuerdo. |
 | RN-07 | Bajas **lógicas** (`activo`), nunca borrado físico. |
 | RN-08 | Estados de cita: `SCHEDULED` · `CONFIRMED` · `CANCELLED` · `COMPLETED` · `NO_SHOW`. |

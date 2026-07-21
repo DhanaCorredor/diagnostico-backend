@@ -124,6 +124,6 @@ gantt
 
 ## 8. Decisiones cerradas / pendientes
 
-1. **Auth:** JWT propio con FastAPI (bcrypt + `python-jose`/PyJWT). ✔️
+1. **Auth:** JWT propio con FastAPI (bcrypt + PyJWT). ✔️
 2. **BD:** PostgreSQL (Neon en la nube por portabilidad). ✔️
 3. **Fecha de entrega:** ~2 semanas → prioriza el MVP; ajustar el Gantt al calendario real.
