@@ -108,7 +108,7 @@ una cancelada deja de contar automáticamente. *(El cambio de estado lo hace `ca
 
 ## R6 · Marcar asistencia (atendida / no-show)
 
-**Regla.** Una cita **activa** (`SCHEDULED`/`CONFIRMED`) se cierra como **atendida** (`COMPLETED`) o **no-show** (`NO_SHOW`); no se puede marcar sobre una cita ya cerrada o cancelada. Lo pueden hacer **recepción, admin y el médico**.
+**Regla.** Una cita **activa** (`SCHEDULED`/`CONFIRMED`) se cierra como **atendida** (`COMPLETED`) o **no-show** (`NO_SHOW`); no se puede marcar sobre una cita ya cerrada o cancelada. Lo hacen **recepción y admin** (el médico solo consulta su agenda, no marca asistencia).
 
 **Implementación.** `marcar_asistencia(db, cita_id, estado)` en `app/services/citas.py` (reutiliza `_obtener_cita_activa`); si la cita no está activa lanza `CitaNoActiva` → **409**. Endpoint `POST /citas/{id}/asistencia` con `estado ∈ {COMPLETED, NO_SHOW}`.
 

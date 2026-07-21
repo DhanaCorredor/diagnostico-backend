@@ -44,7 +44,7 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 |------|-------------|
 | **ADMIN** | Full control: users, doctors, specialties, services, configuration. |
 | **RECEPCION** | Books and cancels appointments; marks attendance (attended/no-show); manages patients; **views** doctors and agendas. **No** access to **users**, **configuration** or **reports**. |
-| **MEDICO** | Sees their own agenda; can **cancel** and **mark attendance/no-show** on their appointments. *(Clinical history notes are phase 2.)* |
+| **MEDICO** | Sees their own agenda (**read-only**). Cannot cancel or mark attendance — reception/admin does that. *(Clinical history notes are phase 2.)* |
 
 > Patients do **not** log in (they are records managed by reception).
 

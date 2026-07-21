@@ -6,13 +6,13 @@ Plan de proyecto, decisiones, fases, cronograma y riesgos del **MVP** (entrega/p
 
 - **Usuarios:** solo **personal interno** hace login (ADMIN, RECEPCION, MEDICO). Las citas las agenda **recepción**. Los pacientes son registros, no acceden.
 - **Tabla `usuarios` unificada:** personal, médicos y pacientes comparten el mismo diseño de tabla (campo `rol`), para **ahorrar código**. En la UI, **dos vistas** (Pacientes / Médicos) que filtran por rol.
-- **Roles:** ADMIN todo · **RECEPCION sin acceso a usuarios, configuración ni reportes** · MEDICO su agenda (consulta, marca asistencia y puede cancelar; notas clínicas → fase 2).
+- **Roles:** ADMIN todo · **RECEPCION sin acceso a usuarios, configuración ni reportes** · MEDICO su agenda **solo lectura** (solo consulta; la asistencia y la cancelación las hacen recepción/admin; notas clínicas → fase 2).
 - **Volumen:** ~60 citas/día · 18 médicos · ~11-13 especialidades.
 - **Duración de cita:** la **elige recepción** al agendar, de una lista fija ({15, 30, 45, 60, 90} min).
 - **Disponibilidad:** el calendario **bloquea** los días/horas fuera de la disponibilidad del médico.
 - **Upsert de paciente al agendar:** si el paciente no existe se crea, si existe se detecta (por `nombre_completo + edad`).
 - **Cero solapamientos:** en el MVP, **solo por médico** (por recurso → fase 2).
-- **Historia clínica:** **fuera del MVP → fase 2** (notas de texto del médico). En el MVP el médico consulta su agenda y marca asistencia (sin escribir notas clínicas).
+- **Historia clínica:** **fuera del MVP → fase 2** (notas de texto del médico). En el MVP el médico **solo consulta** su agenda (sin marcar asistencia ni escribir notas clínicas).
 - **Facturación y cobros:** **fuera** del sistema. **Sede:** una sola.
 - **Idioma UI:** español. · **Gestor de paquetes (frontend):** pnpm.
 
@@ -42,7 +42,7 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 3. **Pacientes** — CRUD (cédula única si se indica, opcional) + **upsert al agendar**.
 4. **Servicios** — catálogo de consultas y estudios (la duración de la cita la elige recepción al agendar).
 5. **Citas y calendario** — agendar con **anti-solapamiento por médico** y **bloqueo por disponibilidad**; estados y cancelación (libera cupo).
-6. **Agenda del médico (solo lectura)** — el médico consulta su propia agenda (sin escribir notas clínicas en el MVP).
+6. **Agenda del médico (solo lectura)** — el médico consulta su propia agenda; **no** marca asistencia ni cancela (lo hace recepción/admin) ni escribe notas clínicas en el MVP.
 
 > **Fuera del MVP (→ fase 2):** identificación robusta del paciente (por `fecha_nacimiento` obligatoria y/o `cédula`) — en el MVP se identifica por `nombre_completo + edad`, con la limitación conocida de posibles duplicados —, historia clínica / notas clínicas del médico, reportes, recordatorios WhatsApp, auditoría, visitas (agrupar estudios), duración por médico (`medico_servicio`), recursos/salas + anti-solapamiento por recurso, holter colocación+retiro, constraint `gist` en BD, PWA offline, portal de pacientes, Google Calendar, facturación (SENIAT).
 
@@ -72,7 +72,7 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 |----------|--------|-----|--------|:------:|
 | `GET /servicios` · `GET /medicos` · `GET /especialidades` | Alimentar desplegables al agendar | autenticado | MANUAL §3 | ✅ |
 
-**Disponibilidad — ADMIN**
+**Disponibilidad — lectura autenticada / gestión ADMIN**
 
 | Endpoint | Acción | Rol | Origen | Estado |
 |----------|--------|-----|--------|:------:|
@@ -94,8 +94,8 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 |----------|--------|-----|--------|:------:|
 | `POST /citas` | Agendar (aplica todas las reglas) | ADMIN·RECEP | RF-07 · MANUAL §3 | ✅ |
 | `GET /citas` | Agenda por día / rango | ADMIN·RECEP·MED | MANUAL §4,§8 | ✅ |
-| `POST /citas/{id}/cancelar` | Cancelar (libera cupo) | ADMIN·RECEP·MED | RF-11 · MANUAL §4 | ✅ |
-| `POST /citas/{id}/asistencia` | Atendida / no-show | ADMIN·RECEP·MED | MANUAL §8 | ✅ |
+| `POST /citas/{id}/cancelar` | Cancelar (libera cupo) | ADMIN·RECEP | RF-11 · MANUAL §4 | ✅ |
+| `POST /citas/{id}/asistencia` | Atendida / no-show | ADMIN·RECEP | MANUAL §4 | ✅ |
 | `PUT /citas/{id}` | **Editar / mover (revalida reglas)** | ADMIN·RECEP | RF-07 · MANUAL §4 | ✅ |
 
 **Servicios y especialidades (gestión) — ADMIN**

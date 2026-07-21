@@ -14,7 +14,7 @@ Guía de uso del sistema para el personal del centro (alcance **MVP**). La inter
 
 - **Administrador:** acceso a todo — usuarios, médicos, especialidades y servicios.
 - **Recepción:** pacientes, agenda y citas. **No** ve usuarios, configuración ni reportes.
-- **Médico:** tu agenda y tus citas. Puedes **marcar asistencia** y **cancelar** citas, pero **no** creas ni editas citas ni escribes notas clínicas (la historia clínica llega en fase 2).
+- **Médico:** tu agenda del día (**solo lectura**). **Consultas** tus citas, pero **no** creas, editas, cancelas ni marcas asistencia (de eso se encarga recepción); las notas clínicas llegan en fase 2.
 
 ## 3. Agendar una cita (Recepción / Admin)
 
@@ -24,11 +24,12 @@ Guía de uso del sistema para el personal del centro (alcance **MVP**). La inter
 4. **Fecha y hora:** el calendario muestra solo los **días/horas disponibles** del médico. Si el médico ya está ocupado a esa hora, el sistema **avisa** y no deja guardar; elige otro hueco.
 5. Pulsa **Guardar**. La cita queda como **agendada**.
 
-## 4. Editar, mover o cancelar una cita
+## 4. Editar, mover, cancelar o marcar asistencia (Recepción / Admin)
 
 1. Abre la cita desde la **agenda** o el **calendario**.
 2. Cambia los datos (fecha, hora, servicio…) o pulsa **Cancelar cita**.
 3. Al mover una cita, se vuelve a validar que no haya solapamiento. Al **cancelar**, su hueco queda libre.
+4. Tras la consulta, marca la cita como **Atendida** o **No asistió** (asistencia / no-show).
 
 ## 5. Gestionar pacientes (Recepción / Admin)
 
@@ -50,16 +51,16 @@ Guía de uso del sistema para el personal del centro (alcance **MVP**). La inter
 3. Comparte la contraseña con la persona.
 4. Para dar de baja a alguien, márcalo como **inactivo** (no se borra, se conserva el historial).
 
-## 8. Ver mi agenda, marcar asistencia y cancelar (Médico)
+## 8. Ver mi agenda (Médico)
 
 1. Entra en **Mi agenda**.
-2. Consulta tus citas del día.
-3. Marca cada cita como **Atendida** o **No asistió** según corresponda.
-4. Si hace falta, **cancela** una cita (su hueco queda libre).
+2. Consulta tus citas del día (**solo lectura**).
+
+> La asistencia (atendida / no-show) y las cancelaciones las gestiona **recepción** (ver §4).
 
 ## 9. Historia clínica (Médico) — próximamente (fase 2)
 
-En el MVP el médico **consulta** su agenda, **marca asistencia** y puede **cancelar** citas, pero **no** crea/edita citas ni escribe notas clínicas. La **historia clínica** está planificada para una **fase 2** posterior.
+En el MVP el médico **solo consulta** su agenda (solo lectura): **no** crea/edita/cancela citas, **no** marca asistencia y **no** escribe notas clínicas. La **historia clínica** está planificada para una **fase 2** posterior.
 
 ## 10. Cerrar sesión
 

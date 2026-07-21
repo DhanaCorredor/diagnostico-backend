@@ -22,13 +22,11 @@ flowchart TD
     D -- RECEPCIÓN --> F[Panel de recepción]
     F --> F1[Gestionar pacientes]
     F --> F2[Ver agenda / calendario]
-    F --> G[Crear / editar cita]
+    F --> G[Crear / editar / cancelar cita · marcar asistencia]
 
     %% MÉDICO
-    D -- MÉDICO --> H[Mi agenda]
+    D -- MÉDICO --> H["Mi agenda (solo lectura)"]
     H --> H1[Ver mis citas del día]
-    H --> H2[Marcar atendida / no asistió]
-    H --> H3[Cancelar una cita]
 
     %% Cierre
     E --> Z([Cerrar sesión])

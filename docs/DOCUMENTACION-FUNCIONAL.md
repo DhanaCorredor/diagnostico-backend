@@ -38,7 +38,7 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 |-----|----------|
 | **ADMIN** | **Todo**: usuarios, médicos, especialidades, servicios, configuración. |
 | **RECEPCION** | Agenda y cancela citas; marca asistencia (atendida/no-show); gestiona pacientes; **consulta** médicos y agendas. **No** accede a **usuarios**, **configuración** ni **reportes**. |
-| **MEDICO** | Ve su agenda; puede **cancelar** y **marcar asistencia/no-show** en sus citas. *(Las notas de historia clínica quedan para fase 2.)* |
+| **MEDICO** | Ve su agenda (**solo lectura**). **No** cancela ni marca asistencia (lo hace recepción/admin). *(Las notas de historia clínica quedan para fase 2.)* |
 
 > Los **pacientes no acceden** al sistema (son registros que gestiona recepción).
 
@@ -57,7 +57,7 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 | RF-09 | La duración/fin de la cita se calcula con la **duración que elige recepción** al agendar (15/30/45/60/90 min). |
 | RF-10 | El **calendario bloquea** los días/horas fuera de la **disponibilidad** del médico, **salvo que recepción fuerce un cupo extra** (sobrecupo) con confirmación. |
 | RF-11 | Al **cancelar** una cita, su cupo queda libre. |
-| RF-12 | El MEDICO ve su agenda y marca **atendida / no-show**. |
+| RF-12 | El MEDICO ve su agenda (**solo lectura**). La asistencia (**atendida / no-show**) la marca RECEPCION/ADMIN. |
 | RF-13 | *(Fase 2, fuera del MVP)* El MEDICO consultará y añadirá **notas de historia clínica** del paciente. |
 
 ## 5. Requisitos no funcionales (RNF)
@@ -79,7 +79,7 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 - *Quiero que el sistema me avise si el horario del médico está ocupado o fuera de su disponibilidad, para no solapar.*
 
 **Médico**
-- *Quiero ver mi agenda del día y marcar asistencia.*
+- *Quiero ver mi agenda del día (solo consulta).*
 - *(Fase 2) Quiero revisar y añadir notas a la historia del paciente.*
 
 **Administrador**
