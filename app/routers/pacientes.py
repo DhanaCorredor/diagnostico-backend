@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.auth import requiere_rol
 from app.db import get_db
 from app.models import Rol
-from app.schemas import PacienteOut, PacienteUpdate
+from app.schemas import PacienteCreate, PacienteOut, PacienteUpdate
 from app.services import pacientes as pac_service
 
 # Toda la gestión de pacientes es solo para ADMIN y RECEPCIÓN (guarda a nivel de router).
@@ -23,6 +23,19 @@ router = APIRouter(
 def listar_pacientes(db: Session = Depends(get_db)):
     """Lista todos los pacientes."""
     return pac_service.listar_pacientes(db)
+
+
+@router.post("", response_model=PacienteOut, status_code=status.HTTP_201_CREATED)
+def crear_paciente(datos: PacienteCreate, db: Session = Depends(get_db)):
+    """Da de alta un paciente manualmente (sin agendarle una cita)."""
+    try:
+        paciente = pac_service.crear_paciente(db, datos.model_dump())
+    except pac_service.CedulaDuplicada:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "La cédula ya pertenece a otra persona"
+        )
+    db.commit()
+    return paciente
 
 
 @router.get("/{paciente_id}", response_model=PacienteOut)

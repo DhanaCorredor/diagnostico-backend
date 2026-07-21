@@ -102,6 +102,16 @@ class PacienteOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PacienteCreate(BaseModel):
+    """Cuerpo del POST /pacientes: alta manual de un paciente (sin agendarle cita)."""
+
+    nombre_completo: str = Field(min_length=1)
+    edad: int = Field(ge=0, le=120)
+    cedula: str | None = None
+    telefono: str | None = None
+    fecha_nacimiento: date | None = None
+
+
 class PacienteUpdate(BaseModel):
     """Cuerpo del PUT /pacientes/{id}. No incluye rol (fijo PACIENTE) ni datos clínicos."""
 

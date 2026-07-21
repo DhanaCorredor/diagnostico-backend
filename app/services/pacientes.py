@@ -80,6 +80,24 @@ def obtener_paciente(db: Session, paciente_id: uuid.UUID) -> Usuario:
     return paciente
 
 
+def crear_paciente(db: Session, datos: dict) -> Usuario:
+    """Da de alta un paciente de forma manual (sin agendar). Hace flush (no commit).
+
+    La cédula, si se indica, debe ser única. No se deduplica por nombre+edad: es un
+    alta explícita de recepción (para reutilizar uno existente está el upsert al agendar).
+    """
+    cedula = datos.get("cedula")
+    if cedula is not None:  # la cédula, si viene, no puede pertenecer a otra persona
+        existe = db.query(Usuario).filter(Usuario.cedula == cedula).first()
+        if existe is not None:
+            raise CedulaDuplicada()
+
+    paciente = Usuario(rol=Rol.PACIENTE, **datos)
+    db.add(paciente)
+    db.flush()  # asigna el id; el commit lo hace el endpoint
+    return paciente
+
+
 def actualizar_paciente(db: Session, paciente_id: uuid.UUID, cambios: dict) -> Usuario:
     """Actualiza SOLO los campos presentes en `cambios`. Hace flush (no commit).
 

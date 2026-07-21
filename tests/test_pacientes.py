@@ -11,6 +11,7 @@ from app.services.pacientes import (
     PacientesAmbiguos,
     actualizar_paciente,
     buscar_o_crear_paciente,
+    crear_paciente,
     listar_pacientes,
     obtener_paciente,
 )
@@ -78,6 +79,31 @@ def test_actualizar_paciente_parcial_no_borra_cedula(db):
     actualizar_paciente(db, pac.id, {"telefono": "555-9999"})
     assert pac.cedula == ced_original
     assert pac.telefono == "555-9999"
+
+
+def test_crear_paciente_alta_manual(db):
+    datos = {
+        "nombre_completo": f"Pac {uuid.uuid4()}",
+        "edad": 33,
+        "cedula": None,
+        "telefono": None,
+        "fecha_nacimiento": None,
+    }
+    p = crear_paciente(db, datos)
+    assert p.id is not None
+    assert p.rol == Rol.PACIENTE
+    assert p.edad == 33
+
+
+def test_crear_paciente_cedula_duplicada(db):
+    ced = f"CED-{uuid.uuid4()}"
+    db.add(Usuario(nombre_completo=f"Otro {uuid.uuid4()}", edad=30, rol=Rol.PACIENTE, cedula=ced))
+    db.flush()
+    with pytest.raises(CedulaDuplicada):
+        crear_paciente(
+            db,
+            {"nombre_completo": "X", "edad": 20, "cedula": ced, "telefono": None, "fecha_nacimiento": None},
+        )
 
 
 def test_actualizar_paciente_cedula_duplicada(db):
