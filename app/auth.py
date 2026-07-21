@@ -96,7 +96,7 @@ def usuario_actual(
         datos = decodificar_token(credentials.credentials)
         usuario_id = uuid.UUID(datos["sub"])
     except (jwt.InvalidTokenError, KeyError, ValueError):
-        raise no_autorizado
+        raise no_autorizado from None
     usuario = db.get(Usuario, usuario_id)
     # El usuario debe existir Y seguir activo: si un admin lo dio de baja, su token
     # (que dura horas) deja de servir de inmediato, no hasta que caduque.

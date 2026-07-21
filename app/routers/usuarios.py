@@ -35,7 +35,7 @@ def obtener_usuario(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
         return usr_service.obtener_usuario(db, usuario_id)
     except usr_service.UsuarioNoEncontrado:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado") from None
 
 
 @router.post("", response_model=UsuarioDetalle, status_code=status.HTTP_201_CREATED)
@@ -54,15 +54,15 @@ def crear_usuario(datos: UsuarioCreate, db: Session = Depends(get_db)):
     except usr_service.RolNoPermitido:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST, "No se puede crear un usuario con ese rol"
-        )
+        ) from None
     except usr_service.EmailDuplicado:
-        raise HTTPException(status.HTTP_409_CONFLICT, "El email ya está en uso")
+        raise HTTPException(status.HTTP_409_CONFLICT, "El email ya está en uso") from None
     except usr_service.EspecialidadNoEncontrada:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Alguna especialidad no existe")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Alguna especialidad no existe") from None
     except usr_service.DatosSoloDeMedico:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST, "Especialidades y matrícula son solo para médicos"
-        )
+        ) from None
 
     db.commit()
     return usuario
@@ -74,7 +74,7 @@ def desactivar_usuario(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
         usuario = usr_service.desactivar_usuario(db, usuario_id)
     except usr_service.UsuarioNoEncontrado:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado") from None
 
     db.commit()
     return usuario
@@ -91,15 +91,15 @@ def actualizar_usuario(
     try:
         usuario = usr_service.actualizar_usuario(db, usuario_id, cambios)
     except usr_service.UsuarioNoEncontrado:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado") from None
     except usr_service.EmailDuplicado:
-        raise HTTPException(status.HTTP_409_CONFLICT, "El email ya está en uso")
+        raise HTTPException(status.HTTP_409_CONFLICT, "El email ya está en uso") from None
     except usr_service.EspecialidadNoEncontrada:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Alguna especialidad no existe")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Alguna especialidad no existe") from None
     except usr_service.DatosSoloDeMedico:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST, "Especialidades y matrícula son solo para médicos"
-        )
+        ) from None
 
     db.commit()
     return usuario

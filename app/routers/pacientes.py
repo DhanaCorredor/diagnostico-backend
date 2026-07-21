@@ -34,7 +34,7 @@ def crear_paciente(datos: PacienteCreate, db: Session = Depends(get_db)):
     except pac_service.CedulaDuplicada:
         raise HTTPException(
             status.HTTP_409_CONFLICT, "La cédula ya pertenece a otra persona"
-        )
+        ) from None
     db.commit()
     return paciente
 
@@ -45,7 +45,7 @@ def obtener_paciente(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
         return pac_service.obtener_paciente(db, paciente_id)
     except pac_service.PacienteNoEncontrado:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado") from None
 
 
 @router.get("/{paciente_id}/citas", response_model=list[CitaOut])
@@ -54,7 +54,7 @@ def historial_citas(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
         pac_service.obtener_paciente(db, paciente_id)  # 404 si el paciente no existe
     except pac_service.PacienteNoEncontrado:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado") from None
     return citas_service.listar_citas_de_paciente(db, paciente_id)
 
 
@@ -69,11 +69,11 @@ def actualizar_paciente(
     try:
         paciente = pac_service.actualizar_paciente(db, paciente_id, cambios)
     except pac_service.PacienteNoEncontrado:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado") from None
     except pac_service.CedulaDuplicada:
         raise HTTPException(
             status.HTTP_409_CONFLICT, "La cédula ya pertenece a otra persona"
-        )
+        ) from None
 
     db.commit()
     return paciente

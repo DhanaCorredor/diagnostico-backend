@@ -73,7 +73,7 @@ def crear_servicio(
             db, nombre=datos.nombre, categoria=datos.categoria
         )
     except catalogo_service.NombreDuplicado:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe un servicio con ese nombre")
+        raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe un servicio con ese nombre") from None
 
     db.commit()
     return servicio
@@ -91,9 +91,9 @@ def actualizar_servicio(
     try:
         servicio = catalogo_service.actualizar_servicio(db, servicio_id, cambios)
     except catalogo_service.ServicioNoEncontrado:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado") from None
     except catalogo_service.NombreDuplicado:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe un servicio con ese nombre")
+        raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe un servicio con ese nombre") from None
 
     db.commit()
     return servicio
@@ -115,7 +115,7 @@ def crear_especialidad(
     except catalogo_service.NombreDuplicado:
         raise HTTPException(
             status.HTTP_409_CONFLICT, "Ya existe una especialidad con ese nombre"
-        )
+        ) from None
 
     db.commit()
     return especialidad
