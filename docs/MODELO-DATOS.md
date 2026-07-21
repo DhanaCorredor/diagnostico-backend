@@ -23,9 +23,9 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 ## Decisiones cerradas (con datos reales del centro)
 
 - **Usuarios:** solo personal interno hace login (`ADMIN`, `RECEPCION`, `MEDICO`). Las citas las agenda **recepción**. Los pacientes son registros, no usuarios con acceso.
-- **Roles:** ADMIN todo · RECEPCION agenda/pacientes/médicos pero **sin** usuarios, configuración ni reportes · MEDICO su agenda (solo lectura en el MVP; las notas clínicas quedan para fase 2).
-- **Paciente:** al agendar se identifica por **nombre + apellido + edad** (lo que pide recepción). La **cédula** la solicitan los especialistas al realizar la consulta/estudio (para el informe): es **opcional** y se añade **después** (única si se indica).
-- **Alta de paciente al agendar (upsert):** al crear una cita el sistema **busca al paciente por nombre + apellido + edad**; si **existe** lo reutiliza, si **no existe** lo **crea** con `rol = PACIENTE`; si **varios coinciden** (nombres repetidos), recepción **elige** de una lista. Nunca se duplica.
+- **Roles:** ADMIN todo · RECEPCION agenda/pacientes y **consulta** médicos, pero **sin** usuarios, configuración ni reportes · MEDICO su agenda (puede cancelar y marcar asistencia; las notas clínicas quedan para fase 2).
+- **Paciente:** al agendar se identifica por **`nombre_completo` + `edad`** (lo que pide recepción). La **cédula** la solicitan los especialistas al realizar la consulta/estudio (para el informe): es **opcional** y se añade **después** (única si se indica).
+- **Alta de paciente al agendar (upsert):** al crear una cita el sistema **busca al paciente por `nombre_completo` + `edad`** (coincidencia exacta de ambos); si **existe** lo reutiliza, si **no existe** lo **crea** con `rol = PACIENTE`; si **varios coinciden** (nombres repetidos), recepción **elige** de una lista. Nunca se duplica.
 - **Duración de la cita:** la **elige recepción** al agendar, de una lista fija ({15, 30, 45, 60, 90} min). `ends_at = starts_at + duracion_min`. El servicio ya no la marca.
 - **Disponibilidad y sobrecupo:** cada médico define sus franjas semanales (`disponibilidad`); el calendario **bloquea** por defecto los días/horas fuera de ellas. Recepción puede **forzar un cupo extra** (sobrecupo, de mutuo acuerdo con el médico) con una confirmación. El **solapamiento exacto** (mismo médico a la misma hora) **sí se bloquea siempre**.
 - **Cero solapamientos (MVP): solo por médico.** Un médico no puede tener dos citas activas que se solapen en el tiempo. *(El anti-solapamiento por recurso/sala queda para fase 2.)*
@@ -117,7 +117,7 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 
 Toda la validación vive en la **capa de servicio** del backend (Python), antes de guardar:
 
-1. **Upsert de paciente** — `buscar_o_crear_paciente(nombre, apellido, edad)`: reutiliza si existe, crea con `rol = PACIENTE` si no; si hay varias coincidencias, recepción elige. La cédula se añade después.
+1. **Upsert de paciente** — `buscar_o_crear_paciente(db, nombre_completo, edad)`: reutiliza si existe, crea con `rol = PACIENTE` si no; si hay varias coincidencias, recepción elige. La cédula se añade después.
 2. **Disponibilidad (con sobrecupo)** — la cita debe caer en la `disponibilidad` del médico; si está fuera, se avisa y recepción puede **forzar un cupo extra** (override). El solapamiento exacto por médico (regla 3) se bloquea siempre.
 3. **Cero solapamientos (por médico)** — una cita nueva/modificada **no puede intersectar** con otra cita **activa** (`SCHEDULED`/`CONFIRMED`) del **mismo médico**. Intersección = `nueva.starts_at < existente.ends_at` **y** `nueva.ends_at > existente.starts_at`.
 4. **Cancelar libera** — al pasar a `CANCELLED` la cita sale de los estados activos y su hueco se reutiliza.

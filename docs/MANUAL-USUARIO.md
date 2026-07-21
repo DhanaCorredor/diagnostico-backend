@@ -20,7 +20,7 @@ Guía de uso del sistema para el personal del centro (alcance **MVP**). La inter
 
 1. Pulsa **Nueva cita** (botón superior).
 2. **Médico, servicio y duración:** elige el médico, el servicio (consulta o estudio) y la **duración** de la cita (15, 30, 45, 60 o 90 min).
-3. **Paciente:** escribe su **cédula** (o nombre + fecha de nacimiento). Si ya existe, el sistema lo **detecta**; si no, lo **crea** automáticamente al guardar.
+3. **Paciente:** escribe su **nombre completo** y su **edad**. Si ya existe, el sistema lo **detecta**; si no, lo **crea** automáticamente al guardar. La **cédula** es opcional y se añade después.
 4. **Fecha y hora:** el calendario muestra solo los **días/horas disponibles** del médico. Si el médico ya está ocupado a esa hora, el sistema **avisa** y no deja guardar; elige otro hueco.
 5. Pulsa **Guardar**. La cita queda como **agendada**.
 
@@ -33,7 +33,7 @@ Guía de uso del sistema para el personal del centro (alcance **MVP**). La inter
 ## 5. Gestionar pacientes (Recepción / Admin)
 
 1. Entra en **Pacientes**.
-2. **Nuevo paciente:** rellena nombre, **cédula** (única; **opcional** si no tiene, p. ej. niños o extranjeros), fecha de nacimiento y teléfono.
+2. **Nuevo paciente:** rellena **nombre completo** y **edad**; la **cédula** (única; no la tienen niños ni extranjeros), la **fecha de nacimiento** y el **teléfono** son **opcionales**.
 3. Desde la **ficha** del paciente puedes ver su historial de citas.
 
 ## 6. Gestionar médicos y servicios (Admin)

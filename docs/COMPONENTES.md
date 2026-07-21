@@ -58,7 +58,7 @@ src/
 | `Calendario` | grid médico × hora; **grisa lo no disponible** y permite **sobrecupo** |
 | `FormularioCita` | **upsert de paciente** + servicio/médico + fecha/hora + aviso de solapamiento |
 | `TablaPacientes` | listado + acción "ver ficha" |
-| `FormularioPaciente` | alta/edición: **nombre + apellido + edad** (cédula opcional) |
+| `FormularioPaciente` | alta/edición: **nombre completo + edad** (cédula opcional) |
 | `TarjetaMedico` | avatar + **especialidades (N:M)** + servicios + disponibilidad |
 | `FichaCabecera` | datos del paciente + alergias/antecedentes |
 | `FichaTabs` | pestañas: Datos · Historial de citas (la pestaña **Historia clínica** llega en **fase 2**) |
@@ -90,7 +90,7 @@ src/
 
 ## 🔑 Comportamientos clave (dónde vive la lógica)
 
-- **`FormularioCita`** → al guardar: **upsert de paciente** por `nombre + apellido + edad` (si hay varios, se elige); el backend valida **disponibilidad** (con opción de **sobrecupo**) y **cero solapamientos por médico**.
+- **`FormularioCita`** → al guardar: **upsert de paciente** por `nombre completo + edad` (si hay varios, se elige); el backend valida **disponibilidad** (con opción de **sobrecupo**) y **cero solapamientos por médico**.
 - **`Calendario`** → pide al backend la disponibilidad del médico y **desactiva** los días/horas fuera de ella; recepción puede **forzar un cupo extra**.
 - **`Badge`** de estado → mapea `EstadoCita` (SCHEDULED · CONFIRMED · CANCELLED · COMPLETED · NO_SHOW) a color.
 - La **cédula** no se pide al agendar (opcional, se añade después).
