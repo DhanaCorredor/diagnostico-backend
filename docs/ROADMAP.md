@@ -110,6 +110,18 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 - `POST /pacientes`, `GET /pacientes/{id}/citas` y `PUT /citas/{id}` (editar/mover) cierran las vistas de **Pacientes** y **Citas**.
 - La gestión de `servicios`/`especialidades` (ADMIN) queda cubierta; los catálogos siguen precargándose por el seed y ahora además se pueden mantener por API.
 
+### Deuda técnica detectada (revisión) → fase 2
+
+> De una revisión de código del backend. No bloquean el MVP; se anotan para no perderlas.
+
+- **Convención de fechas:** la API trabaja en **hora local naive** (el frontend envía hora local; si llega con zona, se descarta). Pendiente: valorar migrar a **UTC *aware***. Ojo: `datetime.now()` en el servidor (Render corre en UTC) no coincide con la hora local del centro → la regla "no en el pasado" puede descuadrar por el desfase; revisar al fijar la zona.
+- **Router de citas:** el mapeo excepción→HTTP se repite entre agendar y editar (se dejó **explícito a propósito** por legibilidad).
+- **Disponibilidad:** `crear_disponibilidad` no valida franjas duplicadas/solapadas por médico y día.
+- **Login enumerable por *timing*:** responde sin llamar a bcrypt cuando el email no existe (oráculo de emails; riesgo bajo en tool interno).
+- **Sin paginación** en los listados de pacientes/personal.
+- **Unicidad sensible a mayúsculas/acentos** en `nombre`/`email`/`cédula`.
+- **CORS de un solo origen:** al desplegar, permitir local + producción a la vez.
+
 ## 4. Modelo de datos
 
 **Definido** → ver [`MODELO-DATOS.md`](MODELO-DATOS.md) (incluye el diagrama entidad-relación).
