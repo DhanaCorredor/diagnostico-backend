@@ -196,9 +196,9 @@ def editar_cita(
 def cancelar_cita(
     cita_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION, Rol.MEDICO)),
+    _: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION)),
 ):
-    """Cancela una cita (libera el cupo). ADMIN, RECEPCIÓN o MEDICO."""
+    """Cancela una cita (libera el cupo). Solo ADMIN o RECEPCIÓN (el médico no cancela)."""
     try:
         cita = citas_service.cancelar_cita(db, cita_id)
     except citas_service.CitaNoEncontrada:
@@ -217,9 +217,9 @@ def marcar_asistencia(
     cita_id: uuid.UUID,
     datos: AsistenciaUpdate,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION, Rol.MEDICO)),
+    _: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION)),
 ):
-    """Marca una cita como **atendida** (COMPLETED) o **no-show** (NO_SHOW)."""
+    """Marca una cita como **atendida** (COMPLETED) o **no-show** (NO_SHOW). Solo ADMIN o RECEPCIÓN."""
     try:
         cita = citas_service.marcar_asistencia(db, cita_id, datos.estado)
     except citas_service.CitaNoEncontrada:
