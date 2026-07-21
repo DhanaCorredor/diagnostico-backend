@@ -1,15 +1,27 @@
-"""Router de catálogos de lectura: servicios (y más adelante especialidades, médicos).
+"""Router de catálogos: lectura (servicios, especialidades, médicos) y gestión (ADMIN).
 
-Alimentan los desplegables del frontend al agendar. Solo requieren estar
-autenticado (cualquier rol del personal), sin restricción por rol.
+Las lecturas alimentan los desplegables del frontend al agendar y solo requieren
+estar autenticado (cualquier rol del personal). La gestión (alta/edición de
+servicios y alta de especialidades) es solo para ADMIN.
 """
 
-from fastapi import APIRouter, Depends
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.auth import usuario_actual
+from app.auth import requiere_rol, usuario_actual
 from app.db import get_db
-from app.schemas import EspecialidadOut, MedicoOut, ServicioOut
+from app.models import Rol
+from app.schemas import (
+    EspecialidadCreate,
+    EspecialidadOut,
+    MedicoOut,
+    ServicioCreate,
+    ServicioDetalle,
+    ServicioOut,
+    ServicioUpdate,
+)
 from app.services import catalogo as catalogo_service
 
 router = APIRouter(tags=["catálogos"])
@@ -40,3 +52,70 @@ def listar_especialidades(
 ):
     """Devuelve el catálogo de especialidades médicas."""
     return catalogo_service.listar_especialidades(db)
+
+
+# --- Gestión de catálogos (solo ADMIN) --------------------------------------
+
+
+@router.post(
+    "/servicios",
+    response_model=ServicioDetalle,
+    status_code=status.HTTP_201_CREATED,
+)
+def crear_servicio(
+    datos: ServicioCreate,
+    db: Session = Depends(get_db),
+    _: object = Depends(requiere_rol(Rol.ADMIN)),
+):
+    """Da de alta un servicio en el catálogo (ADMIN)."""
+    try:
+        servicio = catalogo_service.crear_servicio(
+            db, nombre=datos.nombre, categoria=datos.categoria
+        )
+    except catalogo_service.NombreDuplicado:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe un servicio con ese nombre")
+
+    db.commit()
+    return servicio
+
+
+@router.put("/servicios/{servicio_id}", response_model=ServicioDetalle)
+def actualizar_servicio(
+    servicio_id: uuid.UUID,
+    datos: ServicioUpdate,
+    db: Session = Depends(get_db),
+    _: object = Depends(requiere_rol(Rol.ADMIN)),
+):
+    """Edita un servicio del catálogo (ADMIN). Permite desactivarlo sin borrarlo."""
+    cambios = datos.model_dump(exclude_unset=True)
+    try:
+        servicio = catalogo_service.actualizar_servicio(db, servicio_id, cambios)
+    except catalogo_service.ServicioNoEncontrado:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado")
+    except catalogo_service.NombreDuplicado:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe un servicio con ese nombre")
+
+    db.commit()
+    return servicio
+
+
+@router.post(
+    "/especialidades",
+    response_model=EspecialidadOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def crear_especialidad(
+    datos: EspecialidadCreate,
+    db: Session = Depends(get_db),
+    _: object = Depends(requiere_rol(Rol.ADMIN)),
+):
+    """Da de alta una especialidad médica (ADMIN)."""
+    try:
+        especialidad = catalogo_service.crear_especialidad(db, nombre=datos.nombre)
+    except catalogo_service.NombreDuplicado:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Ya existe una especialidad con ese nombre"
+        )
+
+    db.commit()
+    return especialidad

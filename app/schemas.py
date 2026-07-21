@@ -49,6 +49,32 @@ class ServicioOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ServicioDetalle(BaseModel):
+    """Un servicio con su estado (para la gestión del ADMIN: incluye `activo`)."""
+
+    id: uuid.UUID
+    nombre: str
+    categoria: ServicioCategoria
+    activo: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ServicioCreate(BaseModel):
+    """Cuerpo del POST /servicios: alta de un servicio en el catálogo."""
+
+    nombre: str = Field(min_length=1)
+    categoria: ServicioCategoria
+
+
+class ServicioUpdate(BaseModel):
+    """Cuerpo del PUT /servicios/{id}. Solo se cambian los campos enviados."""
+
+    nombre: str | None = Field(default=None, min_length=1)
+    categoria: ServicioCategoria | None = None
+    activo: bool | None = None  # permite desactivar el servicio sin borrarlo
+
+
 class EspecialidadOut(BaseModel):
     """Una especialidad médica."""
 
@@ -56,6 +82,12 @@ class EspecialidadOut(BaseModel):
     nombre: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class EspecialidadCreate(BaseModel):
+    """Cuerpo del POST /especialidades: alta de una especialidad."""
+
+    nombre: str = Field(min_length=1)
 
 
 class MedicoOut(BaseModel):

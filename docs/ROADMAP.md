@@ -101,13 +101,14 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 
 | Endpoint | Acción | Rol | Origen | Estado |
 |----------|--------|-----|--------|:------:|
-| `POST /servicios` · `PUT /servicios/{id}` | Crear / editar servicio | ADMIN | RF-02 · MANUAL §6.4 | ⬜ |
-| `POST /especialidades` | Crear especialidad | ADMIN | MANUAL §6 | ⬜ |
+| `POST /servicios` · `PUT /servicios/{id}` | Crear / editar servicio | ADMIN | RF-02 · MANUAL §6.4 | ✅ |
+| `POST /especialidades` | Crear especialidad | ADMIN | MANUAL §6 | ✅ |
 
 ### Pendientes → plan de cierre del backend
 
-- **A construir antes del frontend (MVP): ✅ hecho.** `POST /pacientes`, `GET /pacientes/{id}/citas` y `PUT /citas/{id}` (editar/mover) ya están implementados. Las vistas de **Pacientes** y de **Citas** ya tienen su contrato completo.
-- **A decidir (MVP simple o fase 2):** gestión de `servicios`/`especialidades`. Hoy vienen **precargadas por el seed** y se **leen** sin problema; su gestión por UI es prescindible para el MVP.
+- **Contrato de la API: ✅ 100% cerrado.** Todos los endpoints del MANUAL/RF están implementados y probados. El backend queda listo para el frontend (Fase 4).
+- `POST /pacientes`, `GET /pacientes/{id}/citas` y `PUT /citas/{id}` (editar/mover) cierran las vistas de **Pacientes** y **Citas**.
+- La gestión de `servicios`/`especialidades` (ADMIN) queda cubierta; los catálogos siguen precargándose por el seed y ahora además se pueden mantener por API.
 
 ## 4. Modelo de datos
 
@@ -158,11 +159,13 @@ gantt
 ## 6. Tablero de tareas (Kanban orientativo)
 
 **Por hacer**
-- **Completar el contrato de la API** (ver §3.1): `POST /pacientes`, historial de citas del paciente y `PUT /citas/{id}` (editar/mover) — MVP; gestión de servicios/especialidades — a decidir
 - Calendario, vistas Pacientes/Médicos y formulario de cita (Fase 4, frontend en repo aparte)
 
 **En curso**
 - **Fase 4 — UI:** login, calendario/agenda y formulario de cita en el frontend (repo aparte).
+
+**Hecho (reciente)**
+- **Contrato de la API completo** (ver §3.1): `POST /pacientes`, `GET /pacientes/{id}/citas`, `PUT /citas/{id}` (editar/mover) y gestión de `servicios`/`especialidades` (ADMIN).
 
 **Hecho**
 - Planificación y decisiones de arquitectura
