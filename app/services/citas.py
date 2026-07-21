@@ -53,6 +53,10 @@ class CitaNoActiva(Exception):
     """La cita no está activa (SCHEDULED/CONFIRMED): no se puede marcar su asistencia."""
 
 
+class CitaNoEditable(Exception):
+    """La cita no está activa (ya cancelada o cerrada): no se puede editar ni mover."""
+
+
 def esta_alineado(starts_at: datetime) -> bool:
     """True si el inicio cae justo en la rejilla de GRID_MINUTOS y sin segundos sueltos.
 
@@ -103,12 +107,14 @@ def hay_solapamiento(
     medico_id: uuid.UUID,
     starts_at: datetime,
     ends_at: datetime,
+    excluir_cita_id: uuid.UUID | None = None,
 ) -> bool:
     """Indica si el médico ya tiene una cita ACTIVA que se cruza con este horario.
 
     Dos citas se cruzan si:  nueva.inicio < existente.fin  Y  nueva.fin > existente.inicio.
     - Solo cuentan las activas (SCHEDULED / CONFIRMED); una CANCELLED libera el hueco.
     - Citas pegadas (una acaba justo cuando empieza la otra) NO se solapan.
+    - excluir_cita_id: al mover una cita, se excluye ella misma (si no, chocaría consigo misma).
     """
     q = (
         db.query(Cita)
@@ -117,6 +123,8 @@ def hay_solapamiento(
         .filter(Cita.starts_at < ends_at)  # la existente empieza antes de que acabe la nueva
         .filter(Cita.ends_at > starts_at)  # y termina después de que empiece la nueva
     )
+    if excluir_cita_id is not None:
+        q = q.filter(Cita.id != excluir_cita_id)
     return db.query(q.exists()).scalar()
 
 
@@ -268,5 +276,78 @@ def marcar_asistencia(db: Session, cita_id: uuid.UUID, estado: EstadoCita) -> Ci
     """
     cita = _obtener_cita_activa(db, cita_id, CitaNoActiva)
     cita.estado = estado
+    db.flush()
+    return cita
+
+
+def editar_cita(
+    db: Session,
+    cita_id: uuid.UUID,
+    *,
+    medico_id: uuid.UUID | None = None,
+    servicio_id: uuid.UUID | None = None,
+    starts_at: datetime | None = None,
+    duracion_min: int | None = None,
+    motivo: str | None = None,
+    permitir_sobrecupo: bool = False,
+    ahora: datetime | None = None,
+) -> Cita:
+    """Edita o mueve una cita activa, revalidando las mismas reglas que al crearla.
+
+    Actualización parcial: cada campo en None se deja como está. No cambia el paciente:
+    para eso está `PUT /pacientes/{id}`. (Con esta semántica no se puede "vaciar" el
+    motivo; es una limitación conocida y asumible para el MVP.)
+
+    Reglas revalidadas sobre los valores efectivos: servicio y médico válidos, rejilla
+    de minutos, disponibilidad (salvo sobrecupo) y anti-solapamiento **excluyendo la
+    propia cita**. La regla de "no en el pasado" solo se aplica si se mueve la hora.
+    Hace flush (no commit): el commit lo hace el endpoint.
+    """
+    cita = _obtener_cita_activa(db, cita_id, CitaNoEditable)
+
+    # Valores efectivos: lo nuevo si vino, si no lo que ya tenía la cita.
+    nuevo_medico_id = medico_id if medico_id is not None else cita.medico_id
+    nuevo_servicio_id = servicio_id if servicio_id is not None else cita.servicio_id
+    nuevo_starts_at = starts_at if starts_at is not None else cita.starts_at
+    # La duración no se guarda como campo: se deduce del tramo actual (fin - inicio).
+    duracion_actual = int((cita.ends_at - cita.starts_at).total_seconds() // 60)
+    nueva_duracion = duracion_min if duracion_min is not None else duracion_actual
+
+    servicio = db.get(Servicio, nuevo_servicio_id)
+    if servicio is None:
+        raise ServicioNoEncontrado()
+
+    medico = db.get(Usuario, nuevo_medico_id)
+    if medico is None or medico.rol != Rol.MEDICO or not medico.activo:
+        raise MedicoNoEncontrado()
+
+    if not esta_alineado(nuevo_starts_at):
+        raise HorarioNoAlineado()
+
+    # Solo se comprueba el pasado si de verdad se está moviendo la hora.
+    if starts_at is not None:
+        if ahora is None:
+            ahora = datetime.now()
+        if nuevo_starts_at < ahora:
+            raise CitaEnElPasado()
+
+    nuevo_ends_at = calcular_ends_at(nuevo_starts_at, nueva_duracion)
+
+    if not permitir_sobrecupo and not dentro_de_disponibilidad(
+        db, nuevo_medico_id, nuevo_starts_at, nuevo_ends_at
+    ):
+        raise FueraDeDisponibilidad()
+
+    if hay_solapamiento(
+        db, nuevo_medico_id, nuevo_starts_at, nuevo_ends_at, excluir_cita_id=cita.id
+    ):
+        raise Solapamiento()
+
+    cita.medico_id = nuevo_medico_id
+    cita.servicio_id = nuevo_servicio_id
+    cita.starts_at = nuevo_starts_at
+    cita.ends_at = nuevo_ends_at
+    if motivo is not None:
+        cita.motivo = motivo
     db.flush()
     return cita

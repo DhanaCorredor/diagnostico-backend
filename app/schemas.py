@@ -171,6 +171,18 @@ class CitaCreate(BaseModel):
     permitir_sobrecupo: bool = False  # recepción puede forzar un cupo extra
 
 
+class CitaUpdate(BaseModel):
+    """Cuerpo del PUT /citas/{id}: editar o mover una cita. Todos los campos son
+    opcionales; solo se aplican los enviados (None = sin cambio). No cambia el paciente."""
+
+    medico_id: uuid.UUID | None = None
+    servicio_id: uuid.UUID | None = None
+    starts_at: datetime | None = None
+    duracion_min: Literal[15, 30, 45, 60, 90] | None = None
+    motivo: str | None = None
+    permitir_sobrecupo: bool = False  # recepción puede forzar un cupo extra al mover
+
+
 class CitaOut(BaseModel):
     """Datos de la cita creada."""
 

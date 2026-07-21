@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.auth import requiere_rol
 from app.db import get_db
 from app.models import Rol, Usuario
-from app.schemas import AsistenciaUpdate, CitaCreate, CitaOut
+from app.schemas import AsistenciaUpdate, CitaCreate, CitaOut, CitaUpdate
 from app.services import citas as citas_service
 from app.services.pacientes import PacientesAmbiguos
 
@@ -116,6 +116,65 @@ def listar_citas(
         medico_id=medico_id,
         incluir_canceladas=incluir_canceladas,
     )
+
+
+@router.put("/{cita_id}", response_model=CitaOut)
+def editar_cita(
+    cita_id: uuid.UUID,
+    datos: CitaUpdate,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION)),
+):
+    """Edita o mueve una cita activa, revalidando todas las reglas de negocio.
+
+    Actualización parcial: solo se cambian los campos enviados. Cada regla que falla
+    se traduce al mismo código HTTP que al agendar. ADMIN o RECEPCIÓN.
+    """
+    try:
+        cita = citas_service.editar_cita(
+            db,
+            cita_id,
+            medico_id=datos.medico_id,
+            servicio_id=datos.servicio_id,
+            starts_at=datos.starts_at,
+            duracion_min=datos.duracion_min,
+            motivo=datos.motivo,
+            permitir_sobrecupo=datos.permitir_sobrecupo,
+        )
+    except citas_service.CitaNoEncontrada:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada")
+    except citas_service.CitaNoEditable:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "La cita no se puede editar (ya está cancelada o cerrada)",
+        )
+    except citas_service.ServicioNoEncontrado:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado")
+    except citas_service.MedicoNoEncontrado:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Médico no encontrado")
+    except citas_service.HorarioNoAlineado:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "La cita debe empezar en :00, :15, :30 o :45",
+        )
+    except citas_service.CitaEnElPasado:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "No se puede mover una cita al pasado",
+        )
+    except citas_service.FueraDeDisponibilidad:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "La cita cae fuera de la disponibilidad del médico",
+        )
+    except citas_service.Solapamiento:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "El médico ya tiene una cita en ese horario",
+        )
+
+    db.commit()
+    return cita
 
 
 @router.post("/{cita_id}/cancelar", response_model=CitaOut)

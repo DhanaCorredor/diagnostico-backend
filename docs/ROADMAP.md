@@ -95,7 +95,7 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 | `GET /citas` | Agenda por día / rango | ADMIN·RECEP·MED | MANUAL §4,§8 | ✅ |
 | `POST /citas/{id}/cancelar` | Cancelar (libera cupo) | ADMIN·RECEP·MED | RF-11 · MANUAL §4 | ✅ |
 | `POST /citas/{id}/asistencia` | Atendida / no-show | ADMIN·RECEP·MED | MANUAL §8 | ✅ |
-| `PUT /citas/{id}` | **Editar / mover (revalida reglas)** | ADMIN·RECEP | RF-07 · MANUAL §4 | ⬜ |
+| `PUT /citas/{id}` | **Editar / mover (revalida reglas)** | ADMIN·RECEP | RF-07 · MANUAL §4 | ✅ |
 
 **Servicios y especialidades (gestión) — ADMIN**
 
@@ -106,7 +106,7 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 
 ### Pendientes → plan de cierre del backend
 
-- **A construir antes del frontend (MVP):** `POST /pacientes`, `GET /pacientes/{id}/citas`, `PUT /citas/{id}` (editar/mover). Sin ellos las vistas de **Pacientes** y de **Citas** quedan incompletas.
+- **A construir antes del frontend (MVP): ✅ hecho.** `POST /pacientes`, `GET /pacientes/{id}/citas` y `PUT /citas/{id}` (editar/mover) ya están implementados. Las vistas de **Pacientes** y de **Citas** ya tienen su contrato completo.
 - **A decidir (MVP simple o fase 2):** gestión de `servicios`/`especialidades`. Hoy vienen **precargadas por el seed** y se **leen** sin problema; su gestión por UI es prescindible para el MVP.
 
 ## 4. Modelo de datos
