@@ -43,31 +43,46 @@ def agendar_cita(
             permitir_sobrecupo=datos.permitir_sobrecupo,
         )
     except citas_service.ServicioNoEncontrado:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado") from None
     except citas_service.MedicoNoEncontrado:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Médico no encontrado")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Médico no encontrado") from None
     except citas_service.HorarioNoAlineado:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "La cita debe empezar en :00, :15, :30 o :45",
-        )
+        ) from None
     except citas_service.CitaEnElPasado:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "No se puede agendar una cita en el pasado",
-        )
+        ) from None
     except PacientesAmbiguos as e:
-        raise HTTPException(status.HTTP_409_CONFLICT, str(e))
+        # Varios pacientes coinciden por nombre + edad: se devuelven los candidatos
+        # para que recepción elija cuál es (y reintente indicando su id en fase 2).
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail={
+                "mensaje": str(e),
+                "candidatos": [
+                    {
+                        "id": str(c.id),
+                        "nombre_completo": c.nombre_completo,
+                        "edad": c.edad,
+                    }
+                    for c in e.candidatos
+                ],
+            },
+        ) from None
     except citas_service.FueraDeDisponibilidad:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "La cita cae fuera de la disponibilidad del médico",
-        )
+        ) from None
     except citas_service.Solapamiento:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "El médico ya tiene una cita en ese horario",
-        )
+        ) from None
 
     db.commit()  # todo válido: se confirma la transacción (cita + posible paciente nuevo)
     return cita
@@ -142,36 +157,36 @@ def editar_cita(
             permitir_sobrecupo=datos.permitir_sobrecupo,
         )
     except citas_service.CitaNoEncontrada:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada") from None
     except citas_service.CitaNoEditable:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "La cita no se puede editar (ya está cancelada o cerrada)",
-        )
+        ) from None
     except citas_service.ServicioNoEncontrado:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado") from None
     except citas_service.MedicoNoEncontrado:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Médico no encontrado")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Médico no encontrado") from None
     except citas_service.HorarioNoAlineado:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "La cita debe empezar en :00, :15, :30 o :45",
-        )
+        ) from None
     except citas_service.CitaEnElPasado:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "No se puede mover una cita al pasado",
-        )
+        ) from None
     except citas_service.FueraDeDisponibilidad:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "La cita cae fuera de la disponibilidad del médico",
-        )
+        ) from None
     except citas_service.Solapamiento:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "El médico ya tiene una cita en ese horario",
-        )
+        ) from None
 
     db.commit()
     return cita
@@ -187,12 +202,12 @@ def cancelar_cita(
     try:
         cita = citas_service.cancelar_cita(db, cita_id)
     except citas_service.CitaNoEncontrada:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada") from None
     except citas_service.CitaNoCancelable:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "La cita no se puede cancelar (ya está cancelada o completada)",
-        )
+        ) from None
     db.commit()
     return cita
 
@@ -208,11 +223,11 @@ def marcar_asistencia(
     try:
         cita = citas_service.marcar_asistencia(db, cita_id, datos.estado)
     except citas_service.CitaNoEncontrada:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada") from None
     except citas_service.CitaNoActiva:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "Solo se puede marcar asistencia de una cita activa",
-        )
+        ) from None
     db.commit()
     return cita

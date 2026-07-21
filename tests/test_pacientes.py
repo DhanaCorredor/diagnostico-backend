@@ -37,8 +37,10 @@ def test_varios_coinciden_lanza_ambiguo(db):
     db.add(Usuario(nombre_completo=nombre, edad=50, rol=Rol.PACIENTE))
     db.add(Usuario(nombre_completo=nombre, edad=50, rol=Rol.PACIENTE))
     db.flush()
-    with pytest.raises(PacientesAmbiguos):
+    with pytest.raises(PacientesAmbiguos) as exc:
         buscar_o_crear_paciente(db, nombre, 50)
+    # la excepción lleva los candidatos para que el endpoint los muestre (409)
+    assert len(exc.value.candidatos) == 2
 
 
 # --- Gestión de pacientes (listar / ver / editar) ---------------------------
