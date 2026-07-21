@@ -128,6 +128,52 @@ def hay_solapamiento(
     return db.query(q.exists()).scalar()
 
 
+def _validar_servicio_medico_y_rejilla(
+    db: Session,
+    *,
+    servicio_id: uuid.UUID,
+    medico_id: uuid.UUID,
+    starts_at: datetime,
+) -> None:
+    """Valida las reglas comunes de identidad y encaje horario (crear y editar cita).
+
+    - El servicio debe existir.
+    - El médico debe existir, tener rol MEDICO y estar activo (uno de baja no es agendable).
+    - El inicio debe caer en la rejilla de minutos (:00, :15, :30, :45).
+    Lanza la excepción de dominio correspondiente si algo falla.
+    """
+    if db.get(Servicio, servicio_id) is None:
+        raise ServicioNoEncontrado()
+    medico = db.get(Usuario, medico_id)
+    if medico is None or medico.rol != Rol.MEDICO or not medico.activo:
+        raise MedicoNoEncontrado()
+    if not esta_alineado(starts_at):
+        raise HorarioNoAlineado()
+
+
+def _validar_hueco(
+    db: Session,
+    *,
+    medico_id: uuid.UUID,
+    starts_at: datetime,
+    ends_at: datetime,
+    permitir_sobrecupo: bool,
+    excluir_cita_id: uuid.UUID | None = None,
+) -> None:
+    """Valida que el hueco esté libre (crear y editar cita).
+
+    - Disponibilidad: la cita debe caer dentro de una franja del médico (salvo sobrecupo).
+    - Anti-solapamiento: el médico no puede tener otra cita activa que se cruce
+      (al editar se excluye la propia cita con `excluir_cita_id`).
+    """
+    if not permitir_sobrecupo and not dentro_de_disponibilidad(
+        db, medico_id, starts_at, ends_at
+    ):
+        raise FueraDeDisponibilidad()
+    if hay_solapamiento(db, medico_id, starts_at, ends_at, excluir_cita_id=excluir_cita_id):
+        raise Solapamiento()
+
+
 def crear_cita(
     db: Session,
     *,
@@ -150,20 +196,11 @@ def crear_cita(
 
     `ahora` se inyecta (por defecto la hora actual) para poder probar la regla del pasado.
     """
-    servicio = db.get(Servicio, servicio_id)
-    if servicio is None:
-        raise ServicioNoEncontrado()
-
-    # R0.c: el médico debe existir, tener rol MEDICO y estar activo (un médico dado
-    # de baja no es agendable, aunque conserve su rol).
-    medico = db.get(Usuario, medico_id)
-    if medico is None or medico.rol != Rol.MEDICO or not medico.activo:
-        raise MedicoNoEncontrado()
-
-    # R0: el inicio debe caer en la rejilla de minutos (:00, :15, :30, :45).
-    # Se valida antes de tocar al paciente para no crear datos por una hora inválida.
-    if not esta_alineado(starts_at):
-        raise HorarioNoAlineado()
+    # R0: servicio, médico y rejilla de minutos. Se valida antes de tocar al
+    # paciente para no crear datos por una cita inválida.
+    _validar_servicio_medico_y_rejilla(
+        db, servicio_id=servicio_id, medico_id=medico_id, starts_at=starts_at
+    )
 
     # R0.b: no se puede agendar en el pasado (comparamos con 'ahora', inyectable).
     if ahora is None:
@@ -177,15 +214,14 @@ def crear_cita(
     # R2: la duración la elige recepción (viene validada del schema)
     ends_at = calcular_ends_at(starts_at, duracion_min)
 
-    # R3: disponibilidad (salvo que recepción fuerce un sobrecupo)
-    if not permitir_sobrecupo and not dentro_de_disponibilidad(
-        db, medico_id, starts_at, ends_at
-    ):
-        raise FueraDeDisponibilidad()
-
-    # R4: anti-solapamiento por médico (siempre se bloquea)
-    if hay_solapamiento(db, medico_id, starts_at, ends_at):
-        raise Solapamiento()
+    # R3 y R4: disponibilidad (salvo sobrecupo) y anti-solapamiento por médico.
+    _validar_hueco(
+        db,
+        medico_id=medico_id,
+        starts_at=starts_at,
+        ends_at=ends_at,
+        permitir_sobrecupo=permitir_sobrecupo,
+    )
 
     cita = Cita(
         paciente_id=paciente.id,
@@ -313,16 +349,10 @@ def editar_cita(
     duracion_actual = int((cita.ends_at - cita.starts_at).total_seconds() // 60)
     nueva_duracion = duracion_min if duracion_min is not None else duracion_actual
 
-    servicio = db.get(Servicio, nuevo_servicio_id)
-    if servicio is None:
-        raise ServicioNoEncontrado()
-
-    medico = db.get(Usuario, nuevo_medico_id)
-    if medico is None or medico.rol != Rol.MEDICO or not medico.activo:
-        raise MedicoNoEncontrado()
-
-    if not esta_alineado(nuevo_starts_at):
-        raise HorarioNoAlineado()
+    # R0: servicio, médico y rejilla (sobre los valores efectivos).
+    _validar_servicio_medico_y_rejilla(
+        db, servicio_id=nuevo_servicio_id, medico_id=nuevo_medico_id, starts_at=nuevo_starts_at
+    )
 
     # Solo se comprueba el pasado si de verdad se está moviendo la hora.
     if starts_at is not None:
@@ -333,15 +363,15 @@ def editar_cita(
 
     nuevo_ends_at = calcular_ends_at(nuevo_starts_at, nueva_duracion)
 
-    if not permitir_sobrecupo and not dentro_de_disponibilidad(
-        db, nuevo_medico_id, nuevo_starts_at, nuevo_ends_at
-    ):
-        raise FueraDeDisponibilidad()
-
-    if hay_solapamiento(
-        db, nuevo_medico_id, nuevo_starts_at, nuevo_ends_at, excluir_cita_id=cita.id
-    ):
-        raise Solapamiento()
+    # R3 y R4: disponibilidad y anti-solapamiento, excluyendo la propia cita.
+    _validar_hueco(
+        db,
+        medico_id=nuevo_medico_id,
+        starts_at=nuevo_starts_at,
+        ends_at=nuevo_ends_at,
+        permitir_sobrecupo=permitir_sobrecupo,
+        excluir_cita_id=cita.id,
+    )
 
     cita.medico_id = nuevo_medico_id
     cita.servicio_id = nuevo_servicio_id
