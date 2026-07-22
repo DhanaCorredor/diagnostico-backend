@@ -5,7 +5,7 @@ para poder probarlas de forma aislada.
 """
 
 import uuid
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
@@ -15,6 +15,17 @@ from app.services.pacientes import buscar_o_crear_paciente
 # La cita solo puede empezar en un minuto "de rejilla" (:00, :15, :30, :45).
 # Cambiar este valor mueve la rejilla (p. ej. 10 o 20 min) sin tocar la lógica.
 GRID_MINUTOS = 15
+
+# El centro está en Venezuela (VET), UTC-4 todo el año (sin horario de verano). El
+# servidor puede correr en otra zona (Render usa UTC), así que "ahora" se calcula en
+# la hora local del centro: si no, la regla "no en el pasado" descuadraría por el
+# desfase. Se devuelve naive, igual que se guardan las citas.
+ZONA_CENTRO = timezone(timedelta(hours=-4))
+
+
+def ahora_centro() -> datetime:
+    """Hora actual en la zona del centro (UTC-4), naive (sin tzinfo)."""
+    return datetime.now(ZONA_CENTRO).replace(tzinfo=None)
 
 
 class ServicioNoEncontrado(Exception):
@@ -205,7 +216,7 @@ def crear_cita(
 
     # R0.b: no se puede agendar en el pasado (comparamos con 'ahora', inyectable).
     if ahora is None:
-        ahora = datetime.now()
+        ahora = ahora_centro()
     if starts_at < ahora:
         raise CitaEnElPasado()
 
@@ -359,7 +370,7 @@ def editar_cita(
     # Solo se comprueba el pasado si de verdad se está moviendo la hora.
     if starts_at is not None:
         if ahora is None:
-            ahora = datetime.now()
+            ahora = ahora_centro()
         if nuevo_starts_at < ahora:
             raise CitaEnElPasado()
 

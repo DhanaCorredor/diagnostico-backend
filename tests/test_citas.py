@@ -1,7 +1,7 @@
 """Tests de las reglas de citas (R2, R3, R4) y del orquestador crear_cita."""
 
 import uuid
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 
 import pytest
 from pydantic import ValidationError
@@ -69,6 +69,16 @@ def test_citaupdate_sin_starts_at_no_falla():
     # el campo es opcional: si no viene, el validador no debe romper
     datos = CitaUpdate(motivo="control")
     assert datos.starts_at is None
+
+
+def test_ahora_centro_es_naive_y_utc_menos_4():
+    # el "ahora" de la regla del pasado se calcula en hora local del centro (UTC-4),
+    # no en la del servidor (Render corre en UTC)
+    got = C.ahora_centro()
+    assert got.tzinfo is None
+    utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    horas_detras = (utc - got).total_seconds() / 3600
+    assert 3.5 < horas_detras < 4.5
 
 
 # --- R2: duración ------------------------------------------------------------
