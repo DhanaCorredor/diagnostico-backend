@@ -76,6 +76,11 @@ SERVICIOS = [
     ("MAPA", ServicioCategoria.ESTUDIO_CARDIACO),
     ("Espirometría", ServicioCategoria.OTRO),
     ("Endoscopia nasal", ServicioCategoria.OTRO),
+    ("Plan Mujer (chequeo ginecológico completo)", ServicioCategoria.PROMOCION),
+    ("Cardiología (Holter + MAPA)", ServicioCategoria.PROMOCION),
+    ("2 ecografías convencionales", ServicioCategoria.PROMOCION),
+    ("Eco Doppler completo", ServicioCategoria.PROMOCION),
+    ("Neumonología + espirometría", ServicioCategoria.PROMOCION),
 ]
 
 LUN, MAR, MIE, JUE, VIE, SAB = 1, 2, 3, 4, 5, 6

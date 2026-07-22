@@ -49,6 +49,7 @@ class ServicioCategoria(str, enum.Enum):
     ECOGRAFIA = "ECOGRAFIA"
     DOPPLER = "DOPPLER"
     ESTUDIO_CARDIACO = "ESTUDIO_CARDIACO"
+    PROMOCION = "PROMOCION"
     OTRO = "OTRO"
 
 
