@@ -7,7 +7,7 @@ Plan de proyecto, decisiones, fases, cronograma y riesgos del **MVP** (entrega/p
 - **Usuarios:** solo **personal interno** hace login (ADMIN, RECEPCION, MEDICO). Las citas las agenda **recepción**. Los pacientes son registros, no acceden.
 - **Tabla `usuarios` unificada:** personal, médicos y pacientes comparten el mismo diseño de tabla (campo `rol`), para **ahorrar código**. En la UI, **dos vistas** (Pacientes / Médicos) que filtran por rol.
 - **Roles:** ADMIN todo · **RECEPCION sin acceso a usuarios, configuración ni reportes** · MEDICO su agenda **solo lectura** (solo consulta; la asistencia y la cancelación las hacen recepción/admin; notas clínicas → fase 2).
-- **Volumen:** ~60 citas/día · 18 médicos · ~11-13 especialidades.
+- **Volumen:** ~60 citas/día · 18 médicos · 12 especialidades.
 - **Duración de cita:** la **elige recepción** al agendar, de una lista fija ({15, 30, 45, 60, 90} min).
 - **Disponibilidad:** el calendario **bloquea** los días/horas fuera de la disponibilidad del médico.
 - **Upsert de paciente al agendar:** si el paciente no existe se crea, si existe se detecta (por `nombre_completo + edad`).
@@ -26,7 +26,7 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 |------|-----------|
 | Backend | **Python + FastAPI** |
 | ORM | **SQLAlchemy** (migraciones con **Alembic**) |
-| Base de datos | **PostgreSQL** (Neon en la nube o local en dev) |
+| Base de datos | **PostgreSQL** (Render gestionado en prod · Neon o local en dev) |
 | Auth | **JWT** (contraseñas con bcrypt) |
 | Frontend | **React (Vite, JavaScript)** + React Router |
 | Estilos | Tailwind CSS |
@@ -187,10 +187,10 @@ gantt
 - Prototipo visual (mockup)
 - Documentación actualizada al stack React + Python
 - **Fase 0** — Andamiaje backend FastAPI + conexión a PostgreSQL (frontend React/Vite en repo aparte)
-- **Fase 1** — Modelos SQLAlchemy (7 tablas) + Alembic + migración inicial + seed de catálogos (12 especialidades, 16 servicios)
+- **Fase 1** — Modelos SQLAlchemy (7 tablas) + Alembic + migración inicial + seed de catálogos (12 especialidades, 19 servicios)
 - **Fase 2** — Auth JWT (bcrypt), dependencia `requiere_rol` y guardas por rol (ADMIN/RECEPCION/MEDICO)
-- **Fase 3 — Citas (núcleo)** — Servicio `crear_cita`: upsert de paciente + disponibilidad + anti-solapamiento por médico + **rejilla de inicio (:00/:15/:30/:45)**; endpoints de citas (crear, listar por fecha/rango, cancelar, marcar asistencia), catálogos de lectura (`servicios`, `medicos`, `especialidades`), disponibilidad, pacientes (listar/ficha/editar) y CRUD de usuarios/médicos; **79 tests en verde** (tras completar el contrato y la revisión de código).
-- **Fase 5 — Despliegue** — Backend en producción en **Render** (release **v0.3.0**, auto-deploy en push a `main`, ejecuta `alembic upgrade head` y el seed)
+- **Fase 3 — Citas (núcleo)** — Servicio `crear_cita`: upsert de paciente + disponibilidad + anti-solapamiento por médico + **rejilla de inicio (:00/:15/:30/:45)**; endpoints de citas (crear, listar por fecha/rango, cancelar, marcar asistencia), catálogos de lectura (`servicios`, `medicos`, `especialidades`), disponibilidad, pacientes (listar/ficha/editar) y CRUD de usuarios/médicos; **94 tests en verde** (tras completar el contrato y la revisión de código).
+- **Fase 5 — Despliegue** — Backend en producción en **Render** (release **v0.4.0**, auto-deploy en push a `main`, ejecuta `alembic upgrade head` y el seed)
 
 ## 7. Riesgos y mitigación
 

@@ -248,6 +248,23 @@ def test_crear_cita_servicio_invalido(db, medico, admin):
         )
 
 
+def test_crear_cita_servicio_inactivo(db, medico, servicio, admin):
+    # un servicio desactivado (activo=False) no debe poder agendarse
+    servicio.activo = False
+    db.flush()
+    with pytest.raises(C.ServicioNoEncontrado):
+        C.crear_cita(
+            db,
+            nombre_completo="X",
+            edad=1,
+            medico_id=medico.id,
+            servicio_id=servicio.id,
+            starts_at=LUNES_10,
+            duracion_min=45,
+            creado_por_id=admin.id,
+        )
+
+
 def test_crear_cita_en_el_pasado(db, medico, servicio, admin):
     _franja(db, medico)
     # 'ahora' posterior al inicio -> la cita queda en el pasado
