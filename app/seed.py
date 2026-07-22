@@ -71,7 +71,7 @@ SERVICIOS = [
 ]
 
 # --- Cuadro médico (briefing) -----------------------------------------------
-# Los 18 médicos reales del centro. NO hacen login (sin email/contraseña):
+# Los 17 médicos reales del centro. NO hacen login (sin email/contraseña):
 # recepción agenda por ellos; el médico de demo con acceso es el del STAFF.
 #
 # Horarios: el briefing da la hora de inicio y "am/pm", pero no la de fin, así

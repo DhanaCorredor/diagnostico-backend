@@ -6,7 +6,7 @@ Qué hace el sistema, para quién y bajo qué reglas (alcance **MVP**, deadline 
 
 Dar al centro **Diagnóstico** una herramienta para **gestionar citas médicas** de forma organizada: login por roles, evitar solapamientos, centralizar los pacientes (hoy dispersos en los contactos del teléfono) y ver la agenda de cada médico respetando su disponibilidad.
 
-**Datos del centro:** una sola sede · ~60 citas/día · 18 médicos · 12 especialidades · consultas + ecografías + estudios cardíacos.
+**Datos del centro:** una sola sede · ~60 citas/día · 17 médicos · 12 especialidades · consultas + ecografías + estudios cardíacos.
 
 ## 2. Alcance
 
