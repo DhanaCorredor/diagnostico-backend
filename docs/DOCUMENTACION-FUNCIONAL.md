@@ -103,3 +103,59 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 ## 8. Flujo principal: crear una cita
 
 El recorrido completo está en el **flowchart** de [`FLUJO-USUARIO.md`](FLUJO-USUARIO.md). En resumen: **login** → elegir médico y servicio → el calendario muestra los días/horas **disponibles** (recepción puede forzar un **sobrecupo**) → introducir al paciente por **nombre completo + edad** (**upsert**) → el sistema calcula el fin con la **duración elegida** y **valida el solapamiento por médico** → guardar la cita.
+
+## 9. Casos de uso
+
+Actores del sistema y las acciones que puede realizar cada uno (alcance **MVP**).
+
+```mermaid
+flowchart LR
+    admin(["👤 Administrador"])
+    recep(["👤 Recepción"])
+    medico(["👤 Médico"])
+
+    subgraph SIS["ERP Diagnóstico (MVP)"]
+        login(["Iniciar sesión"])
+        uUsuarios(["Gestionar usuarios y accesos"])
+        uMedicos(["Gestionar médicos y especialidades"])
+        uServicios(["Gestionar servicios"])
+        uDisp(["Definir disponibilidad de médicos"])
+        uPacientes(["Gestionar pacientes"])
+        uCitas(["Crear / editar / cancelar citas"])
+        uAgenda(["Consultar agenda y calendario"])
+        uMiAgenda(["Ver mi agenda"])
+        uAsistencia(["Marcar asistencia / no-show"])
+    end
+
+    admin --- login
+    recep --- login
+    medico --- login
+
+    admin --- uUsuarios
+    admin --- uMedicos
+    admin --- uServicios
+    admin --- uDisp
+
+    recep --- uPacientes
+    recep --- uCitas
+    recep --- uAgenda
+    recep --- uAsistencia
+
+    medico --- uMiAgenda
+```
+
+| Caso de uso | Actor | Descripción |
+|-------------|-------|-------------|
+| CU-01 Iniciar sesión | Todos | Autenticarse con email y contraseña (JWT); el sistema aplica permisos según el rol. |
+| CU-02 Gestionar usuarios | Admin | Crear, editar y desactivar cuentas del personal y asignar roles. |
+| CU-03 Gestionar médicos y especialidades | Admin | Alta de médicos, asignación de una o varias especialidades (N:M). |
+| CU-04 Definir disponibilidad | Admin | Configurar las franjas horarias en que atiende cada médico. |
+| CU-05 Gestionar servicios | Admin | Definir los servicios del catálogo (consultas/estudios). |
+| CU-06 Gestionar pacientes | Recepción | Registrar y editar pacientes (cédula única si se indica; opcional). |
+| CU-07 Gestionar citas | Recepción | Crear, editar, mover y cancelar citas con validación anti-solapamiento **por médico** y **upsert de paciente**. |
+| CU-08 Consultar agenda | Recepción | Ver la agenda del día y el calendario de los médicos (también desde el móvil). |
+| CU-09 Ver mi agenda | Médico | Consultar sus propias citas (**solo lectura**). |
+| CU-10 Marcar asistencia | Recepción | Marcar una cita como atendida o no-show. |
+| CU-11 Historia clínica *(fase 2, fuera del MVP)* | Médico | Consultar y añadir notas de evolución del paciente. En el MVP no está disponible. |
+
+> El flujo detallado de **CU-07 (agendar cita)** está en el §8 anterior y en el flowchart de [`FLUJO-USUARIO.md`](FLUJO-USUARIO.md).
