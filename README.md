@@ -4,7 +4,7 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 
 > Bootcamp final project — MVP scoped to a 2-week deadline. Documentation in `docs/` (in Spanish).
 >
-> **Status:** the backend MVP is **complete and deployed** (release **v0.3.0** on Render, auto-deploy on push to `main`). 93 passing tests (unit + integration). The React frontend (`diagnostico-frontend`) is the remaining phase.
+> **Status:** the backend MVP is **complete and deployed** — [live API](https://diagnostico-api-jtbw.onrender.com/docs) (release **v0.4.0** on Render, auto-deploy on push to `main`). 97 passing tests (unit + integration). The React frontend (`diagnostico-frontend`) is the remaining phase.
 
 ---
 
@@ -83,7 +83,7 @@ Core entities (7 tables): `usuarios` (unified), `especialidades` + `usuario_espe
 
 ## 🚀 Getting started
 
-> Requirements: Python 3.12+, Node.js 20+ with pnpm, and a PostgreSQL database (a local install, or Neon in the cloud).
+> Requirements: Python 3.12+, Node.js 20+ with pnpm, and a PostgreSQL database (a local install, or a managed cloud Postgres — Render in production).
 
 ```bash
 # Backend (this repo)
@@ -94,7 +94,7 @@ cp .env.example .env         # set DATABASE_URL, JWT_SECRET and ADMIN_PASSWORD
 alembic upgrade head         # apply migrations
 python -m app.seed           # seed catalogs + staff login users (needs ADMIN_PASSWORD)
 uvicorn app.main:app --reload   # http://localhost:8000  (Swagger at /docs)
-pytest                       # run the test suite (93 tests)
+pytest                       # run the test suite (97 tests)
 
 # Frontend (separate repo, in another terminal)
 git clone <frontend-repo-url> && cd diagnostico-frontend
@@ -140,7 +140,7 @@ pnpm dev                     # http://localhost:5173
 - [x] **Phase 2** — Authentication (JWT) and roles
 - [x] **Phase 3** — Appointments core (patient upsert + availability + overlap per doctor) + tests
 - [ ] **Phase 4** — UI (login, calendar, Patients/Doctors views, appointment form) — frontend repo, pending
-- [x] **Phase 5** — Deployment (backend live on Render, release v0.3.0)
+- [x] **Phase 5** — Deployment (backend live on Render, release v0.4.0)
 
 Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 

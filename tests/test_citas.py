@@ -1,9 +1,10 @@
 """Tests de las reglas de citas (R2, R3, R4) y del orquestador crear_cita."""
 
 import uuid
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 
 import pytest
+from pydantic import ValidationError
 
 from app.models import Cita, Disponibilidad, EstadoCita, Rol, Usuario
 from app.schemas import CitaCreate, CitaUpdate
@@ -33,30 +34,51 @@ def _franja(db, medico, hora_inicio=time(8, 0), hora_fin=time(14, 0)):
 # --- Normalización de fecha con zona horaria (naive local) -------------------
 
 
-def test_citacreate_convierte_fecha_con_zona_a_naive():
-    # lo que manda el navegador con new Date().toISOString() lleva 'Z' (UTC)
+def test_citacreate_rechaza_fecha_con_zona():
+    # contrato: el frontend manda la hora LOCAL del centro sin zona; una fecha con
+    # zona (p. ej. la 'Z' de toISOString()) se rechaza en vez de mal-interpretarla
+    with pytest.raises(ValidationError):
+        CitaCreate(
+            nombre_completo="Ana",
+            edad=30,
+            medico_id=uuid.uuid4(),
+            servicio_id=uuid.uuid4(),
+            starts_at="2026-07-20T10:00:00Z",
+            duracion_min=45,
+        )
+
+
+def test_citacreate_acepta_fecha_naive():
     datos = CitaCreate(
         nombre_completo="Ana",
         edad=30,
         medico_id=uuid.uuid4(),
         servicio_id=uuid.uuid4(),
-        starts_at="2026-07-20T10:00:00Z",
+        starts_at="2026-07-20T10:00:00",  # sin zona -> hora local del centro
         duracion_min=45,
     )
-    assert datos.starts_at.tzinfo is None                 # sin zona -> no rompe la comparación
-    assert datos.starts_at == datetime(2026, 7, 20, 10, 0)  # se toma la hora tal cual (local)
+    assert datos.starts_at == datetime(2026, 7, 20, 10, 0)
 
 
-def test_citaupdate_convierte_fecha_con_zona_a_naive():
-    datos = CitaUpdate(starts_at="2026-07-20T11:30:00+00:00")
-    assert datos.starts_at.tzinfo is None
-    assert datos.starts_at == datetime(2026, 7, 20, 11, 30)
+def test_citaupdate_rechaza_fecha_con_zona():
+    with pytest.raises(ValidationError):
+        CitaUpdate(starts_at="2026-07-20T11:30:00+00:00")
 
 
 def test_citaupdate_sin_starts_at_no_falla():
     # el campo es opcional: si no viene, el validador no debe romper
     datos = CitaUpdate(motivo="control")
     assert datos.starts_at is None
+
+
+def test_ahora_centro_es_naive_y_utc_menos_4():
+    # el "ahora" de la regla del pasado se calcula en hora local del centro (UTC-4),
+    # no en la del servidor (Render corre en UTC)
+    got = C.ahora_centro()
+    assert got.tzinfo is None
+    utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    horas_detras = (utc - got).total_seconds() / 3600
+    assert 3.5 < horas_detras < 4.5
 
 
 # --- R2: duración ------------------------------------------------------------
@@ -246,6 +268,42 @@ def test_crear_cita_servicio_invalido(db, medico, admin):
             duracion_min=45,
             creado_por_id=admin.id,
         )
+
+
+def test_crear_cita_servicio_inactivo(db, medico, servicio, admin):
+    # un servicio desactivado (activo=False) no debe poder agendarse
+    servicio.activo = False
+    db.flush()
+    with pytest.raises(C.ServicioNoEncontrado):
+        C.crear_cita(
+            db,
+            nombre_completo="X",
+            edad=1,
+            medico_id=medico.id,
+            servicio_id=servicio.id,
+            starts_at=LUNES_10,
+            duracion_min=45,
+            creado_por_id=admin.id,
+        )
+
+
+def test_editar_cita_sobrecupo_solo_motivo(db, medico, servicio, admin):
+    # una cita creada por sobrecupo cae FUERA de disponibilidad a propósito (sin franja);
+    # editar solo el motivo NO debe re-validar disponibilidad (antes fallaba con 400)
+    cita = C.crear_cita(
+        db,
+        nombre_completo=f"X {uuid.uuid4()}",
+        edad=1,
+        medico_id=medico.id,
+        servicio_id=servicio.id,
+        starts_at=LUNES_10,
+        duracion_min=45,
+        creado_por_id=admin.id,
+        permitir_sobrecupo=True,
+        ahora=ANTES,
+    )
+    actualizada = C.editar_cita(db, cita.id, motivo="control")
+    assert actualizada.motivo == "control"
 
 
 def test_crear_cita_en_el_pasado(db, medico, servicio, admin):

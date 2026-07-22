@@ -109,7 +109,7 @@ package.json        # pnpm
 
 - **Frontend:** build estático de Vite (Vercel / Netlify / cualquier hosting estático).
 - **Backend:** servicio Python (Render / Railway / Fly.io).
-- **BD:** PostgreSQL en la nube (Neon) o local en desarrollo.
+- **BD:** PostgreSQL — Render gestionado en producción; Neon o local en desarrollo.
 - **Variables de entorno:** `DATABASE_URL` y `JWT_SECRET`.
 - **Migraciones:** `alembic upgrade head` en el despliegue.
 

@@ -5,7 +5,7 @@ para poder probarlas de forma aislada.
 """
 
 import uuid
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
@@ -15,6 +15,17 @@ from app.services.pacientes import buscar_o_crear_paciente
 # La cita solo puede empezar en un minuto "de rejilla" (:00, :15, :30, :45).
 # Cambiar este valor mueve la rejilla (p. ej. 10 o 20 min) sin tocar la lógica.
 GRID_MINUTOS = 15
+
+# El centro está en Venezuela (VET), UTC-4 todo el año (sin horario de verano). El
+# servidor puede correr en otra zona (Render usa UTC), así que "ahora" se calcula en
+# la hora local del centro: si no, la regla "no en el pasado" descuadraría por el
+# desfase. Se devuelve naive, igual que se guardan las citas.
+ZONA_CENTRO = timezone(timedelta(hours=-4))
+
+
+def ahora_centro() -> datetime:
+    """Hora actual en la zona del centro (UTC-4), naive (sin tzinfo)."""
+    return datetime.now(ZONA_CENTRO).replace(tzinfo=None)
 
 
 class ServicioNoEncontrado(Exception):
@@ -137,12 +148,13 @@ def _validar_servicio_medico_y_rejilla(
 ) -> None:
     """Valida las reglas comunes de identidad y encaje horario (crear y editar cita).
 
-    - El servicio debe existir.
+    - El servicio debe existir y estar activo (uno desactivado no es agendable).
     - El médico debe existir, tener rol MEDICO y estar activo (uno de baja no es agendable).
     - El inicio debe caer en la rejilla de minutos (:00, :15, :30, :45).
     Lanza la excepción de dominio correspondiente si algo falla.
     """
-    if db.get(Servicio, servicio_id) is None:
+    servicio = db.get(Servicio, servicio_id)
+    if servicio is None or not servicio.activo:
         raise ServicioNoEncontrado()
     medico = db.get(Usuario, medico_id)
     if medico is None or medico.rol != Rol.MEDICO or not medico.activo:
@@ -204,7 +216,7 @@ def crear_cita(
 
     # R0.b: no se puede agendar en el pasado (comparamos con 'ahora', inyectable).
     if ahora is None:
-        ahora = datetime.now()
+        ahora = ahora_centro()
     if starts_at < ahora:
         raise CitaEnElPasado()
 
@@ -335,8 +347,9 @@ def editar_cita(
     motivo; es una limitación conocida y asumible para el MVP.)
 
     Reglas revalidadas sobre los valores efectivos: servicio y médico válidos, rejilla
-    de minutos, disponibilidad (salvo sobrecupo) y anti-solapamiento **excluyendo la
-    propia cita**. La regla de "no en el pasado" solo se aplica si se mueve la hora.
+    de minutos, disponibilidad (salvo sobrecupo, y solo si se mueve el hueco) y
+    anti-solapamiento **excluyendo la propia cita**. La regla de "no en el pasado"
+    solo se aplica si se mueve la hora.
     Hace flush (no commit): el commit lo hace el endpoint.
     """
     cita = _obtener_cita_activa(db, cita_id, CitaNoEditable)
@@ -357,19 +370,23 @@ def editar_cita(
     # Solo se comprueba el pasado si de verdad se está moviendo la hora.
     if starts_at is not None:
         if ahora is None:
-            ahora = datetime.now()
+            ahora = ahora_centro()
         if nuevo_starts_at < ahora:
             raise CitaEnElPasado()
 
     nuevo_ends_at = calcular_ends_at(nuevo_starts_at, nueva_duracion)
 
     # R3 y R4: disponibilidad y anti-solapamiento, excluyendo la propia cita.
+    # Si la edición NO mueve el hueco (mismo médico, misma hora y misma duración), la
+    # disponibilidad ya se validó al crear la cita (o se forzó como sobrecupo): no se
+    # re-chequea, para no romper la edición del motivo de una cita agendada por sobrecupo.
+    mismo_hueco = medico_id is None and starts_at is None and duracion_min is None
     _validar_hueco(
         db,
         medico_id=nuevo_medico_id,
         starts_at=nuevo_starts_at,
         ends_at=nuevo_ends_at,
-        permitir_sobrecupo=permitir_sobrecupo,
+        permitir_sobrecupo=permitir_sobrecupo or mismo_hueco,
         excluir_cita_id=cita.id,
     )
 

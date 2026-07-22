@@ -10,6 +10,7 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app.models import Rol, Usuario
+from app.services.comun import valor_en_uso
 
 
 class PacientesAmbiguos(Exception):
@@ -64,10 +65,7 @@ class CedulaDuplicada(Exception):
 
 def _cedula_en_uso(db: Session, cedula: str, excluir_id: uuid.UUID | None = None) -> bool:
     """True si la cédula ya pertenece a otra persona (excluyendo, si se indica, un id)."""
-    q = db.query(Usuario).filter(Usuario.cedula == cedula)
-    if excluir_id is not None:
-        q = q.filter(Usuario.id != excluir_id)
-    return db.query(q.exists()).scalar()
+    return valor_en_uso(db, Usuario, Usuario.cedula, cedula, excluir_id)
 
 
 def listar_pacientes(db: Session) -> list[Usuario]:

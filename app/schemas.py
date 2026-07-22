@@ -13,17 +13,17 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.models import EstadoCita, Rol, ServicioCategoria
 
 
-def _a_hora_local_naive(v: datetime | None) -> datetime | None:
-    """Normaliza una fecha/hora a hora local 'naive' (sin zona horaria).
+def _exigir_hora_local_naive(v: datetime | None) -> datetime | None:
+    """Exige que la fecha/hora llegue SIN zona horaria (naive), en hora local del centro.
 
-    La API trabaja en la hora de reloj del centro (sede única) y las fechas se
-    guardan sin zona. Si llega una fecha con zona (p. ej. la 'Z' que añade
-    `Date.toISOString()` en el navegador), se descarta la zona y se toma la hora tal
-    cual. Así se evita el error de comparar fechas 'aware' con 'naive'. Contrato:
-    el frontend envía la hora local del centro.
+    La API trabaja en la hora de reloj del centro (sede única, una sola zona) y guarda
+    las fechas sin zona. Si llega una fecha CON zona (p. ej. la 'Z' que añade
+    `Date.toISOString()` en el navegador) se RECHAZA, en vez de convertirla a ciegas:
+    así el frontend manda siempre la hora local explícita y no hay ambigüedad de zona.
+    Contrato: el frontend envía la hora local del centro, sin sufijo de zona.
     """
     if v is not None and v.tzinfo is not None:
-        return v.replace(tzinfo=None)
+        raise ValueError("La fecha debe ir en hora local del centro, sin zona horaria.")
     return v
 
 
@@ -63,15 +63,10 @@ class ServicioOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class ServicioDetalle(BaseModel):
-    """Un servicio con su estado (para la gestión del ADMIN: incluye `activo`)."""
+class ServicioDetalle(ServicioOut):
+    """Un servicio con su estado (para la gestión del ADMIN: `ServicioOut` + `activo`)."""
 
-    id: uuid.UUID
-    nombre: str
-    categoria: ServicioCategoria
     activo: bool
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class ServicioCreate(BaseModel):
@@ -158,14 +153,8 @@ class PacienteCreate(BaseModel):
     fecha_nacimiento: date | None = None
 
 
-class PacienteUpdate(BaseModel):
-    """Cuerpo del PUT /pacientes/{id}. No incluye rol (fijo PACIENTE) ni datos clínicos."""
-
-    nombre_completo: str = Field(min_length=1)
-    edad: int = Field(ge=0, le=120)
-    cedula: str | None = None
-    telefono: str | None = None
-    fecha_nacimiento: date | None = None
+class PacienteUpdate(PacienteCreate):
+    """Cuerpo del PUT /pacientes/{id}: mismos campos que el alta (rol fijo PACIENTE, sin datos clínicos)."""
 
 
 class UsuarioDetalle(BaseModel):
@@ -219,7 +208,7 @@ class CitaCreate(BaseModel):
     @field_validator("starts_at")
     @classmethod
     def _starts_at_local_naive(cls, v: datetime) -> datetime:
-        return _a_hora_local_naive(v)
+        return _exigir_hora_local_naive(v)
 
 
 class CitaUpdate(BaseModel):
@@ -236,7 +225,7 @@ class CitaUpdate(BaseModel):
     @field_validator("starts_at")
     @classmethod
     def _starts_at_local_naive(cls, v: datetime | None) -> datetime | None:
-        return _a_hora_local_naive(v)
+        return _exigir_hora_local_naive(v)
 
 
 class CitaOut(BaseModel):

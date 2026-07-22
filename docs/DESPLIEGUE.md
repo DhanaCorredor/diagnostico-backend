@@ -3,6 +3,9 @@
 El backend se despliega en **Render** (un solo proveedor): el Web Service de la API
 **y** su base de datos PostgreSQL. La configuración está en `render.yaml` (Blueprint).
 
+> 🌐 **API en producción:** **https://diagnostico-api-jtbw.onrender.com** · Swagger en [`/docs`](https://diagnostico-api-jtbw.onrender.com/docs) · salud en [`/health`](https://diagnostico-api-jtbw.onrender.com/health).
+> *(Ojo: el subdominio lleva sufijo `-jtbw` porque `diagnostico-api.onrender.com` estaba ocupado por otro servicio ajeno.)*
+
 ## Pasos (una sola vez)
 
 1. Crear cuenta en **[render.com](https://render.com)** (login con GitHub).
@@ -11,7 +14,7 @@ El backend se despliega en **Render** (un solo proveedor): el Web Service de la 
 4. Render detecta `render.yaml` y muestra lo que va a crear (la API + la base).
 5. Cuando lo pida, escribir el valor de **`ADMIN_PASSWORD`** (la contraseña del admin).
 6. **Apply / Create** → Render crea la base, aplica las migraciones, carga el seed y arranca la API.
-7. Probar la **URL pública**:
+7. Probar la **URL pública** (la actual: `https://diagnostico-api-jtbw.onrender.com`):
    - `GET /health` → `{"status":"ok"}`
    - `GET /docs` → la documentación Swagger
    - `POST /auth/login` con `admin@diagnostico.com` y la contraseña que pusiste.
