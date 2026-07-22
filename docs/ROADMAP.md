@@ -115,7 +115,7 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 
 > De una revisión de código del backend. No bloquean el MVP; se anotan para no perderlas.
 
-- **Convención de fechas:** la API trabaja en **hora local naive** (el frontend envía hora local; si llega con zona, se descarta). Pendiente: valorar migrar a **UTC *aware***. Ojo: `datetime.now()` en el servidor (Render corre en UTC) no coincide con la hora local del centro → la regla "no en el pasado" puede descuadrar por el desfase; revisar al fijar la zona.
+- **Convención de fechas:** la API trabaja en **hora local naive**: el frontend envía la hora local del centro **sin zona**; si llega con zona (p. ej. la `Z` de `toISOString()`), **se rechaza con 422** (contrato explícito, sin conversiones a ciegas). Ojo: `datetime.now()` en el servidor (Render corre en UTC) no coincide con la hora local del centro → la regla "no en el pasado" puede descuadrar por el desfase; pendiente de revisar al fijar la zona del servidor.
 - **Router de citas:** el mapeo excepción→HTTP se repite entre agendar y editar (se dejó **explícito a propósito** por legibilidad).
 - **Disponibilidad:** `crear_disponibilidad` no valida franjas duplicadas/solapadas por médico y día.
 - **Login enumerable por *timing*:** responde sin llamar a bcrypt cuando el email no existe (oráculo de emails; riesgo bajo en tool interno).
@@ -189,7 +189,7 @@ gantt
 - **Fase 0** — Andamiaje backend FastAPI + conexión a PostgreSQL (frontend React/Vite en repo aparte)
 - **Fase 1** — Modelos SQLAlchemy (7 tablas) + Alembic + migración inicial + seed de catálogos (12 especialidades, 19 servicios)
 - **Fase 2** — Auth JWT (bcrypt), dependencia `requiere_rol` y guardas por rol (ADMIN/RECEPCION/MEDICO)
-- **Fase 3 — Citas (núcleo)** — Servicio `crear_cita`: upsert de paciente + disponibilidad + anti-solapamiento por médico + **rejilla de inicio (:00/:15/:30/:45)**; endpoints de citas (crear, listar por fecha/rango, cancelar, marcar asistencia), catálogos de lectura (`servicios`, `medicos`, `especialidades`), disponibilidad, pacientes (listar/ficha/editar) y CRUD de usuarios/médicos; **95 tests en verde** (tras completar el contrato y la revisión de código).
+- **Fase 3 — Citas (núcleo)** — Servicio `crear_cita`: upsert de paciente + disponibilidad + anti-solapamiento por médico + **rejilla de inicio (:00/:15/:30/:45)**; endpoints de citas (crear, listar por fecha/rango, cancelar, marcar asistencia), catálogos de lectura (`servicios`, `medicos`, `especialidades`), disponibilidad, pacientes (listar/ficha/editar) y CRUD de usuarios/médicos; **96 tests en verde** (tras completar el contrato y la revisión de código).
 - **Fase 5 — Despliegue** — Backend en producción en **Render** (release **v0.4.0**, auto-deploy en push a `main`, ejecuta `alembic upgrade head` y el seed)
 
 ## 7. Riesgos y mitigación
