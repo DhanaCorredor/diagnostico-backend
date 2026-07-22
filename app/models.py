@@ -47,6 +47,7 @@ class EstadoCita(str, enum.Enum):
 class ServicioCategoria(str, enum.Enum):
     CONSULTA = "CONSULTA"
     ECOGRAFIA = "ECOGRAFIA"
+    DOPPLER = "DOPPLER"
     ESTUDIO_CARDIACO = "ESTUDIO_CARDIACO"
     OTRO = "OTRO"
 
