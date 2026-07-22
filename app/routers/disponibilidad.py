@@ -22,7 +22,7 @@ router = APIRouter(prefix="/disponibilidad", tags=["disponibilidad"])
 def listar_disponibilidad(
     medico_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _: object = Depends(usuario_actual),  # solo exige estar autenticado
+    _: object = Depends(usuario_actual),
 ):
     """Devuelve las franjas de disponibilidad de un médico."""
     return disp_service.listar_disponibilidad(db, medico_id)

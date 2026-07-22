@@ -29,11 +29,6 @@ from sqlalchemy.orm import relationship
 from app.db import Base
 
 
-# --- Enums: listas cerradas de valores permitidos ---------------------------
-# Heredan de `str` para que su valor en la BD sea el texto (ej. "ADMIN"),
-# legible y fácil de comparar.
-
-
 class Rol(str, enum.Enum):
     ADMIN = "ADMIN"
     RECEPCION = "RECEPCION"
@@ -65,18 +60,12 @@ def _uuid_pk():
     return Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
 
-# --- Tabla de asociación N:M: médico <-> especialidad -----------------------
-# No tiene columnas propias, solo las dos claves foráneas, así que se define
-# como una Table simple (no como clase). Su PK es la pareja (usuario, especialidad).
 usuario_especialidad = Table(
     "usuario_especialidad",
     Base.metadata,
     Column("usuario_id", UUID(as_uuid=True), ForeignKey("usuarios.id"), primary_key=True),
     Column("especialidad_id", UUID(as_uuid=True), ForeignKey("especialidades.id"), primary_key=True),
 )
-
-
-# --- Tablas principales ------------------------------------------------------
 
 
 class Usuario(Base):
@@ -92,28 +81,23 @@ class Usuario(Base):
     nombre_completo = Column(String, nullable=False)
     rol = Column(Enum(Rol), nullable=False)
 
-    # Login (solo personal interno: ADMIN, RECEPCION, MEDICO)
-    email = Column(String, unique=True)   # opcional; único si se indica
-    password_hash = Column(String)        # bcrypt; solo staff
+    email = Column(String, unique=True)
+    password_hash = Column(String)
 
-    # Identificación / datos de la persona
-    cedula = Column(String, unique=True)  # opcional; la añaden los especialistas después
-    edad = Column(Integer)                # edad al registrar (lo que pide recepción)
-    fecha_nacimiento = Column(Date)       # opcional; se completa luego
-    telefono = Column(String)             # varios pacientes pueden compartir número
+    cedula = Column(String, unique=True)
+    edad = Column(Integer)
+    fecha_nacimiento = Column(Date)
+    telefono = Column(String)
 
-    # Solo médico
-    matricula = Column(String)            # nº de colegiado
+    matricula = Column(String)
 
-    # Historia clínica (solo paciente)
     alergias = Column(Text)
     antecedentes = Column(Text)
 
-    activo = Column(Boolean, nullable=False, default=True)  # baja lógica
+    activo = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, nullable=False, default=func.now())
     updated_at = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
-    # Especialidades del médico (relación N:M vía la tabla de asociación)
     especialidades = relationship(
         "Especialidad", secondary=usuario_especialidad, back_populates="medicos"
     )
@@ -149,8 +133,8 @@ class Disponibilidad(Base):
     __tablename__ = "disponibilidad"
 
     id = _uuid_pk()
-    usuario_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id"), nullable=False)  # médico
-    dia_semana = Column(Integer, nullable=False)  # 0=domingo ... 6=sábado
+    usuario_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id"), nullable=False)
+    dia_semana = Column(Integer, nullable=False)
     hora_inicio = Column(Time, nullable=False)
     hora_fin = Column(Time, nullable=False)
 
@@ -165,10 +149,10 @@ class Cita(Base):
     medico_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id"), nullable=False)
     servicio_id = Column(UUID(as_uuid=True), ForeignKey("servicios.id"), nullable=False)
     starts_at = Column(DateTime, nullable=False)
-    ends_at = Column(DateTime, nullable=False)  # = starts_at + la duración elegida al agendar
+    ends_at = Column(DateTime, nullable=False)
     estado = Column(Enum(EstadoCita), nullable=False, default=EstadoCita.SCHEDULED)
     motivo = Column(String)
-    creado_por_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id"), nullable=False)  # recepción
+    creado_por_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id"), nullable=False)
     created_at = Column(DateTime, nullable=False, default=func.now())
     updated_at = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
@@ -180,7 +164,7 @@ class NotaClinica(Base):
 
     id = _uuid_pk()
     paciente_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id"), nullable=False)
-    medico_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id"), nullable=False)  # quién la escribe
-    cita_id = Column(UUID(as_uuid=True), ForeignKey("citas.id"))  # opcional
+    medico_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id"), nullable=False)
+    cita_id = Column(UUID(as_uuid=True), ForeignKey("citas.id"))
     fecha = Column(DateTime, nullable=False, default=func.now())
     contenido = Column(Text, nullable=False)

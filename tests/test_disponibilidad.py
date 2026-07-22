@@ -18,7 +18,6 @@ def test_crear_y_listar_disponibilidad(db, medico):
 
 
 def test_crear_disponibilidad_medico_invalido(db, admin):
-    # admin no tiene rol MEDICO -> no se le puede definir disponibilidad
     with pytest.raises(D.MedicoNoEncontrado):
         D.crear_disponibilidad(
             db, medico_id=admin.id, dia_semana=1, hora_inicio=time(8, 0), hora_fin=time(14, 0)
@@ -26,7 +25,6 @@ def test_crear_disponibilidad_medico_invalido(db, admin):
 
 
 def test_crear_disponibilidad_franja_invalida(db, medico):
-    # inicio no anterior a fin -> franja inválida
     with pytest.raises(D.FranjaInvalida):
         D.crear_disponibilidad(
             db, medico_id=medico.id, dia_semana=1, hora_inicio=time(14, 0), hora_fin=time(8, 0)

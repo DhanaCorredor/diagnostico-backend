@@ -15,23 +15,20 @@ from app.models import Disponibilidad, Rol, Usuario
 def _slot_futuro_alineado() -> datetime:
     """Un inicio válido: mañana (o el siguiente día laborable) a las 10:00, en rejilla."""
     d = datetime.now() + timedelta(days=1)
-    while d.weekday() == 6:  # domingo cerrado (weekday: lunes=0 ... domingo=6)
+    while d.weekday() == 6:
         d += timedelta(days=1)
     return d.replace(hour=10, minute=0, second=0, microsecond=0)
 
 
 def _con_disponibilidad(db, medico, slot):
     """Da al médico una franja amplia (08:00-18:00) el día del slot."""
-    dia = (slot.weekday() + 1) % 7  # convención del modelo: domingo=0
+    dia = (slot.weekday() + 1) % 7
     db.add(
         Disponibilidad(
             usuario_id=medico.id, dia_semana=dia, hora_inicio=time(8, 0), hora_fin=time(18, 0)
         )
     )
     db.flush()
-
-
-# --- Salud / OpenAPI ---------------------------------------------------------
 
 
 def test_health(client):
@@ -41,9 +38,6 @@ def test_health(client):
 
 def test_openapi_accesible(client):
     assert client.get("/openapi.json").status_code == 200
-
-
-# --- Autenticación -----------------------------------------------------------
 
 
 def test_login_ok_y_me(client, db):
@@ -79,9 +73,6 @@ def test_me_sin_token(client):
     assert client.get("/auth/me").status_code in (401, 403)
 
 
-# --- Guardas por rol ---------------------------------------------------------
-
-
 def test_recepcion_no_ve_usuarios(client, recepcion, token_for):
     assert client.get("/usuarios", headers=token_for(recepcion)).status_code == 403
 
@@ -114,9 +105,6 @@ def test_medico_ve_su_agenda(client, medico, token_for):
     assert r.status_code == 200
 
 
-# --- Flujo completo de una cita + validador de fechas (Z) --------------------
-
-
 def test_flujo_cita_completo(client, db, admin, medico, servicio, token_for):
     slot = _slot_futuro_alineado()
     _con_disponibilidad(db, medico, slot)
@@ -126,22 +114,19 @@ def test_flujo_cita_completo(client, db, admin, medico, servicio, token_for):
         "edad": 40,
         "medico_id": str(medico.id),
         "servicio_id": str(servicio.id),
-        "starts_at": slot.strftime("%Y-%m-%dT%H:%M:%S"),  # hora local del centro (sin zona)
+        "starts_at": slot.strftime("%Y-%m-%dT%H:%M:%S"),
         "duracion_min": 30,
     }
     r = client.post("/citas", headers=hdr, json=body)
     assert r.status_code == 201, r.text
     cita = r.json()
-    # se guarda la hora local tal cual
     assert cita["starts_at"].startswith(slot.strftime("%Y-%m-%dT%H:%M"))
     cita_id = cita["id"]
 
-    # aparece en la agenda del día
     fecha = slot.strftime("%Y-%m-%d")
     lista = client.get(f"/citas?fecha={fecha}", headers=hdr).json()
     assert any(c["id"] == cita_id for c in lista)
 
-    # mover a las 11:00
     mov = client.put(
         f"/citas/{cita_id}",
         headers=hdr,
@@ -149,7 +134,6 @@ def test_flujo_cita_completo(client, db, admin, medico, servicio, token_for):
     )
     assert mov.status_code == 200 and mov.json()["starts_at"].endswith("11:00:00")
 
-    # cancelar libera el cupo
     canc = client.post(f"/citas/{cita_id}/cancelar", headers=hdr)
     assert canc.status_code == 200 and canc.json()["estado"] == "CANCELLED"
 
@@ -167,10 +151,7 @@ def test_cita_fecha_con_zona_se_rechaza(client, db, admin, medico, servicio, tok
         "duracion_min": 15,
     }
     r = client.post("/citas", headers=token_for(admin), json=body)
-    assert r.status_code == 422, r.text  # zona -> rechazada por el contrato
-
-
-# --- 409 de paciente ambiguo con candidatos ----------------------------------
+    assert r.status_code == 422, r.text
 
 
 def test_cita_paciente_ambiguo_devuelve_candidatos(

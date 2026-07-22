@@ -12,7 +12,6 @@ from app.schemas import CitaOut, PacienteCreate, PacienteOut, PacienteUpdate
 from app.services import citas as citas_service
 from app.services import pacientes as pac_service
 
-# Toda la gestión de pacientes es solo para ADMIN y RECEPCIÓN (guarda a nivel de router).
 router = APIRouter(
     prefix="/pacientes",
     tags=["pacientes"],
@@ -52,7 +51,7 @@ def obtener_paciente(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
 def historial_citas(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
     """Devuelve el historial de citas de un paciente (de la más reciente a la más antigua)."""
     try:
-        pac_service.obtener_paciente(db, paciente_id)  # 404 si el paciente no existe
+        pac_service.obtener_paciente(db, paciente_id)
     except pac_service.PacienteNoEncontrado:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado") from None
     return citas_service.listar_citas_de_paciente(db, paciente_id)

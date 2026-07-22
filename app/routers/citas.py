@@ -15,7 +15,6 @@ from app.services.pacientes import PacientesAmbiguos
 
 router = APIRouter(prefix="/citas", tags=["citas"])
 
-# Tope del rango de listado: evita consultas enormes (la agenda se mira por día o semanas).
 MAX_RANGO_DIAS = 60
 
 
@@ -57,8 +56,6 @@ def agendar_cita(
             "No se puede agendar una cita en el pasado",
         ) from None
     except PacientesAmbiguos as e:
-        # Varios pacientes coinciden por nombre + edad: se devuelven los candidatos
-        # para que recepción elija cuál es (y reintente indicando su id en fase 2).
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             detail={
@@ -84,7 +81,7 @@ def agendar_cita(
             "El médico ya tiene una cita en ese horario",
         ) from None
 
-    db.commit()  # todo válido: se confirma la transacción (cita + posible paciente nuevo)
+    db.commit()
     return cita
 
 
@@ -104,7 +101,6 @@ def listar_citas(
     Por defecto solo devuelve citas vigentes; con incluir_canceladas=true, también las canceladas.
     Un MÉDICO solo ve su propia agenda (se le fija su id, ignorando el medico_id que envíe).
     """
-    # 'fecha' es un atajo cómodo para un rango de un solo día.
     if fecha is not None:
         desde = hasta = fecha
     if desde is None or hasta is None:

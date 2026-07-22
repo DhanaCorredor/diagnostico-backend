@@ -25,7 +25,7 @@ def _crear(db, **over):
 def test_crear_usuario_hashea_password(db):
     u = _crear(db, rol=Rol.RECEPCION)
     assert u.id is not None
-    assert u.password_hash and u.password_hash != "password123"  # hasheada, no en claro
+    assert u.password_hash and u.password_hash != "password123"
 
 
 def test_crear_medico_con_especialidades(db):
@@ -73,7 +73,7 @@ def test_listar_personal_excluye_pacientes(db):
     db.flush()
     ids = [u.id for u in U.listar_personal(db)]
     assert med.id in ids
-    assert pac.id not in ids  # los pacientes no son personal
+    assert pac.id not in ids
 
 
 def test_obtener_usuario_no_encontrado(db):
@@ -86,14 +86,14 @@ def test_actualizar_usuario_parcial_no_toca_password(db):
     hash_original = u.password_hash
     U.actualizar_usuario(db, u.id, {"nombre_completo": "Nuevo"})
     assert u.nombre_completo == "Nuevo"
-    assert u.password_hash == hash_original  # sin password en los cambios -> no se toca
+    assert u.password_hash == hash_original
 
 
 def test_actualizar_usuario_cambia_password(db):
     u = _crear(db, rol=Rol.RECEPCION)
     hash_original = u.password_hash
     U.actualizar_usuario(db, u.id, {"password": "nuevopass1"})
-    assert u.password_hash != hash_original  # nueva contraseña -> nuevo hash
+    assert u.password_hash != hash_original
 
 
 def test_actualizar_usuario_email_duplicado(db):
