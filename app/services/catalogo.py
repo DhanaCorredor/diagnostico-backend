@@ -11,6 +11,7 @@ import uuid
 from sqlalchemy.orm import Session, selectinload
 
 from app.models import Especialidad, Rol, Servicio, ServicioCategoria, Usuario
+from app.services.comun import valor_en_uso
 
 
 class ServicioNoEncontrado(Exception):
@@ -55,10 +56,7 @@ def _servicio_nombre_en_uso(
     db: Session, nombre: str, excluir_id: uuid.UUID | None = None
 ) -> bool:
     """True si ya hay un servicio con ese nombre (excluyendo, si se indica, uno propio)."""
-    q = db.query(Servicio).filter(Servicio.nombre == nombre)
-    if excluir_id is not None:
-        q = q.filter(Servicio.id != excluir_id)
-    return db.query(q.exists()).scalar()
+    return valor_en_uso(db, Servicio, Servicio.nombre, nombre, excluir_id)
 
 
 def crear_servicio(
@@ -94,10 +92,7 @@ def actualizar_servicio(db: Session, servicio_id: uuid.UUID, cambios: dict) -> S
 
 def crear_especialidad(db: Session, *, nombre: str) -> Especialidad:
     """Da de alta una especialidad en el catálogo. Nombre único. Flush (no commit)."""
-    existe = db.query(
-        db.query(Especialidad).filter(Especialidad.nombre == nombre).exists()
-    ).scalar()
-    if existe:
+    if valor_en_uso(db, Especialidad, Especialidad.nombre, nombre):
         raise NombreDuplicado()
     especialidad = Especialidad(nombre=nombre)
     db.add(especialidad)

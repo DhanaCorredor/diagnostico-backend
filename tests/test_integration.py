@@ -126,13 +126,13 @@ def test_flujo_cita_completo(client, db, admin, medico, servicio, token_for):
         "edad": 40,
         "medico_id": str(medico.id),
         "servicio_id": str(servicio.id),
-        "starts_at": slot.strftime("%Y-%m-%dT%H:%M:%S") + "Z",  # 'Z' -> prueba el validador
+        "starts_at": slot.strftime("%Y-%m-%dT%H:%M:%S"),  # hora local del centro (sin zona)
         "duracion_min": 30,
     }
     r = client.post("/citas", headers=hdr, json=body)
     assert r.status_code == 201, r.text
     cita = r.json()
-    # el validador normaliza la 'Z' a hora local: se guarda 10:00 tal cual
+    # se guarda la hora local tal cual
     assert cita["starts_at"].startswith(slot.strftime("%Y-%m-%dT%H:%M"))
     cita_id = cita["id"]
 
@@ -154,8 +154,8 @@ def test_flujo_cita_completo(client, db, admin, medico, servicio, token_for):
     assert canc.status_code == 200 and canc.json()["estado"] == "CANCELLED"
 
 
-def test_cita_fecha_con_zona_no_da_500(client, db, admin, medico, servicio, token_for):
-    """La 'Z' del navegador no debe provocar un 500 (bug naive/aware corregido)."""
+def test_cita_fecha_con_zona_se_rechaza(client, db, admin, medico, servicio, token_for):
+    """Contrato: una fecha con zona (la 'Z' del navegador) se rechaza con 422."""
     slot = _slot_futuro_alineado()
     _con_disponibilidad(db, medico, slot)
     body = {
@@ -167,7 +167,7 @@ def test_cita_fecha_con_zona_no_da_500(client, db, admin, medico, servicio, toke
         "duracion_min": 15,
     }
     r = client.post("/citas", headers=token_for(admin), json=body)
-    assert r.status_code == 201, r.text  # 201, no 500
+    assert r.status_code == 422, r.text  # zona -> rechazada por el contrato
 
 
 # --- 409 de paciente ambiguo con candidatos ----------------------------------

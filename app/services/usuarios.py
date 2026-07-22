@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.auth import hashear_password
 from app.models import Especialidad, Rol, Usuario
+from app.services.comun import valor_en_uso
 
 # Roles de personal que hacen login (nunca PACIENTE).
 ROLES_STAFF = (Rol.ADMIN, Rol.RECEPCION, Rol.MEDICO)
@@ -37,10 +38,7 @@ class DatosSoloDeMedico(Exception):
 
 
 def _email_en_uso(db: Session, email: str, excluir_id: uuid.UUID | None = None) -> bool:
-    q = db.query(Usuario).filter(Usuario.email == email)
-    if excluir_id is not None:
-        q = q.filter(Usuario.id != excluir_id)
-    return db.query(q.exists()).scalar()
+    return valor_en_uso(db, Usuario, Usuario.email, email, excluir_id)
 
 
 def _resolver_especialidades(db: Session, ids: list[uuid.UUID]) -> list[Especialidad]:
