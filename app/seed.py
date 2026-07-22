@@ -101,6 +101,7 @@ MEDICOS = [
      [(SAB, time(12, 0), CIERRE)]),
     ("Dra. Elsa Blanco", ["Otorrinolaringología"], []),
     ("Dra. Andrea Blanco", ["Dermatología", "Venereología"], []),
+    ("Especialista por asignar", ["Cirugía General"], []),
     ("Lic. Nathaly Rojas", ["Psicología"], []),
     ("Dra. Katherinne Castro", ["Traumatología"], []),
     ("Dra. Cristina Jiménez", ["Traumatología"], []),

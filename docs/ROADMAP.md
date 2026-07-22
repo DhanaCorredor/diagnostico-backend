@@ -7,7 +7,7 @@ Plan de proyecto, decisiones, fases, cronograma y riesgos del **MVP** (entrega/p
 - **Usuarios:** solo **personal interno** hace login (ADMIN, RECEPCION, MEDICO). Las citas las agenda **recepción**. Los pacientes son registros, no acceden.
 - **Tabla `usuarios` unificada:** personal, médicos y pacientes comparten el mismo diseño de tabla (campo `rol`), para **ahorrar código**. En la UI, **dos vistas** (Pacientes / Médicos) que filtran por rol.
 - **Roles:** ADMIN todo · **RECEPCION sin acceso a usuarios, configuración ni reportes** · MEDICO su agenda **solo lectura** (solo consulta; la asistencia y la cancelación las hacen recepción/admin; notas clínicas → fase 2).
-- **Volumen:** ~60 citas/día · 17 médicos · 12 especialidades.
+- **Volumen:** ~60 citas/día · 18 médicos · 12 especialidades.
 - **Duración de cita:** la **elige recepción** al agendar, de una lista fija ({15, 30, 45, 60, 90} min).
 - **Disponibilidad:** el calendario **bloquea** los días/horas fuera de la disponibilidad del médico.
 - **Upsert de paciente al agendar:** si el paciente no existe se crea, si existe se detecta (por `nombre_completo + edad`).
