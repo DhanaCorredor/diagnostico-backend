@@ -4,7 +4,7 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 
 > Bootcamp final project — MVP scoped to a 2-week deadline. Documentation in `docs/` (in Spanish).
 >
-> **Status:** the backend MVP is **complete and deployed** (release **v0.3.0** on Render, auto-deploy on push to `main`). 53 passing tests. The React frontend (`diagnostico-frontend`) is the remaining phase.
+> **Status:** the backend MVP is **complete and deployed** (release **v0.3.0** on Render, auto-deploy on push to `main`). 93 passing tests (unit + integration). The React frontend (`diagnostico-frontend`) is the remaining phase.
 
 ---
 
@@ -44,7 +44,7 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 |------|-------------|
 | **ADMIN** | Full control: users, doctors, specialties, services, configuration. |
 | **RECEPCION** | Books and cancels appointments; marks attendance (attended/no-show); manages patients; **views** doctors and agendas. **No** access to **users**, **configuration** or **reports**. |
-| **MEDICO** | Sees their own agenda; can **cancel** and **mark attendance/no-show** on their appointments. *(Clinical history notes are phase 2.)* |
+| **MEDICO** | Sees their own agenda (**read-only**). Cannot cancel or mark attendance — reception/admin does that. *(Clinical history notes are phase 2.)* |
 
 > Patients do **not** log in (they are records managed by reception).
 
@@ -90,9 +90,11 @@ Core entities (7 tables): `usuarios` (unified), `especialidades` + `usuario_espe
 git clone <backend-repo-url> && cd diagnostico-backend
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env         # set DATABASE_URL and JWT_SECRET
+cp .env.example .env         # set DATABASE_URL, JWT_SECRET and ADMIN_PASSWORD
 alembic upgrade head         # apply migrations
+python -m app.seed           # seed catalogs + staff login users (needs ADMIN_PASSWORD)
 uvicorn app.main:app --reload   # http://localhost:8000  (Swagger at /docs)
+pytest                       # run the test suite (93 tests)
 
 # Frontend (separate repo, in another terminal)
 git clone <frontend-repo-url> && cd diagnostico-frontend

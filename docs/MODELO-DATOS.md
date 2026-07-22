@@ -23,7 +23,7 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 ## Decisiones cerradas (con datos reales del centro)
 
 - **Usuarios:** solo personal interno hace login (`ADMIN`, `RECEPCION`, `MEDICO`). Las citas las agenda **recepción**. Los pacientes son registros, no usuarios con acceso.
-- **Roles:** ADMIN todo · RECEPCION agenda/pacientes y **consulta** médicos, pero **sin** usuarios, configuración ni reportes · MEDICO su agenda (puede cancelar y marcar asistencia; las notas clínicas quedan para fase 2).
+- **Roles:** ADMIN todo · RECEPCION agenda/pacientes y **consulta** médicos, pero **sin** usuarios, configuración ni reportes · MEDICO su agenda (**solo lectura**; la asistencia y la cancelación las hacen recepción/admin; las notas clínicas quedan para fase 2).
 - **Paciente:** al agendar se identifica por **`nombre_completo` + `edad`** (lo que pide recepción). La **cédula** la solicitan los especialistas al realizar la consulta/estudio (para el informe): es **opcional** y se añade **después** (única si se indica).
 - **Alta de paciente al agendar (upsert):** al crear una cita el sistema **busca al paciente por `nombre_completo` + `edad`** (coincidencia exacta de ambos); si **existe** lo reutiliza, si **no existe** lo **crea** con `rol = PACIENTE`; si **varios coinciden** (nombres repetidos), recepción **elige** de una lista. Nunca se duplica.
 - **Duración de la cita:** la **elige recepción** al agendar, de una lista fija ({15, 30, 45, 60, 90} min). `ends_at = starts_at + duracion_min`. El servicio ya no la marca.

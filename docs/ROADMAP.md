@@ -6,13 +6,13 @@ Plan de proyecto, decisiones, fases, cronograma y riesgos del **MVP** (entrega/p
 
 - **Usuarios:** solo **personal interno** hace login (ADMIN, RECEPCION, MEDICO). Las citas las agenda **recepción**. Los pacientes son registros, no acceden.
 - **Tabla `usuarios` unificada:** personal, médicos y pacientes comparten el mismo diseño de tabla (campo `rol`), para **ahorrar código**. En la UI, **dos vistas** (Pacientes / Médicos) que filtran por rol.
-- **Roles:** ADMIN todo · **RECEPCION sin acceso a usuarios, configuración ni reportes** · MEDICO su agenda (consulta, marca asistencia y puede cancelar; notas clínicas → fase 2).
+- **Roles:** ADMIN todo · **RECEPCION sin acceso a usuarios, configuración ni reportes** · MEDICO su agenda **solo lectura** (solo consulta; la asistencia y la cancelación las hacen recepción/admin; notas clínicas → fase 2).
 - **Volumen:** ~60 citas/día · 18 médicos · ~11-13 especialidades.
 - **Duración de cita:** la **elige recepción** al agendar, de una lista fija ({15, 30, 45, 60, 90} min).
 - **Disponibilidad:** el calendario **bloquea** los días/horas fuera de la disponibilidad del médico.
 - **Upsert de paciente al agendar:** si el paciente no existe se crea, si existe se detecta (por `nombre_completo + edad`).
 - **Cero solapamientos:** en el MVP, **solo por médico** (por recurso → fase 2).
-- **Historia clínica:** **fuera del MVP → fase 2** (notas de texto del médico). En el MVP el médico consulta su agenda y marca asistencia (sin escribir notas clínicas).
+- **Historia clínica:** **fuera del MVP → fase 2** (notas de texto del médico). En el MVP el médico **solo consulta** su agenda (sin marcar asistencia ni escribir notas clínicas).
 - **Facturación y cobros:** **fuera** del sistema. **Sede:** una sola.
 - **Idioma UI:** español. · **Gestor de paquetes (frontend):** pnpm.
 
@@ -42,7 +42,7 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 3. **Pacientes** — CRUD (cédula única si se indica, opcional) + **upsert al agendar**.
 4. **Servicios** — catálogo de consultas y estudios (la duración de la cita la elige recepción al agendar).
 5. **Citas y calendario** — agendar con **anti-solapamiento por médico** y **bloqueo por disponibilidad**; estados y cancelación (libera cupo).
-6. **Agenda del médico (solo lectura)** — el médico consulta su propia agenda (sin escribir notas clínicas en el MVP).
+6. **Agenda del médico (solo lectura)** — el médico consulta su propia agenda; **no** marca asistencia ni cancela (lo hace recepción/admin) ni escribe notas clínicas en el MVP.
 
 > **Fuera del MVP (→ fase 2):** identificación robusta del paciente (por `fecha_nacimiento` obligatoria y/o `cédula`) — en el MVP se identifica por `nombre_completo + edad`, con la limitación conocida de posibles duplicados —, historia clínica / notas clínicas del médico, reportes, recordatorios WhatsApp, auditoría, visitas (agrupar estudios), duración por médico (`medico_servicio`), recursos/salas + anti-solapamiento por recurso, holter colocación+retiro, constraint `gist` en BD, PWA offline, portal de pacientes, Google Calendar, facturación (SENIAT).
 
@@ -72,11 +72,12 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 |----------|--------|-----|--------|:------:|
 | `GET /servicios` · `GET /medicos` · `GET /especialidades` | Alimentar desplegables al agendar | autenticado | MANUAL §3 | ✅ |
 
-**Disponibilidad — ADMIN**
+**Disponibilidad — lectura autenticada / gestión ADMIN**
 
 | Endpoint | Acción | Rol | Origen | Estado |
 |----------|--------|-----|--------|:------:|
-| `GET /disponibilidad` · `POST /disponibilidad` | Ver / definir franjas del médico | ADMIN | MANUAL §6.3 | ✅ |
+| `GET /disponibilidad` | Ver las franjas de un médico | autenticado | MANUAL §6.3 | ✅ |
+| `POST /disponibilidad` | Definir una franja del médico | ADMIN | MANUAL §6.3 | ✅ |
 
 **Pacientes — ADMIN/RECEPCION**
 
@@ -84,8 +85,8 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 |----------|--------|-----|--------|:------:|
 | `GET /pacientes` · `GET /pacientes/{id}` | Listar / ficha | ADMIN·RECEP | MANUAL §5 | ✅ |
 | `PUT /pacientes/{id}` | Editar ficha (parcial) | ADMIN·RECEP | MANUAL §5 | ✅ |
-| `POST /pacientes` | **Alta de paciente suelto** | ADMIN·RECEP | RF-05 · MANUAL §5.2 | ⬜ |
-| `GET /pacientes/{id}/citas` | **Historial de citas del paciente** | ADMIN·RECEP | MANUAL §5.3 | ⬜ |
+| `POST /pacientes` | **Alta de paciente suelto** | ADMIN·RECEP | RF-05 · MANUAL §5.2 | ✅ |
+| `GET /pacientes/{id}/citas` | **Historial de citas del paciente** | ADMIN·RECEP | MANUAL §5.3 | ✅ |
 
 **Citas**
 
@@ -93,21 +94,34 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 |----------|--------|-----|--------|:------:|
 | `POST /citas` | Agendar (aplica todas las reglas) | ADMIN·RECEP | RF-07 · MANUAL §3 | ✅ |
 | `GET /citas` | Agenda por día / rango | ADMIN·RECEP·MED | MANUAL §4,§8 | ✅ |
-| `POST /citas/{id}/cancelar` | Cancelar (libera cupo) | ADMIN·RECEP·MED | RF-11 · MANUAL §4 | ✅ |
-| `POST /citas/{id}/asistencia` | Atendida / no-show | ADMIN·RECEP·MED | MANUAL §8 | ✅ |
-| `PUT /citas/{id}` | **Editar / mover (revalida reglas)** | ADMIN·RECEP | RF-07 · MANUAL §4 | ⬜ |
+| `POST /citas/{id}/cancelar` | Cancelar (libera cupo) | ADMIN·RECEP | RF-11 · MANUAL §4 | ✅ |
+| `POST /citas/{id}/asistencia` | Atendida / no-show | ADMIN·RECEP | MANUAL §4 | ✅ |
+| `PUT /citas/{id}` | **Editar / mover (revalida reglas)** | ADMIN·RECEP | RF-07 · MANUAL §4 | ✅ |
 
 **Servicios y especialidades (gestión) — ADMIN**
 
 | Endpoint | Acción | Rol | Origen | Estado |
 |----------|--------|-----|--------|:------:|
-| `POST /servicios` · `PUT /servicios/{id}` | Crear / editar servicio | ADMIN | RF-02 · MANUAL §6.4 | ⬜ |
-| `POST /especialidades` | Crear especialidad | ADMIN | MANUAL §6 | ⬜ |
+| `POST /servicios` · `PUT /servicios/{id}` | Crear / editar servicio | ADMIN | RF-02 · MANUAL §6.4 | ✅ |
+| `POST /especialidades` | Crear especialidad | ADMIN | MANUAL §6 | ✅ |
 
 ### Pendientes → plan de cierre del backend
 
-- **A construir antes del frontend (MVP):** `POST /pacientes`, `GET /pacientes/{id}/citas`, `PUT /citas/{id}` (editar/mover). Sin ellos las vistas de **Pacientes** y de **Citas** quedan incompletas.
-- **A decidir (MVP simple o fase 2):** gestión de `servicios`/`especialidades`. Hoy vienen **precargadas por el seed** y se **leen** sin problema; su gestión por UI es prescindible para el MVP.
+- **Contrato de la API: ✅ 100% cerrado.** Todos los endpoints del MANUAL/RF están implementados y probados. El backend queda listo para el frontend (Fase 4).
+- `POST /pacientes`, `GET /pacientes/{id}/citas` y `PUT /citas/{id}` (editar/mover) cierran las vistas de **Pacientes** y **Citas**.
+- La gestión de `servicios`/`especialidades` (ADMIN) queda cubierta; los catálogos siguen precargándose por el seed y ahora además se pueden mantener por API.
+
+### Deuda técnica detectada (revisión) → fase 2
+
+> De una revisión de código del backend. No bloquean el MVP; se anotan para no perderlas.
+
+- **Convención de fechas:** la API trabaja en **hora local naive** (el frontend envía hora local; si llega con zona, se descarta). Pendiente: valorar migrar a **UTC *aware***. Ojo: `datetime.now()` en el servidor (Render corre en UTC) no coincide con la hora local del centro → la regla "no en el pasado" puede descuadrar por el desfase; revisar al fijar la zona.
+- **Router de citas:** el mapeo excepción→HTTP se repite entre agendar y editar (se dejó **explícito a propósito** por legibilidad).
+- **Disponibilidad:** `crear_disponibilidad` no valida franjas duplicadas/solapadas por médico y día.
+- **Login enumerable por *timing*:** responde sin llamar a bcrypt cuando el email no existe (oráculo de emails; riesgo bajo en tool interno).
+- **Sin paginación** en los listados de pacientes/personal.
+- **Unicidad sensible a mayúsculas/acentos** en `nombre`/`email`/`cédula`.
+- **CORS de un solo origen:** al desplegar, permitir local + producción a la vez.
 
 ## 4. Modelo de datos
 
@@ -158,11 +172,13 @@ gantt
 ## 6. Tablero de tareas (Kanban orientativo)
 
 **Por hacer**
-- **Completar el contrato de la API** (ver §3.1): `POST /pacientes`, historial de citas del paciente y `PUT /citas/{id}` (editar/mover) — MVP; gestión de servicios/especialidades — a decidir
 - Calendario, vistas Pacientes/Médicos y formulario de cita (Fase 4, frontend en repo aparte)
 
 **En curso**
 - **Fase 4 — UI:** login, calendario/agenda y formulario de cita en el frontend (repo aparte).
+
+**Hecho (reciente)**
+- **Contrato de la API completo** (ver §3.1): `POST /pacientes`, `GET /pacientes/{id}/citas`, `PUT /citas/{id}` (editar/mover) y gestión de `servicios`/`especialidades` (ADMIN).
 
 **Hecho**
 - Planificación y decisiones de arquitectura
@@ -173,7 +189,7 @@ gantt
 - **Fase 0** — Andamiaje backend FastAPI + conexión a PostgreSQL (frontend React/Vite en repo aparte)
 - **Fase 1** — Modelos SQLAlchemy (7 tablas) + Alembic + migración inicial + seed de catálogos (12 especialidades, 16 servicios)
 - **Fase 2** — Auth JWT (bcrypt), dependencia `requiere_rol` y guardas por rol (ADMIN/RECEPCION/MEDICO)
-- **Fase 3 — Citas (núcleo)** — Servicio `crear_cita`: upsert de paciente + disponibilidad + anti-solapamiento por médico + **rejilla de inicio (:00/:15/:30/:45)**; endpoints de citas (crear, listar por fecha/rango, cancelar, marcar asistencia), catálogos de lectura (`servicios`, `medicos`, `especialidades`), disponibilidad, pacientes (listar/ficha/editar) y CRUD de usuarios/médicos; **53 tests en verde**. *(El contrato de la API aún tiene endpoints pendientes → ver §3.1.)*
+- **Fase 3 — Citas (núcleo)** — Servicio `crear_cita`: upsert de paciente + disponibilidad + anti-solapamiento por médico + **rejilla de inicio (:00/:15/:30/:45)**; endpoints de citas (crear, listar por fecha/rango, cancelar, marcar asistencia), catálogos de lectura (`servicios`, `medicos`, `especialidades`), disponibilidad, pacientes (listar/ficha/editar) y CRUD de usuarios/médicos; **79 tests en verde** (tras completar el contrato y la revisión de código).
 - **Fase 5 — Despliegue** — Backend en producción en **Render** (release **v0.3.0**, auto-deploy en push a `main`, ejecuta `alembic upgrade head` y el seed)
 
 ## 7. Riesgos y mitigación
@@ -188,5 +204,5 @@ gantt
 ## 8. Decisiones cerradas / pendientes
 
 1. **Auth:** JWT propio con FastAPI (bcrypt + PyJWT). ✔️
-2. **BD:** PostgreSQL (Neon en la nube por portabilidad). ✔️
+2. **BD:** PostgreSQL. En **producción** se usa el Postgres gestionado de **Render** (`diagnostico-db`, ver `render.yaml`); Neon fue la opción inicial y sigue valiendo para dev (o Postgres local). ✔️
 3. **Fecha de entrega:** ~2 semanas → prioriza el MVP; ajustar el Gantt al calendario real.

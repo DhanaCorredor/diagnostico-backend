@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.auth import requiere_rol
 from app.db import get_db
 from app.models import Rol, Usuario
-from app.schemas import AsistenciaUpdate, CitaCreate, CitaOut
+from app.schemas import AsistenciaUpdate, CitaCreate, CitaOut, CitaUpdate
 from app.services import citas as citas_service
 from app.services.pacientes import PacientesAmbiguos
 
@@ -43,31 +43,46 @@ def agendar_cita(
             permitir_sobrecupo=datos.permitir_sobrecupo,
         )
     except citas_service.ServicioNoEncontrado:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado") from None
     except citas_service.MedicoNoEncontrado:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Médico no encontrado")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Médico no encontrado") from None
     except citas_service.HorarioNoAlineado:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "La cita debe empezar en :00, :15, :30 o :45",
-        )
+        ) from None
     except citas_service.CitaEnElPasado:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "No se puede agendar una cita en el pasado",
-        )
+        ) from None
     except PacientesAmbiguos as e:
-        raise HTTPException(status.HTTP_409_CONFLICT, str(e))
+        # Varios pacientes coinciden por nombre + edad: se devuelven los candidatos
+        # para que recepción elija cuál es (y reintente indicando su id en fase 2).
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail={
+                "mensaje": str(e),
+                "candidatos": [
+                    {
+                        "id": str(c.id),
+                        "nombre_completo": c.nombre_completo,
+                        "edad": c.edad,
+                    }
+                    for c in e.candidatos
+                ],
+            },
+        ) from None
     except citas_service.FueraDeDisponibilidad:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "La cita cae fuera de la disponibilidad del médico",
-        )
+        ) from None
     except citas_service.Solapamiento:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "El médico ya tiene una cita en ese horario",
-        )
+        ) from None
 
     db.commit()  # todo válido: se confirma la transacción (cita + posible paciente nuevo)
     return cita
@@ -118,22 +133,81 @@ def listar_citas(
     )
 
 
+@router.put("/{cita_id}", response_model=CitaOut)
+def editar_cita(
+    cita_id: uuid.UUID,
+    datos: CitaUpdate,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION)),
+):
+    """Edita o mueve una cita activa, revalidando todas las reglas de negocio.
+
+    Actualización parcial: solo se cambian los campos enviados. Cada regla que falla
+    se traduce al mismo código HTTP que al agendar. ADMIN o RECEPCIÓN.
+    """
+    try:
+        cita = citas_service.editar_cita(
+            db,
+            cita_id,
+            medico_id=datos.medico_id,
+            servicio_id=datos.servicio_id,
+            starts_at=datos.starts_at,
+            duracion_min=datos.duracion_min,
+            motivo=datos.motivo,
+            permitir_sobrecupo=datos.permitir_sobrecupo,
+        )
+    except citas_service.CitaNoEncontrada:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada") from None
+    except citas_service.CitaNoEditable:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "La cita no se puede editar (ya está cancelada o cerrada)",
+        ) from None
+    except citas_service.ServicioNoEncontrado:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado") from None
+    except citas_service.MedicoNoEncontrado:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Médico no encontrado") from None
+    except citas_service.HorarioNoAlineado:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "La cita debe empezar en :00, :15, :30 o :45",
+        ) from None
+    except citas_service.CitaEnElPasado:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "No se puede mover una cita al pasado",
+        ) from None
+    except citas_service.FueraDeDisponibilidad:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "La cita cae fuera de la disponibilidad del médico",
+        ) from None
+    except citas_service.Solapamiento:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "El médico ya tiene una cita en ese horario",
+        ) from None
+
+    db.commit()
+    return cita
+
+
 @router.post("/{cita_id}/cancelar", response_model=CitaOut)
 def cancelar_cita(
     cita_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION, Rol.MEDICO)),
+    _: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION)),
 ):
-    """Cancela una cita (libera el cupo). ADMIN, RECEPCIÓN o MEDICO."""
+    """Cancela una cita (libera el cupo). Solo ADMIN o RECEPCIÓN (el médico no cancela)."""
     try:
         cita = citas_service.cancelar_cita(db, cita_id)
     except citas_service.CitaNoEncontrada:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada") from None
     except citas_service.CitaNoCancelable:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "La cita no se puede cancelar (ya está cancelada o completada)",
-        )
+        ) from None
     db.commit()
     return cita
 
@@ -143,17 +217,17 @@ def marcar_asistencia(
     cita_id: uuid.UUID,
     datos: AsistenciaUpdate,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION, Rol.MEDICO)),
+    _: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION)),
 ):
-    """Marca una cita como **atendida** (COMPLETED) o **no-show** (NO_SHOW)."""
+    """Marca una cita como **atendida** (COMPLETED) o **no-show** (NO_SHOW). Solo ADMIN o RECEPCIÓN."""
     try:
         cita = citas_service.marcar_asistencia(db, cita_id, datos.estado)
     except citas_service.CitaNoEncontrada:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada") from None
     except citas_service.CitaNoActiva:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "Solo se puede marcar asistencia de una cita activa",
-        )
+        ) from None
     db.commit()
     return cita

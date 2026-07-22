@@ -44,12 +44,12 @@ def crear_disponibilidad(
             hora_fin=datos.hora_fin,
         )
     except disp_service.MedicoNoEncontrado:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Médico no encontrado")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Médico no encontrado") from None
     except disp_service.FranjaInvalida:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "La hora de inicio debe ser anterior a la de fin",
-        )
+        ) from None
 
     db.commit()
     return franja

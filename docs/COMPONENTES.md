@@ -81,7 +81,7 @@ src/
 | `PanelPage` | `/` | todos | `PanelResumen` |
 | `AgendaPage` | `/agenda` | todos | `Calendario` (+ `FormularioCita`) |
 | `PacientesPage` | `/pacientes` | ADMIN · RECEPCION | `TablaPacientes` + `FormularioPaciente` |
-| `FichaPacientePage` | `/pacientes/:id` | ADMIN · RECEPCION · MEDICO | `FichaCabecera` + `FichaTabs` (`ListaNotasClinicas` → **fase 2**) |
+| `FichaPacientePage` | `/pacientes/:id` | ADMIN · RECEPCION | `FichaCabecera` + `FichaTabs` (`ListaNotasClinicas` → **fase 2**) |
 | `MedicosPage` | `/medicos` | ADMIN · RECEPCION | `TarjetaMedico` (grid) |
 | `UsuariosPage` | `/usuarios` | **solo ADMIN** | `TablaUsuarios` + `FormularioUsuario` |
 | `ConfiguracionPage` | `/config` | **solo ADMIN** | formularios de centro/servicios |

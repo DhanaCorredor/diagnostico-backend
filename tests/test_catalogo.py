@@ -1,6 +1,8 @@
-"""Tests de las lecturas de catálogo (servicios, especialidades, médicos)."""
+"""Tests del catálogo: lecturas y gestión (servicios, especialidades, médicos)."""
 
 import uuid
+
+import pytest
 
 from app.models import Especialidad, Rol, Servicio, ServicioCategoria, Usuario
 from app.services import catalogo as C
@@ -51,3 +53,79 @@ def test_listar_especialidades_ordenadas(db):
     nombres = [e.nombre for e in C.listar_especialidades(db)]
     assert e_a.nombre in nombres and e_z.nombre in nombres
     assert nombres.index(e_a.nombre) < nombres.index(e_z.nombre)  # ordenadas por nombre
+
+
+# --- Gestión de servicios ----------------------------------------------------
+
+
+def test_crear_servicio(db):
+    servicio = C.crear_servicio(
+        db, nombre=f"Ecografía {uuid.uuid4()}", categoria=ServicioCategoria.ECOGRAFIA
+    )
+    assert servicio.id is not None
+    assert servicio.activo is True  # nace activo
+
+
+def test_crear_servicio_nombre_duplicado(db):
+    nombre = f"Repetido {uuid.uuid4()}"
+    C.crear_servicio(db, nombre=nombre, categoria=ServicioCategoria.CONSULTA)
+    with pytest.raises(C.NombreDuplicado):
+        C.crear_servicio(db, nombre=nombre, categoria=ServicioCategoria.OTRO)
+
+
+def test_actualizar_servicio_cambia_campos(db):
+    servicio = C.crear_servicio(
+        db, nombre=f"Viejo {uuid.uuid4()}", categoria=ServicioCategoria.CONSULTA
+    )
+    nuevo_nombre = f"Nuevo {uuid.uuid4()}"
+    C.actualizar_servicio(
+        db, servicio.id, {"nombre": nuevo_nombre, "categoria": ServicioCategoria.OTRO}
+    )
+    assert servicio.nombre == nuevo_nombre
+    assert servicio.categoria == ServicioCategoria.OTRO
+
+
+def test_actualizar_servicio_desactiva(db):
+    servicio = C.crear_servicio(
+        db, nombre=f"Baja {uuid.uuid4()}", categoria=ServicioCategoria.CONSULTA
+    )
+    C.actualizar_servicio(db, servicio.id, {"activo": False})
+    assert servicio.activo is False
+    # ya no aparece en el listado de activos
+    assert servicio.id not in [s.id for s in C.listar_servicios(db)]
+
+
+def test_actualizar_servicio_inexistente(db):
+    with pytest.raises(C.ServicioNoEncontrado):
+        C.actualizar_servicio(db, uuid.uuid4(), {"nombre": "x"})
+
+
+def test_actualizar_servicio_nombre_duplicado(db):
+    a = C.crear_servicio(db, nombre=f"A {uuid.uuid4()}", categoria=ServicioCategoria.CONSULTA)
+    b = C.crear_servicio(db, nombre=f"B {uuid.uuid4()}", categoria=ServicioCategoria.CONSULTA)
+    with pytest.raises(C.NombreDuplicado):
+        C.actualizar_servicio(db, b.id, {"nombre": a.nombre})  # choca con el de 'a'
+
+
+def test_actualizar_servicio_mismo_nombre_no_choca(db):
+    # renombrar un servicio a su propio nombre no debe dispararse como duplicado
+    servicio = C.crear_servicio(
+        db, nombre=f"Igual {uuid.uuid4()}", categoria=ServicioCategoria.CONSULTA
+    )
+    C.actualizar_servicio(db, servicio.id, {"nombre": servicio.nombre})
+    assert servicio.activo is True
+
+
+# --- Gestión de especialidades -----------------------------------------------
+
+
+def test_crear_especialidad(db):
+    esp = C.crear_especialidad(db, nombre=f"Neurología {uuid.uuid4()}")
+    assert esp.id is not None
+
+
+def test_crear_especialidad_nombre_duplicado(db):
+    nombre = f"Cardiología {uuid.uuid4()}"
+    C.crear_especialidad(db, nombre=nombre)
+    with pytest.raises(C.NombreDuplicado):
+        C.crear_especialidad(db, nombre=nombre)

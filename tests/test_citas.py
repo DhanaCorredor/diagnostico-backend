@@ -6,6 +6,7 @@ from datetime import date, datetime, time
 import pytest
 
 from app.models import Cita, Disponibilidad, EstadoCita, Rol, Usuario
+from app.schemas import CitaCreate, CitaUpdate
 from app.services import citas as C
 
 # Un lunes cualquiera, y su día en la convención del modelo (0=domingo).
@@ -27,6 +28,35 @@ def _franja(db, medico, hora_inicio=time(8, 0), hora_fin=time(14, 0)):
         )
     )
     db.flush()
+
+
+# --- Normalización de fecha con zona horaria (naive local) -------------------
+
+
+def test_citacreate_convierte_fecha_con_zona_a_naive():
+    # lo que manda el navegador con new Date().toISOString() lleva 'Z' (UTC)
+    datos = CitaCreate(
+        nombre_completo="Ana",
+        edad=30,
+        medico_id=uuid.uuid4(),
+        servicio_id=uuid.uuid4(),
+        starts_at="2026-07-20T10:00:00Z",
+        duracion_min=45,
+    )
+    assert datos.starts_at.tzinfo is None                 # sin zona -> no rompe la comparación
+    assert datos.starts_at == datetime(2026, 7, 20, 10, 0)  # se toma la hora tal cual (local)
+
+
+def test_citaupdate_convierte_fecha_con_zona_a_naive():
+    datos = CitaUpdate(starts_at="2026-07-20T11:30:00+00:00")
+    assert datos.starts_at.tzinfo is None
+    assert datos.starts_at == datetime(2026, 7, 20, 11, 30)
+
+
+def test_citaupdate_sin_starts_at_no_falla():
+    # el campo es opcional: si no viene, el validador no debe romper
+    datos = CitaUpdate(motivo="control")
+    assert datos.starts_at is None
 
 
 # --- R2: duración ------------------------------------------------------------
@@ -370,3 +400,105 @@ def test_marcar_asistencia_cita_no_activa(db, medico, servicio, admin):
     C.cancelar_cita(db, cita.id)  # cancelada -> ya no está activa
     with pytest.raises(C.CitaNoActiva):
         C.marcar_asistencia(db, cita.id, EstadoCita.COMPLETED)
+
+
+# --- Editar / mover cita -----------------------------------------------------
+
+
+def test_editar_mueve_la_hora(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)  # 10:00-10:45
+    C.editar_cita(db, cita.id, starts_at=datetime(2026, 7, 20, 11, 0), ahora=ANTES)
+    assert cita.starts_at == datetime(2026, 7, 20, 11, 0)
+    assert cita.ends_at == datetime(2026, 7, 20, 11, 45)  # conserva los 45 min
+
+
+def test_editar_cambia_la_duracion(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)  # 10:00-10:45
+    C.editar_cita(db, cita.id, duracion_min=90, ahora=ANTES)
+    assert cita.ends_at == datetime(2026, 7, 20, 11, 30)  # 10:00 + 90 min
+
+
+def test_editar_no_solapa_consigo_misma(db, medico, servicio, admin):
+    # mover dentro de su propio tramo no debe chocar con ella misma
+    cita = _cita(db, medico, servicio, admin, LUNES_10)  # 10:00-10:45
+    C.editar_cita(db, cita.id, starts_at=datetime(2026, 7, 20, 10, 15), ahora=ANTES)
+    assert cita.starts_at == datetime(2026, 7, 20, 10, 15)
+
+
+def test_editar_bloquea_solapamiento_con_otra(db, medico, servicio, admin):
+    _franja(db, medico)
+    otra = C.crear_cita(
+        db,
+        nombre_completo=f"Otra {uuid.uuid4()}",
+        edad=1,
+        medico_id=medico.id,
+        servicio_id=servicio.id,
+        starts_at=datetime(2026, 7, 20, 9, 0),  # 09:00-09:45
+        duracion_min=45,
+        creado_por_id=admin.id,
+        ahora=ANTES,
+    )
+    cita = _cita(db, medico, servicio, admin, LUNES_10)  # 10:00-10:45
+    # mover 'cita' encima de 'otra' -> choca
+    with pytest.raises(C.Solapamiento):
+        C.editar_cita(db, cita.id, starts_at=datetime(2026, 7, 20, 9, 30), ahora=ANTES)
+    assert otra.id != cita.id
+
+
+def test_editar_cita_inexistente(db):
+    with pytest.raises(C.CitaNoEncontrada):
+        C.editar_cita(db, uuid.uuid4(), motivo="x")
+
+
+def test_editar_cita_no_activa(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    C.cancelar_cita(db, cita.id)  # cancelada -> ya no es editable
+    with pytest.raises(C.CitaNoEditable):
+        C.editar_cita(db, cita.id, motivo="x")
+
+
+def test_editar_fuera_de_disponibilidad(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)  # franja 08:00-14:00
+    with pytest.raises(C.FueraDeDisponibilidad):
+        C.editar_cita(db, cita.id, starts_at=datetime(2026, 7, 20, 7, 0), ahora=ANTES)
+
+
+def test_editar_horario_no_alineado(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    with pytest.raises(C.HorarioNoAlineado):
+        C.editar_cita(db, cita.id, starts_at=datetime(2026, 7, 20, 11, 7), ahora=ANTES)
+
+
+def test_editar_al_pasado(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    with pytest.raises(C.CitaEnElPasado):
+        C.editar_cita(
+            db,
+            cita.id,
+            starts_at=datetime(2026, 7, 20, 11, 0),
+            ahora=datetime(2026, 7, 20, 12, 0),  # ya pasaron las 11:00
+        )
+
+
+def test_editar_sin_mover_hora_no_valida_pasado(db, medico, servicio, admin):
+    # cambiar solo el motivo no dispara la regla del pasado (no se mueve la hora)
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    C.editar_cita(db, cita.id, motivo="control", ahora=datetime(2026, 7, 20, 23, 0))
+    assert cita.motivo == "control"
+
+
+def test_editar_motivo_none_conserva_el_actual(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    cita.motivo = "revisión"
+    db.flush()
+    C.editar_cita(db, cita.id, starts_at=datetime(2026, 7, 20, 11, 0), ahora=ANTES)
+    assert cita.motivo == "revisión"  # no se envió motivo -> se conserva
+
+
+# --- Historial de citas de un paciente ---------------------------------------
+
+
+def test_listar_citas_de_paciente_historial(db, medico, servicio, admin):
+    cita = _cita(db, medico, servicio, admin, LUNES_10)
+    historial = C.listar_citas_de_paciente(db, cita.paciente_id)
+    assert [c.id for c in historial] == [cita.id]  # solo su cita, y es la suya

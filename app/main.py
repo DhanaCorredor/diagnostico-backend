@@ -25,12 +25,12 @@ app.add_middleware(
 )
 
 # Monta los routers (agrupan los endpoints).
-app.include_router(auth.router)      # POST /auth/login, GET /auth/me
-app.include_router(usuarios.router)  # GET /usuarios (solo ADMIN)
-app.include_router(citas.router)     # POST /citas (recepción/admin)
-app.include_router(catalogo.router)  # GET /servicios, /medicos (autenticado)
-app.include_router(disponibilidad.router)  # GET/POST /disponibilidad
-app.include_router(pacientes.router)  # GET/PUT /pacientes (admin/recepción)
+app.include_router(auth.router)      # /auth: login (JWT) y me (autenticado)
+app.include_router(usuarios.router)  # /usuarios: CRUD de personal/médicos (solo ADMIN)
+app.include_router(citas.router)     # /citas: agendar, listar, editar/mover, cancelar, asistencia
+app.include_router(catalogo.router)  # /servicios · /medicos · /especialidades: lectura (auth) + gestión (ADMIN)
+app.include_router(disponibilidad.router)  # /disponibilidad: ver (auth) y definir franjas (ADMIN)
+app.include_router(pacientes.router)  # /pacientes: CRUD e historial de citas (ADMIN/RECEPCIÓN)
 
 
 @app.get("/health")
