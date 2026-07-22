@@ -137,12 +137,13 @@ def _validar_servicio_medico_y_rejilla(
 ) -> None:
     """Valida las reglas comunes de identidad y encaje horario (crear y editar cita).
 
-    - El servicio debe existir.
+    - El servicio debe existir y estar activo (uno desactivado no es agendable).
     - El médico debe existir, tener rol MEDICO y estar activo (uno de baja no es agendable).
     - El inicio debe caer en la rejilla de minutos (:00, :15, :30, :45).
     Lanza la excepción de dominio correspondiente si algo falla.
     """
-    if db.get(Servicio, servicio_id) is None:
+    servicio = db.get(Servicio, servicio_id)
+    if servicio is None or not servicio.activo:
         raise ServicioNoEncontrado()
     medico = db.get(Usuario, medico_id)
     if medico is None or medico.rol != Rol.MEDICO or not medico.activo:
