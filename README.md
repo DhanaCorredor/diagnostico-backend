@@ -83,7 +83,7 @@ Core entities (7 tables): `usuarios` (unified), `especialidades` + `usuario_espe
 
 ## 🚀 Getting started
 
-> Requirements: Python 3.12+, Node.js 20+ with pnpm, and a PostgreSQL database (a local install, or Neon in the cloud).
+> Requirements: Python 3.12+, Node.js 20+ with pnpm, and a PostgreSQL database (a local install, or a managed cloud Postgres — Render in production).
 
 ```bash
 # Backend (this repo)
@@ -140,7 +140,7 @@ pnpm dev                     # http://localhost:5173
 - [x] **Phase 2** — Authentication (JWT) and roles
 - [x] **Phase 3** — Appointments core (patient upsert + availability + overlap per doctor) + tests
 - [ ] **Phase 4** — UI (login, calendar, Patients/Doctors views, appointment form) — frontend repo, pending
-- [x] **Phase 5** — Deployment (backend live on Render, release v0.3.0)
+- [x] **Phase 5** — Deployment (backend live on Render, release v0.4.0)
 
 Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 

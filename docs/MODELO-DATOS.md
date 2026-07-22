@@ -69,7 +69,7 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 | Campo | Tipo | Nota |
 |-------|------|------|
 | id | uuid (PK) | |
-| nombre | string, único | ej. Consulta cardiología, Ecocardiograma, Holter, Eco abdominal, Doppler… |
+| nombre | string, único | ej. Consulta cardiología, Ecocardiograma, Holter de ritmo, Ecografía integral, Doppler… |
 | categoria | `ServicioCategoria` | CONSULTA · ECOGRAFIA · ESTUDIO_CARDIACO · OTRO |
 | activo | bool (def. true) | |
 
