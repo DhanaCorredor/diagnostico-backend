@@ -15,7 +15,6 @@ from app.models import Rol
 from app.schemas import UsuarioCreate, UsuarioDetalle, UsuarioUpdate
 from app.services import usuarios as usr_service
 
-# Toda la gestión de personal es solo para ADMIN (guarda a nivel de router).
 router = APIRouter(
     prefix="/usuarios",
     tags=["usuarios"],

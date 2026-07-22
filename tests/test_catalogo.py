@@ -9,7 +9,6 @@ from app.services import catalogo as C
 
 
 def test_listar_servicios_solo_activos_y_ordenados(db):
-    # dos activos (con nombres desordenados) y uno inactivo
     activo_b = Servicio(nombre=f"B {uuid.uuid4()}", categoria=ServicioCategoria.CONSULTA)
     activo_a = Servicio(nombre=f"A {uuid.uuid4()}", categoria=ServicioCategoria.ECOGRAFIA)
     inactivo = Servicio(
@@ -20,8 +19,7 @@ def test_listar_servicios_solo_activos_y_ordenados(db):
 
     nombres = [s.nombre for s in C.listar_servicios(db)]
     assert activo_a.nombre in nombres and activo_b.nombre in nombres
-    assert inactivo.nombre not in nombres          # los inactivos no salen
-    # ordenados por nombre: 'A...' aparece antes que 'B...'
+    assert inactivo.nombre not in nombres
     assert nombres.index(activo_a.nombre) < nombres.index(activo_b.nombre)
 
 
@@ -37,10 +35,9 @@ def test_listar_medicos_activos_con_especialidades(db):
 
     medicos = C.listar_medicos(db)
     ids = [m.id for m in medicos]
-    assert activo.id in ids            # médico activo -> sí
-    assert inactivo.id not in ids      # médico dado de baja -> no
-    assert paciente.id not in ids      # un paciente -> no
-    # trae sus especialidades
+    assert activo.id in ids
+    assert inactivo.id not in ids
+    assert paciente.id not in ids
     m = next(x for x in medicos if x.id == activo.id)
     assert esp.nombre in [e.nombre for e in m.especialidades]
 
@@ -52,10 +49,7 @@ def test_listar_especialidades_ordenadas(db):
     db.flush()
     nombres = [e.nombre for e in C.listar_especialidades(db)]
     assert e_a.nombre in nombres and e_z.nombre in nombres
-    assert nombres.index(e_a.nombre) < nombres.index(e_z.nombre)  # ordenadas por nombre
-
-
-# --- Gestión de servicios ----------------------------------------------------
+    assert nombres.index(e_a.nombre) < nombres.index(e_z.nombre)
 
 
 def test_crear_servicio(db):
@@ -63,7 +57,7 @@ def test_crear_servicio(db):
         db, nombre=f"Ecografía {uuid.uuid4()}", categoria=ServicioCategoria.ECOGRAFIA
     )
     assert servicio.id is not None
-    assert servicio.activo is True  # nace activo
+    assert servicio.activo is True
 
 
 def test_crear_servicio_nombre_duplicado(db):
@@ -91,7 +85,6 @@ def test_actualizar_servicio_desactiva(db):
     )
     C.actualizar_servicio(db, servicio.id, {"activo": False})
     assert servicio.activo is False
-    # ya no aparece en el listado de activos
     assert servicio.id not in [s.id for s in C.listar_servicios(db)]
 
 
@@ -104,19 +97,15 @@ def test_actualizar_servicio_nombre_duplicado(db):
     a = C.crear_servicio(db, nombre=f"A {uuid.uuid4()}", categoria=ServicioCategoria.CONSULTA)
     b = C.crear_servicio(db, nombre=f"B {uuid.uuid4()}", categoria=ServicioCategoria.CONSULTA)
     with pytest.raises(C.NombreDuplicado):
-        C.actualizar_servicio(db, b.id, {"nombre": a.nombre})  # choca con el de 'a'
+        C.actualizar_servicio(db, b.id, {"nombre": a.nombre})
 
 
 def test_actualizar_servicio_mismo_nombre_no_choca(db):
-    # renombrar un servicio a su propio nombre no debe dispararse como duplicado
     servicio = C.crear_servicio(
         db, nombre=f"Igual {uuid.uuid4()}", categoria=ServicioCategoria.CONSULTA
     )
     C.actualizar_servicio(db, servicio.id, {"nombre": servicio.nombre})
     assert servicio.activo is True
-
-
-# --- Gestión de especialidades -----------------------------------------------
 
 
 def test_crear_especialidad(db):

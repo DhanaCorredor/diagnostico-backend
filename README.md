@@ -4,7 +4,7 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 
 > Bootcamp final project — MVP scoped to a 2-week deadline. Documentation in `docs/` (in Spanish).
 >
-> **Status:** the backend MVP is **complete and deployed** — [live API](https://diagnostico-api-jtbw.onrender.com/docs) (release **v0.4.0** on Render, auto-deploy on push to `main`). 97 passing tests (unit + integration). The React frontend (`diagnostico-frontend`) is the remaining phase.
+> **Status:** the backend MVP is **complete and deployed** — [live API](https://diagnostico-api-jtbw.onrender.com/docs) (release **v0.5.0** on Render, auto-deploy on push to `main`). 98 passing tests (unit + integration). The React frontend (`diagnostico-frontend`) is the remaining phase.
 
 ---
 
@@ -94,7 +94,7 @@ cp .env.example .env         # set DATABASE_URL, JWT_SECRET and ADMIN_PASSWORD
 alembic upgrade head         # apply migrations
 python -m app.seed           # seed catalogs + staff login users (needs ADMIN_PASSWORD)
 uvicorn app.main:app --reload   # http://localhost:8000  (Swagger at /docs)
-pytest                       # run the test suite (97 tests)
+pytest                       # run the test suite (98 tests)
 
 # Frontend (separate repo, in another terminal)
 git clone <frontend-repo-url> && cd diagnostico-frontend
@@ -140,7 +140,7 @@ pnpm dev                     # http://localhost:5173
 - [x] **Phase 2** — Authentication (JWT) and roles
 - [x] **Phase 3** — Appointments core (patient upsert + availability + overlap per doctor) + tests
 - [ ] **Phase 4** — UI (login, calendar, Patients/Doctors views, appointment form) — frontend repo, pending
-- [x] **Phase 5** — Deployment (backend live on Render, release v0.4.0)
+- [x] **Phase 5** — Deployment (backend live on Render, release v0.5.0)
 
 Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
@@ -151,13 +151,11 @@ Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 | Document | Content |
 |----------|---------|
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Roadmap and planning: phases, schedule (Gantt), kanban and risks |
-| [`docs/DOCUMENTACION-FUNCIONAL.md`](docs/DOCUMENTACION-FUNCIONAL.md) | Requirements, roles and user stories |
-| [`docs/CASOS-DE-USO.md`](docs/CASOS-DE-USO.md) | Use-case diagram and description (Mermaid) |
+| [`docs/DOCUMENTACION-FUNCIONAL.md`](docs/DOCUMENTACION-FUNCIONAL.md) | Requirements, roles, user stories and use cases |
 | [`docs/FLUJO-USUARIO.md`](docs/FLUJO-USUARIO.md) | User-flow flowchart (Mermaid) |
 | [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md) | Entities, fields, relations, ER diagram and rules |
 | [`docs/REGLAS-DE-NEGOCIO.md`](docs/REGLAS-DE-NEGOCIO.md) | Canonical business rules and how they are implemented |
 | [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Architecture, layers, data flow and technical decisions |
-| [`docs/COMPONENTES.md`](docs/COMPONENTES.md) | Frontend component map (Atomic Design lite) |
 | [`docs/MANUAL-USUARIO.md`](docs/MANUAL-USUARIO.md) | Step-by-step usage guide for the staff |
 | [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) | Deployment guide (Render + PostgreSQL) |
 

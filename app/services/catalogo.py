@@ -36,7 +36,7 @@ def listar_medicos(db: Session) -> list[Usuario]:
     """Devuelve los médicos activos, ordenados por nombre, con sus especialidades."""
     return (
         db.query(Usuario)
-        .options(selectinload(Usuario.especialidades))  # evita N+1 al serializar
+        .options(selectinload(Usuario.especialidades))
         .filter(Usuario.rol == Rol.MEDICO)
         .filter(Usuario.activo.is_(True))
         .order_by(Usuario.nombre_completo)
@@ -47,9 +47,6 @@ def listar_medicos(db: Session) -> list[Usuario]:
 def listar_especialidades(db: Session) -> list[Especialidad]:
     """Devuelve todas las especialidades del catálogo, ordenadas por nombre."""
     return db.query(Especialidad).order_by(Especialidad.nombre).all()
-
-
-# --- Gestión de catálogos (ADMIN) -------------------------------------------
 
 
 def _servicio_nombre_en_uso(

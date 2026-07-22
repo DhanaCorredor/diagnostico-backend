@@ -49,7 +49,6 @@ class UsuarioOut(BaseModel):
     email: str | None
     rol: Rol
 
-    # Permite construir el esquema a partir de un objeto ORM (usuario.id, .rol...).
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -81,7 +80,7 @@ class ServicioUpdate(BaseModel):
 
     nombre: str | None = Field(default=None, min_length=1)
     categoria: ServicioCategoria | None = None
-    activo: bool | None = None  # permite desactivar el servicio sin borrarlo
+    activo: bool | None = None
 
 
 class EspecialidadOut(BaseModel):
@@ -113,7 +112,7 @@ class DisponibilidadOut(BaseModel):
     """Una franja de disponibilidad semanal de un médico."""
 
     id: uuid.UUID
-    medico_id: uuid.UUID = Field(validation_alias="usuario_id")  # el modelo la guarda como usuario_id
+    medico_id: uuid.UUID = Field(validation_alias="usuario_id")
     dia_semana: int
     hora_inicio: time
     hora_fin: time
@@ -125,7 +124,7 @@ class DisponibilidadCreate(BaseModel):
     """Cuerpo del POST /disponibilidad (definir una franja de un médico)."""
 
     medico_id: uuid.UUID
-    dia_semana: int = Field(ge=0, le=6)  # 0=domingo ... 6=sábado
+    dia_semana: int = Field(ge=0, le=6)
     hora_inicio: time
     hora_fin: time
 
@@ -190,20 +189,22 @@ class UsuarioUpdate(BaseModel):
     password: str | None = Field(default=None, min_length=8)
     matricula: str | None = None
     especialidades: list[uuid.UUID] | None = None
-    activo: bool | None = None  # PUT {"activo": true} reactiva un usuario dado de baja
+    activo: bool | None = None
 
 
 class CitaCreate(BaseModel):
-    """Cuerpo del POST /citas. El paciente se identifica por nombre + edad (upsert)."""
+    """Cuerpo del POST /citas. El paciente se identifica por nombre + edad (upsert);
+    si hay varias coincidencias, recepción reenvía con `paciente_id` para elegir uno."""
 
-    nombre_completo: str = Field(min_length=1)  # no puede ir vacío
-    edad: int = Field(ge=0, le=120)             # 0 (lactantes) a 120
+    nombre_completo: str = Field(min_length=1)
+    edad: int = Field(ge=0, le=120)
+    paciente_id: uuid.UUID | None = None
     medico_id: uuid.UUID
     servicio_id: uuid.UUID
     starts_at: datetime
-    duracion_min: Literal[15, 30, 45, 60, 90]  # la elige recepción; solo estos valores
+    duracion_min: Literal[15, 30, 45, 60, 90]
     motivo: str | None = None
-    permitir_sobrecupo: bool = False  # recepción puede forzar un cupo extra
+    permitir_sobrecupo: bool = False
 
     @field_validator("starts_at")
     @classmethod
@@ -220,7 +221,7 @@ class CitaUpdate(BaseModel):
     starts_at: datetime | None = None
     duracion_min: Literal[15, 30, 45, 60, 90] | None = None
     motivo: str | None = None
-    permitir_sobrecupo: bool = False  # recepción puede forzar un cupo extra al mover
+    permitir_sobrecupo: bool = False
 
     @field_validator("starts_at")
     @classmethod

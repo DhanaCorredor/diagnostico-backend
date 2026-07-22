@@ -7,33 +7,18 @@ from sqlalchemy import pool
 
 from alembic import context
 
-# Importamos Base y los modelos para que sus tablas queden registradas en
-# Base.metadata. Sin este import, Alembic no "vería" ninguna tabla.
 from app.db import Base
-from app import models  # noqa: F401  (import con efecto: registra las 7 tablas)
+from app import models
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
 config = context.config
 
-# La URL de la BD viene del .env (no la escribimos en alembic.ini, que sí se
-# sube a git). load_dotenv lee el .env y os.getenv la recupera.
 load_dotenv()
 config.set_main_option("sqlalchemy.url", os.getenv("DATABASE_URL"))
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Metadatos de nuestros modelos: lo que Alembic compara contra la BD real
-# para autogenerar las migraciones.
 target_metadata = Base.metadata
-
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
 
 
 def run_migrations_offline() -> None:

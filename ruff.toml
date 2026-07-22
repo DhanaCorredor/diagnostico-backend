@@ -1,0 +1,5 @@
+target-version = "py312"
+
+[lint.per-file-ignores]
+# env.py importa los modelos solo para registrarlos en Base.metadata (autogenerate).
+"alembic/env.py" = ["F401"]

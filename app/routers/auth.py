@@ -10,9 +10,6 @@ from app.schemas import LoginRequest, TokenResponse, UsuarioOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# Hash "señuelo": cuando el email no existe, verificamos la contraseña contra
-# este hash igualmente, para que el login tarde lo mismo exista o no el usuario.
-# Así no se puede deducir qué correos están registrados midiendo el tiempo.
 _HASH_SENUELO = hashear_password("timing-attack-decoy")
 
 
@@ -22,7 +19,6 @@ def login(datos: LoginRequest, db: Session = Depends(get_db)):
     usuario = db.query(Usuario).filter_by(email=datos.email).first()
     hash_a_verificar = usuario.password_hash if usuario and usuario.password_hash else _HASH_SENUELO
     password_ok = verificar_password(datos.password, hash_a_verificar)
-    # Mismo mensaje para 'no existe' y 'contraseña mala': no revelamos cuál falló.
     if usuario is None or not usuario.password_hash or not password_ok:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
