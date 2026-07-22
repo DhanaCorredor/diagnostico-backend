@@ -29,7 +29,7 @@ def test_reutiliza_si_existe(db):
     nombre = f"Paciente {uuid.uuid4()}"
     p1 = buscar_o_crear_paciente(db, nombre, 30)
     p2 = buscar_o_crear_paciente(db, nombre, 30)
-    assert p1.id == p2.id  # el mismo, no un duplicado
+    assert p1.id == p2.id
 
 
 def test_varios_coinciden_lanza_ambiguo(db):
@@ -39,11 +39,7 @@ def test_varios_coinciden_lanza_ambiguo(db):
     db.flush()
     with pytest.raises(PacientesAmbiguos) as exc:
         buscar_o_crear_paciente(db, nombre, 50)
-    # la excepción lleva los candidatos para que el endpoint los muestre (409)
     assert len(exc.value.candidatos) == 2
-
-
-# --- Gestión de pacientes (listar / ver / editar) ---------------------------
 
 
 def test_listar_pacientes_solo_pacientes(db):
@@ -53,7 +49,7 @@ def test_listar_pacientes_solo_pacientes(db):
     db.flush()
     ids = [p.id for p in listar_pacientes(db)]
     assert pac.id in ids
-    assert medico.id not in ids  # los médicos no son pacientes
+    assert medico.id not in ids
 
 
 def test_obtener_paciente_ok_y_no_encontrado(db):
@@ -77,7 +73,6 @@ def test_actualizar_paciente_parcial_no_borra_cedula(db):
     pac.cedula = f"V-{uuid.uuid4()}"
     db.flush()
     ced_original = pac.cedula
-    # actualizo solo el teléfono -> la cédula NO se toca (footgun resuelto)
     actualizar_paciente(db, pac.id, {"telefono": "555-9999"})
     assert pac.cedula == ced_original
     assert pac.telefono == "555-9999"

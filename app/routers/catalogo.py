@@ -30,7 +30,7 @@ router = APIRouter(tags=["catálogos"])
 @router.get("/servicios", response_model=list[ServicioOut])
 def listar_servicios(
     db: Session = Depends(get_db),
-    _: object = Depends(usuario_actual),  # solo exige estar autenticado
+    _: object = Depends(usuario_actual),
 ):
     """Devuelve el catálogo de servicios activos."""
     return catalogo_service.listar_servicios(db)
@@ -39,7 +39,7 @@ def listar_servicios(
 @router.get("/medicos", response_model=list[MedicoOut])
 def listar_medicos(
     db: Session = Depends(get_db),
-    _: object = Depends(usuario_actual),  # solo exige estar autenticado
+    _: object = Depends(usuario_actual),
 ):
     """Devuelve los médicos activos con sus especialidades (para elegir al agendar)."""
     return catalogo_service.listar_medicos(db)
@@ -48,13 +48,10 @@ def listar_medicos(
 @router.get("/especialidades", response_model=list[EspecialidadOut])
 def listar_especialidades(
     db: Session = Depends(get_db),
-    _: object = Depends(usuario_actual),  # solo exige estar autenticado
+    _: object = Depends(usuario_actual),
 ):
     """Devuelve el catálogo de especialidades médicas."""
     return catalogo_service.listar_especialidades(db)
-
-
-# --- Gestión de catálogos (solo ADMIN) --------------------------------------
 
 
 @router.post(

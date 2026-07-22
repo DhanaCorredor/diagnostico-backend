@@ -12,11 +12,8 @@ from app.routers import auth, catalogo, citas, disponibilidad, pacientes, usuari
 
 load_dotenv()
 
-# 'app' es la aplicación. El servidor (uvicorn) la busca por este nombre.
 app = FastAPI(title="Diagnóstico API")
 
-# CORS: el navegador solo deja al frontend (otro origen) llamar a esta API si el
-# servidor lo autoriza. El origen sale del .env para poder cambiarlo en producción.
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
 app.add_middleware(
     CORSMiddleware,
@@ -26,13 +23,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Monta los routers (agrupan los endpoints).
-app.include_router(auth.router)      # /auth: login (JWT) y me (autenticado)
-app.include_router(usuarios.router)  # /usuarios: CRUD de personal/médicos (solo ADMIN)
-app.include_router(citas.router)     # /citas: agendar, listar, editar/mover, cancelar, asistencia
-app.include_router(catalogo.router)  # /servicios · /medicos · /especialidades: lectura (auth) + gestión (ADMIN)
-app.include_router(disponibilidad.router)  # /disponibilidad: ver (auth) y definir franjas (ADMIN)
-app.include_router(pacientes.router)  # /pacientes: CRUD e historial de citas (ADMIN/RECEPCIÓN)
+app.include_router(auth.router)
+app.include_router(usuarios.router)
+app.include_router(citas.router)
+app.include_router(catalogo.router)
+app.include_router(disponibilidad.router)
+app.include_router(pacientes.router)
 
 
 @app.exception_handler(IntegrityError)

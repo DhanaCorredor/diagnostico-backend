@@ -14,18 +14,12 @@ from app.auth import hashear_password
 from app.db import SessionLocal
 from app.models import Disponibilidad, Especialidad, Rol, Servicio, ServicioCategoria, Usuario
 
-# Personal interno que hace login: (nombre, rol, email, matrícula).
-# Todos comparten la contraseña del .env (ADMIN_PASSWORD); sin ella, se saltan.
 STAFF = [
     ("Administrador", "ADMIN", "admin@diagnostico.com", None),
     ("Recepción Demo", "RECEPCION", "recepcion@diagnostico.com", None),
     ("Dra. Ana Médico", "MEDICO", "medico@diagnostico.com", "MAT-0001"),
 ]
 
-# --- Catálogo de especialidades (perfil real del centro, briefing) ----------
-# 11 consultas por especialidad + "Ecografía" (para los ecografistas, que en el
-# briefing son un servicio/estudio, no una consulta, pero necesitan especialidad
-# para ser filtrables en la vista de Médicos).
 ESPECIALIDADES = [
     "Cardiología",
     "Medicina Interna",
@@ -41,11 +35,7 @@ ESPECIALIDADES = [
     "Ecografía",
 ]
 
-# --- Catálogo de servicios: (nombre, categoría) ------------------------------
-# La duración ya no vive en el servicio: la elige recepción al agendar la cita.
-# Consultas: una por especialidad de consulta. Estudios: los del briefing.
 SERVICIOS = [
-    # Consultas (una por especialidad de consulta)
     ("Consulta cardiología", ServicioCategoria.CONSULTA),
     ("Consulta medicina interna", ServicioCategoria.CONSULTA),
     ("Consulta cirugía general", ServicioCategoria.CONSULTA),
@@ -57,49 +47,61 @@ SERVICIOS = [
     ("Consulta venereología", ServicioCategoria.CONSULTA),
     ("Consulta neumonología", ServicioCategoria.CONSULTA),
     ("Consulta psicología", ServicioCategoria.CONSULTA),
-    # Ecografías
-    ("Ecografía integral", ServicioCategoria.ECOGRAFIA),
-    ("Doppler", ServicioCategoria.ECOGRAFIA),
-    # Estudios cardíacos
+    ("Ecografía abdominal", ServicioCategoria.ECOGRAFIA),
+    ("Ecografía pélvica", ServicioCategoria.ECOGRAFIA),
+    ("Ecografía renal", ServicioCategoria.ECOGRAFIA),
+    ("Ecografía testicular", ServicioCategoria.ECOGRAFIA),
+    ("Ecografía de partes blandas", ServicioCategoria.ECOGRAFIA),
+    ("Ecografía mamaria", ServicioCategoria.ECOGRAFIA),
+    ("Ecografía prostática", ServicioCategoria.ECOGRAFIA),
+    ("Ecografía tiroidea", ServicioCategoria.ECOGRAFIA),
+    ("Ecografía transvaginal", ServicioCategoria.ECOGRAFIA),
+    ("Ecografía músculo-esquelética", ServicioCategoria.ECOGRAFIA),
+    ("Doppler carotídeo", ServicioCategoria.DOPPLER),
+    ("Doppler hepático", ServicioCategoria.DOPPLER),
+    ("Doppler renal", ServicioCategoria.DOPPLER),
+    ("Doppler testicular", ServicioCategoria.DOPPLER),
+    ("Doppler de partes blandas", ServicioCategoria.DOPPLER),
+    ("Doppler mamario", ServicioCategoria.DOPPLER),
+    ("Doppler prostático", ServicioCategoria.DOPPLER),
+    ("Doppler tiroideo", ServicioCategoria.DOPPLER),
+    ("Doppler pélvico", ServicioCategoria.DOPPLER),
+    ("Doppler transvaginal", ServicioCategoria.DOPPLER),
+    ("Doppler arterial y venoso (un miembro)", ServicioCategoria.DOPPLER),
+    ("Doppler arterial y venoso (ambos miembros)", ServicioCategoria.DOPPLER),
     ("Ecocardiograma", ServicioCategoria.ESTUDIO_CARDIACO),
-    ("Electrocardiograma", ServicioCategoria.ESTUDIO_CARDIACO),
+    ("Electrocardiograma informado", ServicioCategoria.ESTUDIO_CARDIACO),
+    ("Electrocardiograma básico", ServicioCategoria.ESTUDIO_CARDIACO),
     ("Holter de ritmo", ServicioCategoria.ESTUDIO_CARDIACO),
     ("MAPA", ServicioCategoria.ESTUDIO_CARDIACO),
-    # Otros estudios
     ("Espirometría", ServicioCategoria.OTRO),
     ("Endoscopia nasal", ServicioCategoria.OTRO),
+    ("Plan Mujer (chequeo ginecológico completo)", ServicioCategoria.PROMOCION),
+    ("Cardiología (Holter + MAPA)", ServicioCategoria.PROMOCION),
+    ("2 ecografías convencionales", ServicioCategoria.PROMOCION),
+    ("Eco Doppler completo", ServicioCategoria.PROMOCION),
+    ("Neumonología + espirometría", ServicioCategoria.PROMOCION),
 ]
 
-# --- Cuadro médico (briefing) -----------------------------------------------
-# Los 18 médicos reales del centro. NO hacen login (sin email/contraseña):
-# recepción agenda por ellos; el médico de demo con acceso es el del STAFF.
-#
-# Horarios: el briefing da la hora de inicio y "am/pm", pero no la de fin, así
-# que se fija por convención dentro de la jornada del centro (L-S 07:30-17:30):
-#   - mañana ("am")   -> 08:00-13:00
-#   - tarde  ("pm")   -> 14:00-17:30
-#   - "desde HH"      -> HH -> 17:30 (cierre)
-# Los médicos SIN horario en el briefing quedan con la lista de franjas vacía y
-# reciben la jornada completa en sembrar_disponibilidad() (varían según el día).
 LUN, MAR, MIE, JUE, VIE, SAB = 1, 2, 3, 4, 5, 6
 MANANA = (time(8, 0), time(13, 0))
 TARDE = (time(14, 0), time(17, 30))
 CIERRE = time(17, 30)
 
-# (nombre, [especialidades del catálogo], [(día, hora_inicio, hora_fin), ...])
 MEDICOS = [
     ("Dra. Fabiola González", ["Cardiología"],
      [(LUN, *MANANA), (MAR, *MANANA), (MIE, *TARDE), (JUE, *TARDE)]),
     ("Divian Herrera", ["Cardiología"],
      [(MAR, *TARDE), (JUE, *MANANA), (VIE, *TARDE)]),
     ("Dr. Richard Rodríguez", ["Cardiología"],
-     [(MIE, *MANANA), (VIE, *TARDE)]),
+     [(MIE, time(8, 0), CIERRE)]),
     ("Dra. Mariana Contreras", ["Cardiología"],
      [(LUN, *TARDE), (VIE, *MANANA), (SAB, *MANANA)]),
     ("Dr. Luis Peralta", ["Cardiología"],
      [(SAB, time(12, 0), CIERRE)]),
     ("Dra. Elsa Blanco", ["Otorrinolaringología"], []),
-    ("Dra. Andrea Blanco", ["Dermatología"], []),
+    ("Dra. Andrea Blanco", ["Dermatología", "Venereología"], []),
+    ("Dra. Milaurys Fernández", ["Cirugía General"], []),
     ("Lic. Nathaly Rojas", ["Psicología"], []),
     ("Dra. Katherinne Castro", ["Traumatología"], []),
     ("Dra. Cristina Jiménez", ["Traumatología"], []),
@@ -107,29 +109,25 @@ MEDICOS = [
      [(VIE, time(13, 0), CIERRE)]),
     ("Dr. José Reyes", ["Gastroenterología"],
      [(MAR, time(8, 0), CIERRE)]),
-    ("Dra. Genesis Rivas", ["Ginecología"],
+    ("Dra. Jessika Colmenarez", ["Ginecología"],
      [(JUE, time(8, 0), CIERRE)]),
     ("Dra. Nancy Borgas", ["Neumonología"],
      [(MIE, time(13, 0), CIERRE)]),
     ("Dra. Nena Alvarado", ["Medicina Interna"],
      [(SAB, time(8, 0), CIERRE)]),
     ("Dra. Tania Hernández", ["Ecografía"],
-     [(LUN, time(7, 30), CIERRE), (MIE, time(7, 30), CIERRE)]),
+     [(LUN, time(13, 0), CIERRE), (MAR, time(13, 0), CIERRE),
+      (MIE, time(13, 0), CIERRE), (JUE, time(7, 30), CIERRE)]),
     ("Dr. Michell Caballero", ["Ecografía"],
-     [(LUN, time(7, 30), CIERRE), (MIE, time(7, 30), CIERRE)]),
-    ("Dra. Gineth Vargas", ["Ecografía"],
-     [(MAR, time(8, 30), CIERRE), (JUE, time(8, 30), CIERRE)]),
+     [(LUN, time(7, 30), CIERRE), (MAR, time(7, 30), CIERRE),
+      (MIE, time(7, 30), CIERRE), (VIE, time(7, 30), CIERRE),
+      (SAB, time(7, 30), CIERRE)]),
 ]
 
-# --- Pacientes ficticios (demo) ---------------------------------------------
-# NO son datos reales: se INVENTAN para poder mostrar el sistema sin exponer
-# información de pacientes reales del centro (privacidad HIPAA/GDPR).
-# (nombre_completo, edad, cédula|None, teléfono|None). Los adultos llevan cédula
-# (el ~98% de los casos); solo la menor va sin cédula (caso del briefing).
 PACIENTES = [
     ("María Fernández", 34, "V-13245678", "0412-1112233"),
     ("José Rodríguez", 51, "V-16234567", "0414-2223344"),
-    ("Ana Gómez", 8, None, "0416-3334455"),  # menor: sin cédula
+    ("Ana Gómez", 8, None, "0416-3334455"),
     ("Carlos Materán", 67, "V-14567891", "0424-4445566"),
     ("Luisa Pérez", 29, "V-18765432", "0426-6667788"),
 ]
@@ -177,7 +175,7 @@ def sembrar_medicos(db):
         medico = Usuario(nombre_completo=nombre, rol=Rol.MEDICO)
         medico.especialidades = [catalogo[e] for e in especialidades]
         db.add(medico)
-        db.flush()  # necesita id antes de crear su disponibilidad
+        db.flush()
         for dia, inicio, fin in franjas:
             db.add(
                 Disponibilidad(
@@ -245,11 +243,7 @@ def sembrar_staff(db):
     return creados
 
 
-# --- Disponibilidad por defecto de los médicos ------------------------------
-# Horario real del centro: lunes a sábado, 07:30-17:30 (domingo cerrado).
-# Cada médico sin franjas recibe esa jornada, para que la agenda tenga huecos
-# utilizables sin depender de sobrecupos.
-DIAS_LABORABLES = (1, 2, 3, 4, 5, 6)  # lunes a sábado (0=domingo, cerrado)
+DIAS_LABORABLES = (1, 2, 3, 4, 5, 6)
 HORA_APERTURA = time(7, 30)
 HORA_CIERRE = time(17, 30)
 
@@ -286,10 +280,10 @@ def main():
     try:
         n_esp = sembrar_especialidades(db)
         n_serv = sembrar_servicios(db)
-        db.flush()  # las especialidades deben existir antes de vincularlas a los médicos
+        db.flush()
         n_med = sembrar_medicos(db)
         n_staff = sembrar_staff(db)
-        db.flush()  # los médicos deben tener id antes de sembrar su disponibilidad
+        db.flush()
         n_disp = sembrar_disponibilidad(db)
         n_pac = sembrar_pacientes(db)
         db.commit()

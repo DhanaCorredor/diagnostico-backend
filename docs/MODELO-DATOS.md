@@ -69,8 +69,8 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 | Campo | Tipo | Nota |
 |-------|------|------|
 | id | uuid (PK) | |
-| nombre | string, único | ej. Consulta cardiología, Ecocardiograma, Holter de ritmo, Ecografía integral, Doppler… |
-| categoria | `ServicioCategoria` | CONSULTA · ECOGRAFIA · ESTUDIO_CARDIACO · OTRO |
+| nombre | string, único | ej. Consulta cardiología, Ecocardiograma, Holter de ritmo, Ecografía abdominal, Doppler carotídeo… |
+| categoria | `ServicioCategoria` | CONSULTA · ECOGRAFIA · DOPPLER · ESTUDIO_CARDIACO · PROMOCION · OTRO |
 | activo | bool (def. true) | |
 
 ### `disponibilidad` — franjas semanales del médico
@@ -108,7 +108,7 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 
 - `Rol`: `ADMIN`, `RECEPCION`, `MEDICO`, `PACIENTE`
 - `EstadoCita`: `SCHEDULED`, `CONFIRMED`, `CANCELLED`, `COMPLETED`, `NO_SHOW`
-- `ServicioCategoria`: `CONSULTA`, `ECOGRAFIA`, `ESTUDIO_CARDIACO`, `OTRO`
+- `ServicioCategoria`: `CONSULTA`, `ECOGRAFIA`, `DOPPLER`, `ESTUDIO_CARDIACO`, `PROMOCION`, `OTRO`
 
 ## Reglas de validación (en el backend FastAPI)
 

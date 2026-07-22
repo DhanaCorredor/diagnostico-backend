@@ -20,16 +20,11 @@ from app.models import Rol, Usuario
 
 load_dotenv()
 
-# Secreto para firmar los tokens: viene del .env (nunca hardcodeado).
 JWT_SECRET = os.getenv("JWT_SECRET")
 if not JWT_SECRET:
-    # Sin secreto no se pueden firmar ni verificar tokens de forma segura.
     raise RuntimeError("Falta JWT_SECRET en el .env (secreto para firmar los tokens JWT).")
-JWT_ALGORITHM = "HS256"        # algoritmo de firma (HMAC + SHA-256)
-JWT_EXPIRA_MINUTOS = 60 * 8    # el token dura 8 horas (una jornada laboral)
-
-
-# --- Contraseñas (bcrypt) ---------------------------------------------------
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRA_MINUTOS = 60 * 8
 
 
 def hashear_password(password: str) -> str:
@@ -45,9 +40,6 @@ def hashear_password(password: str) -> str:
 def verificar_password(password: str, password_hash: str) -> bool:
     """Comprueba si una contraseña coincide con su hash guardado."""
     return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
-
-
-# --- Tokens JWT (PyJWT) -----------------------------------------------------
 
 
 def crear_token(usuario_id: uuid.UUID) -> str:
@@ -73,9 +65,6 @@ def decodificar_token(token: str) -> dict:
     return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
 
 
-# --- Dependencia de FastAPI: usuario autenticado ----------------------------
-
-# Lee la cabecera 'Authorization: Bearer <token>'. En /docs pone el botón "Authorize".
 security = HTTPBearer()
 
 
@@ -98,8 +87,6 @@ def usuario_actual(
     except (jwt.InvalidTokenError, KeyError, ValueError):
         raise no_autorizado from None
     usuario = db.get(Usuario, usuario_id)
-    # El usuario debe existir Y seguir activo: si un admin lo dio de baja, su token
-    # (que dura horas) deja de servir de inmediato, no hasta que caduque.
     if usuario is None or not usuario.activo:
         raise no_autorizado
     return usuario

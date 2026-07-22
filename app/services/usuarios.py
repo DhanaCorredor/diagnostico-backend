@@ -13,7 +13,6 @@ from app.auth import hashear_password
 from app.models import Especialidad, Rol, Usuario
 from app.services.comun import valor_en_uso
 
-# Roles de personal que hacen login (nunca PACIENTE).
 ROLES_STAFF = (Rol.ADMIN, Rol.RECEPCION, Rol.MEDICO)
 
 
@@ -55,7 +54,7 @@ def listar_personal(db: Session) -> list[Usuario]:
     """Devuelve el personal (todo menos pacientes), ordenado por nombre."""
     return (
         db.query(Usuario)
-        .options(selectinload(Usuario.especialidades))  # evita N+1 al serializar
+        .options(selectinload(Usuario.especialidades))
         .filter(Usuario.rol != Rol.PACIENTE)
         .order_by(Usuario.nombre_completo)
         .all()
@@ -84,7 +83,7 @@ def crear_usuario(
     if rol not in ROLES_STAFF:
         raise RolNoPermitido()
     if rol != Rol.MEDICO and (especialidades or matricula is not None):
-        raise DatosSoloDeMedico()  # especialidades y matrícula solo para médicos
+        raise DatosSoloDeMedico()
     if _email_en_uso(db, email):
         raise EmailDuplicado()
     esp = _resolver_especialidades(db, especialidades)
@@ -109,7 +108,7 @@ def actualizar_usuario(db: Session, usuario_id: uuid.UUID, cambios: dict) -> Usu
     if usuario.rol != Rol.MEDICO and (
         cambios.get("especialidades") or cambios.get("matricula") is not None
     ):
-        raise DatosSoloDeMedico()  # especialidades y matrícula solo para médicos
+        raise DatosSoloDeMedico()
 
     if cambios.get("email") is not None and _email_en_uso(
         db, cambios["email"], excluir_id=usuario_id

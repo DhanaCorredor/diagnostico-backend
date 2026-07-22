@@ -48,11 +48,8 @@ def buscar_o_crear_paciente(db: Session, nombre_completo: str, edad: int) -> Usu
 
     paciente = Usuario(nombre_completo=nombre_completo, edad=edad, rol=Rol.PACIENTE)
     db.add(paciente)
-    db.flush()  # asigna el id sin cerrar la transacción
+    db.flush()
     return paciente
-
-
-# --- Gestión de pacientes (listar / ver / editar) ---------------------------
 
 
 class PacienteNoEncontrado(Exception):
@@ -93,12 +90,12 @@ def crear_paciente(db: Session, datos: dict) -> Usuario:
     alta explícita de recepción (para reutilizar uno existente está el upsert al agendar).
     """
     cedula = datos.get("cedula")
-    if cedula is not None and _cedula_en_uso(db, cedula):  # única si viene
+    if cedula is not None and _cedula_en_uso(db, cedula):
         raise CedulaDuplicada()
 
     paciente = Usuario(rol=Rol.PACIENTE, **datos)
     db.add(paciente)
-    db.flush()  # asigna el id; el commit lo hace el endpoint
+    db.flush()
     return paciente
 
 
