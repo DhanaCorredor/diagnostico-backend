@@ -3,24 +3,27 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.auth import crear_token, usuario_actual, verificar_password
+from app.auth import crear_token, hashear_password, usuario_actual, verificar_password
 from app.db import get_db
 from app.models import Usuario
 from app.schemas import LoginRequest, TokenResponse, UsuarioOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# Hash "señuelo": cuando el email no existe, verificamos la contraseña contra
+# este hash igualmente, para que el login tarde lo mismo exista o no el usuario.
+# Así no se puede deducir qué correos están registrados midiendo el tiempo.
+_HASH_SENUELO = hashear_password("timing-attack-decoy")
+
 
 @router.post("/login", response_model=TokenResponse)
 def login(datos: LoginRequest, db: Session = Depends(get_db)):
     """Verifica email + contraseña y, si son correctos, devuelve un token JWT."""
     usuario = db.query(Usuario).filter_by(email=datos.email).first()
+    hash_a_verificar = usuario.password_hash if usuario and usuario.password_hash else _HASH_SENUELO
+    password_ok = verificar_password(datos.password, hash_a_verificar)
     # Mismo mensaje para 'no existe' y 'contraseña mala': no revelamos cuál falló.
-    if (
-        usuario is None
-        or not usuario.password_hash
-        or not verificar_password(datos.password, usuario.password_hash)
-    ):
+    if usuario is None or not usuario.password_hash or not password_ok:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales inválidas",

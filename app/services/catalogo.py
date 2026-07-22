@@ -8,7 +8,7 @@ servicio para poder probarlo sin levantar la API.
 
 import uuid
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models import Especialidad, Rol, Servicio, ServicioCategoria, Usuario
 
@@ -35,6 +35,7 @@ def listar_medicos(db: Session) -> list[Usuario]:
     """Devuelve los médicos activos, ordenados por nombre, con sus especialidades."""
     return (
         db.query(Usuario)
+        .options(selectinload(Usuario.especialidades))  # evita N+1 al serializar
         .filter(Usuario.rol == Rol.MEDICO)
         .filter(Usuario.activo.is_(True))
         .order_by(Usuario.nombre_completo)

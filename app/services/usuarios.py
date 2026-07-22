@@ -7,7 +7,7 @@ pacientes NO se gestionan aquí (entran por el upsert al agendar).
 
 import uuid
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.auth import hashear_password
 from app.models import Especialidad, Rol, Usuario
@@ -57,6 +57,7 @@ def listar_personal(db: Session) -> list[Usuario]:
     """Devuelve el personal (todo menos pacientes), ordenado por nombre."""
     return (
         db.query(Usuario)
+        .options(selectinload(Usuario.especialidades))  # evita N+1 al serializar
         .filter(Usuario.rol != Rol.PACIENTE)
         .order_by(Usuario.nombre_completo)
         .all()
