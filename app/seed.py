@@ -107,7 +107,7 @@ MEDICOS = [
      [(VIE, time(13, 0), CIERRE)]),
     ("Dr. José Reyes", ["Gastroenterología"],
      [(MAR, time(8, 0), CIERRE)]),
-    ("Dra. Genesis Rivas", ["Ginecología"],
+    ("Dra. Jessika Colmenarez", ["Ginecología"],
      [(JUE, time(8, 0), CIERRE)]),
     ("Dra. Nancy Borgas", ["Neumonología"],
      [(MIE, time(13, 0), CIERRE)]),
@@ -117,8 +117,6 @@ MEDICOS = [
      [(LUN, time(7, 30), CIERRE), (MIE, time(7, 30), CIERRE)]),
     ("Dr. Michell Caballero", ["Ecografía"],
      [(LUN, time(7, 30), CIERRE), (MIE, time(7, 30), CIERRE)]),
-    ("Dra. Gineth Vargas", ["Ecografía"],
-     [(MAR, time(8, 30), CIERRE), (JUE, time(8, 30), CIERRE)]),
 ]
 
 # --- Pacientes ficticios (demo) ---------------------------------------------
