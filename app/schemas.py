@@ -63,15 +63,10 @@ class ServicioOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class ServicioDetalle(BaseModel):
-    """Un servicio con su estado (para la gestión del ADMIN: incluye `activo`)."""
+class ServicioDetalle(ServicioOut):
+    """Un servicio con su estado (para la gestión del ADMIN: `ServicioOut` + `activo`)."""
 
-    id: uuid.UUID
-    nombre: str
-    categoria: ServicioCategoria
     activo: bool
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class ServicioCreate(BaseModel):
@@ -158,14 +153,8 @@ class PacienteCreate(BaseModel):
     fecha_nacimiento: date | None = None
 
 
-class PacienteUpdate(BaseModel):
-    """Cuerpo del PUT /pacientes/{id}. No incluye rol (fijo PACIENTE) ni datos clínicos."""
-
-    nombre_completo: str = Field(min_length=1)
-    edad: int = Field(ge=0, le=120)
-    cedula: str | None = None
-    telefono: str | None = None
-    fecha_nacimiento: date | None = None
+class PacienteUpdate(PacienteCreate):
+    """Cuerpo del PUT /pacientes/{id}: mismos campos que el alta (rol fijo PACIENTE, sin datos clínicos)."""
 
 
 class UsuarioDetalle(BaseModel):
