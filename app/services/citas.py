@@ -336,8 +336,9 @@ def editar_cita(
     motivo; es una limitación conocida y asumible para el MVP.)
 
     Reglas revalidadas sobre los valores efectivos: servicio y médico válidos, rejilla
-    de minutos, disponibilidad (salvo sobrecupo) y anti-solapamiento **excluyendo la
-    propia cita**. La regla de "no en el pasado" solo se aplica si se mueve la hora.
+    de minutos, disponibilidad (salvo sobrecupo, y solo si se mueve el hueco) y
+    anti-solapamiento **excluyendo la propia cita**. La regla de "no en el pasado"
+    solo se aplica si se mueve la hora.
     Hace flush (no commit): el commit lo hace el endpoint.
     """
     cita = _obtener_cita_activa(db, cita_id, CitaNoEditable)
@@ -365,12 +366,16 @@ def editar_cita(
     nuevo_ends_at = calcular_ends_at(nuevo_starts_at, nueva_duracion)
 
     # R3 y R4: disponibilidad y anti-solapamiento, excluyendo la propia cita.
+    # Si la edición NO mueve el hueco (mismo médico, misma hora y misma duración), la
+    # disponibilidad ya se validó al crear la cita (o se forzó como sobrecupo): no se
+    # re-chequea, para no romper la edición del motivo de una cita agendada por sobrecupo.
+    mismo_hueco = medico_id is None and starts_at is None and duracion_min is None
     _validar_hueco(
         db,
         medico_id=nuevo_medico_id,
         starts_at=nuevo_starts_at,
         ends_at=nuevo_ends_at,
-        permitir_sobrecupo=permitir_sobrecupo,
+        permitir_sobrecupo=permitir_sobrecupo or mismo_hueco,
         excluir_cita_id=cita.id,
     )
 

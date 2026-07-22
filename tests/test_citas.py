@@ -265,6 +265,25 @@ def test_crear_cita_servicio_inactivo(db, medico, servicio, admin):
         )
 
 
+def test_editar_cita_sobrecupo_solo_motivo(db, medico, servicio, admin):
+    # una cita creada por sobrecupo cae FUERA de disponibilidad a propósito (sin franja);
+    # editar solo el motivo NO debe re-validar disponibilidad (antes fallaba con 400)
+    cita = C.crear_cita(
+        db,
+        nombre_completo=f"X {uuid.uuid4()}",
+        edad=1,
+        medico_id=medico.id,
+        servicio_id=servicio.id,
+        starts_at=LUNES_10,
+        duracion_min=45,
+        creado_por_id=admin.id,
+        permitir_sobrecupo=True,
+        ahora=ANTES,
+    )
+    actualizada = C.editar_cita(db, cita.id, motivo="control")
+    assert actualizada.motivo == "control"
+
+
 def test_crear_cita_en_el_pasado(db, medico, servicio, admin):
     _franja(db, medico)
     # 'ahora' posterior al inicio -> la cita queda en el pasado
