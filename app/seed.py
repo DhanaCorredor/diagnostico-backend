@@ -100,7 +100,7 @@ MEDICOS = [
     ("Dr. Luis Peralta", ["Cardiología"],
      [(SAB, time(12, 0), CIERRE)]),
     ("Dra. Elsa Blanco", ["Otorrinolaringología"], []),
-    ("Dra. Andrea Blanco", ["Dermatología"], []),
+    ("Dra. Andrea Blanco", ["Dermatología", "Venereología"], []),
     ("Lic. Nathaly Rojas", ["Psicología"], []),
     ("Dra. Katherinne Castro", ["Traumatología"], []),
     ("Dra. Cristina Jiménez", ["Traumatología"], []),
