@@ -7,10 +7,11 @@ Ejecutar con:  python -m app.seed
 """
 
 import os
+from datetime import time
 
 from app.auth import hashear_password
 from app.db import SessionLocal
-from app.models import Especialidad, Rol, Servicio, ServicioCategoria, Usuario
+from app.models import Disponibilidad, Especialidad, Rol, Servicio, ServicioCategoria, Usuario
 
 # Personal interno que hace login: (nombre, rol, email, matrícula).
 # Todos comparten la contraseña del .env (ADMIN_PASSWORD); sin ella, se saltan.
@@ -108,15 +109,54 @@ def sembrar_staff(db):
     return creados
 
 
+# --- Disponibilidad por defecto de los médicos ------------------------------
+# Horario real del centro: lunes a sábado, 07:30-17:30 (domingo cerrado).
+# Cada médico sin franjas recibe esa jornada, para que la agenda tenga huecos
+# utilizables sin depender de sobrecupos.
+DIAS_LABORABLES = (1, 2, 3, 4, 5, 6)  # lunes a sábado (0=domingo, cerrado)
+HORA_APERTURA = time(7, 30)
+HORA_CIERRE = time(17, 30)
+
+
+def sembrar_disponibilidad(db):
+    """Da a cada médico SIN franjas la jornada del centro (L-S 07:30-17:30).
+
+    Idempotente: si el médico ya tiene alguna franja, no la toca. Devuelve cuántas creó.
+    """
+    creadas = 0
+    for medico in db.query(Usuario).filter(Usuario.rol == Rol.MEDICO).all():
+        ya_tiene = (
+            db.query(Disponibilidad)
+            .filter(Disponibilidad.usuario_id == medico.id)
+            .first()
+        )
+        if ya_tiene:
+            continue
+        for dia in DIAS_LABORABLES:
+            db.add(
+                Disponibilidad(
+                    usuario_id=medico.id,
+                    dia_semana=dia,
+                    hora_inicio=HORA_APERTURA,
+                    hora_fin=HORA_CIERRE,
+                )
+            )
+            creadas += 1
+    return creadas
+
+
 def main():
     db = SessionLocal()
     try:
         n_esp = sembrar_especialidades(db)
         n_serv = sembrar_servicios(db)
         n_staff = sembrar_staff(db)
+        db.flush()  # los médicos deben tener id antes de sembrar su disponibilidad
+        n_disp = sembrar_disponibilidad(db)
         db.commit()
         print(
-            f"Seed OK: +{n_esp} especialidades, +{n_serv} servicios, +{n_staff} personal."
+            f"Seed OK: +{n_esp} especialidades, +{n_serv} servicios, "
+            f"+{n_staff} personal, +{n_disp} franjas de disponibilidad."
         )
     finally:
         db.close()

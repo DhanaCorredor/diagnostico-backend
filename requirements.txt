@@ -8,3 +8,4 @@ alembic            # migraciones: control de versiones del esquema de la BD
 pyjwt              # crea y verifica los tokens JWT (login)
 bcrypt             # hash seguro de contraseñas
 pytest             # framework de tests
+httpx              # cliente HTTP que usa TestClient en los tests de integración

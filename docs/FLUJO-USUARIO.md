@@ -15,19 +15,18 @@ flowchart TD
     D -- ADMIN --> E[Panel de administración]
     E --> E1[Gestionar usuarios y accesos]
     E --> E2[Gestionar médicos y especialidades]
-    E --> E3[Gestionar servicios y duraciones]
+    E --> E3[Gestionar servicios]
     E --> E4[Definir disponibilidad de médicos]
 
     %% RECEPCIÓN
     D -- RECEPCIÓN --> F[Panel de recepción]
     F --> F1[Gestionar pacientes]
     F --> F2[Ver agenda / calendario]
-    F --> G[Crear / editar cita]
+    F --> G[Crear / editar / cancelar cita · marcar asistencia]
 
     %% MÉDICO
-    D -- MÉDICO --> H[Mi agenda (solo lectura)]
+    D -- MÉDICO --> H["Mi agenda (solo lectura)"]
     H --> H1[Ver mis citas del día]
-    H --> H2[Marcar atendida / no asistió]
 
     %% Cierre
     E --> Z([Cerrar sesión])
@@ -43,7 +42,7 @@ flowchart TD
 flowchart TD
     S([Nueva cita]) --> R[Elegir médico y servicio]
     R --> R1[Duración = la que elige recepción]
-    R1 --> C1[Introducir paciente<br/>nombre + apellido + edad]
+    R1 --> C1[Introducir paciente<br/>nombre completo + edad]
     C1 --> P{¿El paciente existe?}
     P -- No --> P1[Crear paciente<br/>rol PACIENTE]
     P1 --> T

@@ -20,7 +20,7 @@ flowchart TD
     end
 
     subgraph Backend["API FastAPI (Python)"]
-        ROUTERS["Routers REST<br/>(auth, usuarios, citas, servicios)"]
+        ROUTERS["Routers REST<br/>(auth, usuarios, citas, catalogo,<br/>disponibilidad, pacientes)"]
         AUTHDEP["Dependencia de auth<br/>(verifica JWT + rol)"]
         SERV["Capa de servicio<br/>(citas: solapamiento + disponibilidad,<br/>pacientes: upsert)"]
         ORM["SQLAlchemy (models)"]
@@ -56,7 +56,7 @@ app/
   models.py         # modelos (usuarios, citas, servicios, ...)
   schemas.py        # esquemas Pydantic (entrada/salida)
   auth.py           # JWT, hash de contraseñas, dependencia requiere_rol
-  routers/          # endpoints: auth, usuarios, citas, servicios
+  routers/          # endpoints: auth, usuarios, citas, catalogo, disponibilidad, pacientes
   services/         # lógica: citas (solapamiento/disponibilidad), pacientes (upsert)
 alembic/            # migraciones
 tests/              # pytest
@@ -79,7 +79,7 @@ package.json        # pnpm
 
 1. Recepción rellena el formulario en la **SPA** y envía la petición con el **token JWT**.
 2. El **router** de citas valida el cuerpo (Pydantic) y la **dependencia de auth** comprueba sesión y rol.
-3. El **servicio de pacientes** hace el **upsert**: busca al paciente por cédula (o nombre + fecha de nacimiento); si no existe, lo crea con `rol = PACIENTE`.
+3. El **servicio de pacientes** hace el **upsert**: busca al paciente por `nombre_completo` + `edad`; si no existe, lo crea con `rol = PACIENTE`.
 4. El **servicio de citas** calcula `ends_at` (según la duración elegida al agendar), valida que la hora cae **dentro de la disponibilidad** del médico y que **no se solapa** con otra cita activa del mismo médico.
 5. Si es válido, **SQLAlchemy** persiste la cita y responde en JSON; la SPA refresca la agenda.
 

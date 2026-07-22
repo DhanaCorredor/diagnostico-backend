@@ -3,6 +3,8 @@
 Internal **medical appointment** management system for the **Diagnóstico** health center (Maracay, Venezuela). It lets the staff log in by role and manage patients, doctors and appointments, with **strict schedule validation (zero overlaps per doctor)** and **availability-aware scheduling**.
 
 > Bootcamp final project — MVP scoped to a 2-week deadline. Documentation in `docs/` (in Spanish).
+>
+> **Status:** the backend MVP is **complete and deployed** (release **v0.3.0** on Render, auto-deploy on push to `main`). 93 passing tests (unit + integration). The React frontend (`diagnostico-frontend`) is the remaining phase.
 
 ---
 
@@ -41,8 +43,8 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 | Role | Permissions |
 |------|-------------|
 | **ADMIN** | Full control: users, doctors, specialties, services, configuration. |
-| **RECEPCION** | Books appointments; manages patients and doctors; sees agendas. **No** access to **users**, **configuration** or **reports**. |
-| **MEDICO** | Sees their own agenda (read-only); marks attendance/no-show. *(Clinical history notes are phase 2.)* |
+| **RECEPCION** | Books and cancels appointments; marks attendance (attended/no-show); manages patients; **views** doctors and agendas. **No** access to **users**, **configuration** or **reports**. |
+| **MEDICO** | Sees their own agenda (**read-only**). Cannot cancel or mark attendance — reception/admin does that. *(Clinical history notes are phase 2.)* |
 
 > Patients do **not** log in (they are records managed by reception).
 
@@ -77,7 +79,7 @@ Core entities (7 tables): `usuarios` (unified), `especialidades` + `usuario_espe
 
 - **Zero overlaps (per doctor)** — a new/modified appointment cannot overlap in time with another active appointment (`SCHEDULED`/`CONFIRMED`) of the same doctor. Validated in the backend service layer before saving.
 - **Availability** — appointments can only be booked inside the doctor's weekly availability; the calendar blocks the rest.
-- **Patient upsert** — booking identifies the patient by **name + surname + age** and creates one if none exists (the national ID is optional, added later by specialists).
+- **Patient upsert** — booking identifies the patient by **full name + age** and creates one if none exists (the national ID is optional, added later by specialists).
 
 ## 🚀 Getting started
 
@@ -88,9 +90,11 @@ Core entities (7 tables): `usuarios` (unified), `especialidades` + `usuario_espe
 git clone <backend-repo-url> && cd diagnostico-backend
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env         # set DATABASE_URL and JWT_SECRET
+cp .env.example .env         # set DATABASE_URL, JWT_SECRET and ADMIN_PASSWORD
 alembic upgrade head         # apply migrations
+python -m app.seed           # seed catalogs + staff login users (needs ADMIN_PASSWORD)
 uvicorn app.main:app --reload   # http://localhost:8000  (Swagger at /docs)
+pytest                       # run the test suite (93 tests)
 
 # Frontend (separate repo, in another terminal)
 git clone <frontend-repo-url> && cd diagnostico-frontend
@@ -110,7 +114,7 @@ pnpm dev                     # http://localhost:5173
 │   ├── models.py        # SQLAlchemy models
 │   ├── schemas.py       # Pydantic schemas
 │   ├── auth.py          # JWT, hashing, role guard
-│   ├── routers/         # auth, usuarios, citas, servicios
+│   ├── routers/         # auth, usuarios, citas, catalogo, disponibilidad, pacientes
 │   └── services/        # appointment & patient logic
 ├── alembic/             # migrations
 ├── tests/               # pytest
@@ -131,12 +135,12 @@ pnpm dev                     # http://localhost:5173
 ## 🗺️ Roadmap
 
 - [x] Documentation, unified data model and visual prototype
-- [ ] **Phase 0** — Scaffolding (FastAPI backend here + React/Vite frontend in its own repo)
-- [ ] **Phase 1** — SQLAlchemy models + Alembic migration + seed
-- [ ] **Phase 2** — Authentication (JWT) and roles
-- [ ] **Phase 3** — Appointments core (patient upsert + availability + overlap per doctor) + tests
-- [ ] **Phase 4** — UI (login, calendar, Patients/Doctors views, appointment form)
-- [ ] **Phase 5** — Polish + deployment
+- [x] **Phase 0** — Scaffolding (FastAPI backend here + React/Vite frontend in its own repo)
+- [x] **Phase 1** — SQLAlchemy models + Alembic migration + seed
+- [x] **Phase 2** — Authentication (JWT) and roles
+- [x] **Phase 3** — Appointments core (patient upsert + availability + overlap per doctor) + tests
+- [ ] **Phase 4** — UI (login, calendar, Patients/Doctors views, appointment form) — frontend repo, pending
+- [x] **Phase 5** — Deployment (backend live on Render, release v0.3.0)
 
 Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
@@ -151,9 +155,11 @@ Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 | [`docs/CASOS-DE-USO.md`](docs/CASOS-DE-USO.md) | Use-case diagram and description (Mermaid) |
 | [`docs/FLUJO-USUARIO.md`](docs/FLUJO-USUARIO.md) | User-flow flowchart (Mermaid) |
 | [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md) | Entities, fields, relations, ER diagram and rules |
+| [`docs/REGLAS-DE-NEGOCIO.md`](docs/REGLAS-DE-NEGOCIO.md) | Canonical business rules and how they are implemented |
 | [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Architecture, layers, data flow and technical decisions |
 | [`docs/COMPONENTES.md`](docs/COMPONENTES.md) | Frontend component map (Atomic Design lite) |
 | [`docs/MANUAL-USUARIO.md`](docs/MANUAL-USUARIO.md) | Step-by-step usage guide for the staff |
+| [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) | Deployment guide (Render + PostgreSQL) |
 
 ---
 

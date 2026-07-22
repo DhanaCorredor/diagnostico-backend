@@ -8,9 +8,23 @@ import uuid
 from datetime import date, datetime, time
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models import EstadoCita, Rol, ServicioCategoria
+
+
+def _a_hora_local_naive(v: datetime | None) -> datetime | None:
+    """Normaliza una fecha/hora a hora local 'naive' (sin zona horaria).
+
+    La API trabaja en la hora de reloj del centro (sede única) y las fechas se
+    guardan sin zona. Si llega una fecha con zona (p. ej. la 'Z' que añade
+    `Date.toISOString()` en el navegador), se descarta la zona y se toma la hora tal
+    cual. Así se evita el error de comparar fechas 'aware' con 'naive'. Contrato:
+    el frontend envía la hora local del centro.
+    """
+    if v is not None and v.tzinfo is not None:
+        return v.replace(tzinfo=None)
+    return v
 
 
 class LoginRequest(BaseModel):
@@ -49,6 +63,32 @@ class ServicioOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ServicioDetalle(BaseModel):
+    """Un servicio con su estado (para la gestión del ADMIN: incluye `activo`)."""
+
+    id: uuid.UUID
+    nombre: str
+    categoria: ServicioCategoria
+    activo: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ServicioCreate(BaseModel):
+    """Cuerpo del POST /servicios: alta de un servicio en el catálogo."""
+
+    nombre: str = Field(min_length=1)
+    categoria: ServicioCategoria
+
+
+class ServicioUpdate(BaseModel):
+    """Cuerpo del PUT /servicios/{id}. Solo se cambian los campos enviados."""
+
+    nombre: str | None = Field(default=None, min_length=1)
+    categoria: ServicioCategoria | None = None
+    activo: bool | None = None  # permite desactivar el servicio sin borrarlo
+
+
 class EspecialidadOut(BaseModel):
     """Una especialidad médica."""
 
@@ -56,6 +96,12 @@ class EspecialidadOut(BaseModel):
     nombre: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class EspecialidadCreate(BaseModel):
+    """Cuerpo del POST /especialidades: alta de una especialidad."""
+
+    nombre: str = Field(min_length=1)
 
 
 class MedicoOut(BaseModel):
@@ -100,6 +146,16 @@ class PacienteOut(BaseModel):
     fecha_nacimiento: date | None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PacienteCreate(BaseModel):
+    """Cuerpo del POST /pacientes: alta manual de un paciente (sin agendarle cita)."""
+
+    nombre_completo: str = Field(min_length=1)
+    edad: int = Field(ge=0, le=120)
+    cedula: str | None = None
+    telefono: str | None = None
+    fecha_nacimiento: date | None = None
 
 
 class PacienteUpdate(BaseModel):
@@ -159,6 +215,28 @@ class CitaCreate(BaseModel):
     duracion_min: Literal[15, 30, 45, 60, 90]  # la elige recepción; solo estos valores
     motivo: str | None = None
     permitir_sobrecupo: bool = False  # recepción puede forzar un cupo extra
+
+    @field_validator("starts_at")
+    @classmethod
+    def _starts_at_local_naive(cls, v: datetime) -> datetime:
+        return _a_hora_local_naive(v)
+
+
+class CitaUpdate(BaseModel):
+    """Cuerpo del PUT /citas/{id}: editar o mover una cita. Todos los campos son
+    opcionales; solo se aplican los enviados (None = sin cambio). No cambia el paciente."""
+
+    medico_id: uuid.UUID | None = None
+    servicio_id: uuid.UUID | None = None
+    starts_at: datetime | None = None
+    duracion_min: Literal[15, 30, 45, 60, 90] | None = None
+    motivo: str | None = None
+    permitir_sobrecupo: bool = False  # recepción puede forzar un cupo extra al mover
+
+    @field_validator("starts_at")
+    @classmethod
+    def _starts_at_local_naive(cls, v: datetime | None) -> datetime | None:
+        return _a_hora_local_naive(v)
 
 
 class CitaOut(BaseModel):

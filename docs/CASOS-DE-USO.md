@@ -14,7 +14,7 @@ flowchart LR
         login(["Iniciar sesión"])
         uUsuarios(["Gestionar usuarios y accesos"])
         uMedicos(["Gestionar médicos y especialidades"])
-        uServicios(["Gestionar servicios y duraciones"])
+        uServicios(["Gestionar servicios"])
         uDisp(["Definir disponibilidad de médicos"])
         uPacientes(["Gestionar pacientes"])
         uCitas(["Crear / editar / cancelar citas"])
@@ -35,9 +35,9 @@ flowchart LR
     recep --- uPacientes
     recep --- uCitas
     recep --- uAgenda
+    recep --- uAsistencia
 
     medico --- uMiAgenda
-    medico --- uAsistencia
 ```
 
 > La **historia clínica** (notas del médico) queda **fuera del MVP → fase 2**; en el MVP el médico solo consulta su agenda.
@@ -56,8 +56,8 @@ flowchart LR
 | CU-06 Gestionar pacientes | Recepción | Registrar y editar pacientes (cédula única si se indica; opcional). |
 | CU-07 Gestionar citas | Recepción | Crear, editar, mover y cancelar citas con validación anti-solapamiento **por médico** y **upsert de paciente**. |
 | CU-08 Consultar agenda | Recepción | Ver la agenda del día y el calendario de los médicos (también desde el móvil). |
-| CU-09 Ver mi agenda | Médico | Consultar sus propias citas. |
-| CU-10 Marcar asistencia | Médico | Marcar una cita como atendida o no-show. |
+| CU-09 Ver mi agenda | Médico | Consultar sus propias citas (**solo lectura**). |
+| CU-10 Marcar asistencia | Recepción | Marcar una cita como atendida o no-show. |
 | CU-11 Historia clínica *(fase 2, fuera del MVP)* | Médico | Consultar y añadir notas de evolución del paciente. En el MVP no está disponible. |
 
 ## Caso de uso detallado: CU-07 Agendar cita

@@ -3,7 +3,7 @@
 > **Referencia canónica** de las reglas de negocio del sistema y de **cómo se implementan**.
 > Toda la validación vive en la **capa de servicio** del backend (`app/services/`), en Python,
 > **antes de guardar** en la base de datos, para dar mensajes de error claros y poder probarla aislada.
-> Estado a **15/07/2026** (MVP). Complementa [`MODELO-DATOS.md`](MODELO-DATOS.md) y [`ARQUITECTURA.md`](ARQUITECTURA.md).
+> Estado a **22/07/2026** (MVP). Complementa [`MODELO-DATOS.md`](MODELO-DATOS.md) y [`ARQUITECTURA.md`](ARQUITECTURA.md).
 
 ## Resumen
 
@@ -17,6 +17,7 @@
 | R3 | La cita cae dentro de la disponibilidad del médico | `dentro_de_disponibilidad()` · `app/services/citas.py` | ✅ |
 | R4 | Cero solapamientos por médico | `hay_solapamiento()` · `app/services/citas.py` | ✅ |
 | R5 | Cancelar libera el hueco | filtro de estados en R4 | ✅ (regla) |
+| R6 | Marcar asistencia (atendida/no-show) solo sobre citas activas | `marcar_asistencia()` · `app/services/citas.py` | ✅ |
 | — | Orquestación de todas al crear la cita | `crear_cita()` + `POST /citas` | ✅ |
 
 ---
@@ -102,6 +103,14 @@ en `app/services/citas.py` (consulta `EXISTS` sobre las citas activas del médic
 
 **Implementación.** No necesita código propio: R4 solo mira las citas `SCHEDULED`/`CONFIRMED`, así que
 una cancelada deja de contar automáticamente. *(El cambio de estado lo hace `cancelar_cita` / `POST /citas/{id}/cancelar`.)*
+
+---
+
+## R6 · Marcar asistencia (atendida / no-show)
+
+**Regla.** Una cita **activa** (`SCHEDULED`/`CONFIRMED`) se cierra como **atendida** (`COMPLETED`) o **no-show** (`NO_SHOW`); no se puede marcar sobre una cita ya cerrada o cancelada. Lo hacen **recepción y admin** (el médico solo consulta su agenda, no marca asistencia).
+
+**Implementación.** `marcar_asistencia(db, cita_id, estado)` en `app/services/citas.py` (reutiliza `_obtener_cita_activa`); si la cita no está activa lanza `CitaNoActiva` → **409**. Endpoint `POST /citas/{id}/asistencia` con `estado ∈ {COMPLETED, NO_SHOW}`.
 
 ---
 
