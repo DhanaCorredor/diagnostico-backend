@@ -62,6 +62,14 @@ class CedulaDuplicada(Exception):
     """La cédula indicada ya pertenece a otra persona."""
 
 
+def _cedula_en_uso(db: Session, cedula: str, excluir_id: uuid.UUID | None = None) -> bool:
+    """True si la cédula ya pertenece a otra persona (excluyendo, si se indica, un id)."""
+    q = db.query(Usuario).filter(Usuario.cedula == cedula)
+    if excluir_id is not None:
+        q = q.filter(Usuario.id != excluir_id)
+    return db.query(q.exists()).scalar()
+
+
 def listar_pacientes(db: Session) -> list[Usuario]:
     """Devuelve todos los pacientes, ordenados por nombre."""
     return (
@@ -87,10 +95,8 @@ def crear_paciente(db: Session, datos: dict) -> Usuario:
     alta explícita de recepción (para reutilizar uno existente está el upsert al agendar).
     """
     cedula = datos.get("cedula")
-    if cedula is not None:  # la cédula, si viene, no puede pertenecer a otra persona
-        existe = db.query(Usuario).filter(Usuario.cedula == cedula).first()
-        if existe is not None:
-            raise CedulaDuplicada()
+    if cedula is not None and _cedula_en_uso(db, cedula):  # única si viene
+        raise CedulaDuplicada()
 
     paciente = Usuario(rol=Rol.PACIENTE, **datos)
     db.add(paciente)
@@ -107,15 +113,8 @@ def actualizar_paciente(db: Session, paciente_id: uuid.UUID, cambios: dict) -> U
     paciente = obtener_paciente(db, paciente_id)
 
     nueva_cedula = cambios.get("cedula")
-    if nueva_cedula is not None:  # cédula única solo si se está cambiando
-        otro = (
-            db.query(Usuario)
-            .filter(Usuario.cedula == nueva_cedula)
-            .filter(Usuario.id != paciente_id)
-            .first()
-        )
-        if otro is not None:
-            raise CedulaDuplicada()
+    if nueva_cedula is not None and _cedula_en_uso(db, nueva_cedula, excluir_id=paciente_id):
+        raise CedulaDuplicada()
 
     for campo, valor in cambios.items():
         setattr(paciente, campo, valor)
