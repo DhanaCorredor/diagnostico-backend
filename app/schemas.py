@@ -193,10 +193,12 @@ class UsuarioUpdate(BaseModel):
 
 
 class CitaCreate(BaseModel):
-    """Cuerpo del POST /citas. El paciente se identifica por nombre + edad (upsert)."""
+    """Cuerpo del POST /citas. El paciente se identifica por nombre + edad (upsert);
+    si hay varias coincidencias, recepción reenvía con `paciente_id` para elegir uno."""
 
     nombre_completo: str = Field(min_length=1)
     edad: int = Field(ge=0, le=120)
+    paciente_id: uuid.UUID | None = None
     medico_id: uuid.UUID
     servicio_id: uuid.UUID
     starts_at: datetime

@@ -10,7 +10,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from sqlalchemy.orm import Session
 
 from app.models import Cita, Disponibilidad, EstadoCita, Rol, Servicio, Usuario
-from app.services.pacientes import buscar_o_crear_paciente
+from app.services.pacientes import buscar_o_crear_paciente, obtener_paciente
 
 GRID_MINUTOS = 15
 
@@ -185,6 +185,7 @@ def crear_cita(
     *,
     nombre_completo: str,
     edad: int,
+    paciente_id: uuid.UUID | None = None,
     medico_id: uuid.UUID,
     servicio_id: uuid.UUID,
     starts_at: datetime,
@@ -211,7 +212,10 @@ def crear_cita(
     if starts_at < ahora:
         raise CitaEnElPasado()
 
-    paciente = buscar_o_crear_paciente(db, nombre_completo, edad)
+    if paciente_id is not None:
+        paciente = obtener_paciente(db, paciente_id)
+    else:
+        paciente = buscar_o_crear_paciente(db, nombre_completo, edad)
 
     ends_at = calcular_ends_at(starts_at, duracion_min)
 

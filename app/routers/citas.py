@@ -11,7 +11,7 @@ from app.db import get_db
 from app.models import Rol, Usuario
 from app.schemas import AsistenciaUpdate, CitaCreate, CitaOut, CitaUpdate
 from app.services import citas as citas_service
-from app.services.pacientes import PacientesAmbiguos
+from app.services.pacientes import PacienteNoEncontrado, PacientesAmbiguos
 
 router = APIRouter(prefix="/citas", tags=["citas"])
 
@@ -33,6 +33,7 @@ def agendar_cita(
             db,
             nombre_completo=datos.nombre_completo,
             edad=datos.edad,
+            paciente_id=datos.paciente_id,
             medico_id=datos.medico_id,
             servicio_id=datos.servicio_id,
             starts_at=datos.starts_at,
@@ -55,6 +56,8 @@ def agendar_cita(
             status.HTTP_400_BAD_REQUEST,
             "No se puede agendar una cita en el pasado",
         ) from None
+    except PacienteNoEncontrado:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado") from None
     except PacientesAmbiguos as e:
         raise HTTPException(
             status.HTTP_409_CONFLICT,

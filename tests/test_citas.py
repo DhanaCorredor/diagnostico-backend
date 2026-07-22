@@ -150,6 +150,27 @@ def test_crear_cita_feliz(db, medico, servicio, admin):
     assert cita.estado == EstadoCita.SCHEDULED
 
 
+def test_crear_cita_con_paciente_id_resuelve_ambiguedad(db, medico, servicio, admin):
+    _franja(db, medico)
+    p1 = Usuario(nombre_completo="Ambiguo", edad=40, rol=Rol.PACIENTE)
+    p2 = Usuario(nombre_completo="Ambiguo", edad=40, rol=Rol.PACIENTE)
+    db.add_all([p1, p2])
+    db.flush()
+    cita = C.crear_cita(
+        db,
+        nombre_completo="Ambiguo",
+        edad=40,
+        paciente_id=p1.id,
+        medico_id=medico.id,
+        servicio_id=servicio.id,
+        starts_at=LUNES_10,
+        duracion_min=45,
+        creado_por_id=admin.id,
+        ahora=ANTES,
+    )
+    assert cita.paciente_id == p1.id
+
+
 def test_crear_cita_usa_la_duracion_elegida(db, medico, servicio, admin):
     _franja(db, medico)
     cita = C.crear_cita(
