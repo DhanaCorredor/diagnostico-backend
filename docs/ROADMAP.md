@@ -118,7 +118,6 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 - **Convención de fechas:** la API trabaja en **hora local naive**: el frontend envía la hora local del centro **sin zona**; si llega con zona (p. ej. la `Z` de `toISOString()`), **se rechaza con 422** (contrato explícito, sin conversiones a ciegas). La regla "no en el pasado" calcula el "ahora" en **hora local del centro (UTC-4)** en el backend, para no descuadrar aunque el servidor corra en UTC (Render).
 - **Router de citas:** el mapeo excepción→HTTP se repite entre agendar y editar (se dejó **explícito a propósito** por legibilidad).
 - **Disponibilidad:** `crear_disponibilidad` no valida franjas duplicadas/solapadas por médico y día.
-- **Login enumerable por *timing*:** responde sin llamar a bcrypt cuando el email no existe (oráculo de emails; riesgo bajo en tool interno).
 - **Sin paginación** en los listados de pacientes/personal.
 - **Unicidad sensible a mayúsculas/acentos** en `nombre`/`email`/`cédula`.
 - **CORS de un solo origen:** al desplegar, permitir local + producción a la vez.
