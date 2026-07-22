@@ -1,4 +1,4 @@
-"""Router de citas: agendar, listar (agenda) y cancelar."""
+"""Router de citas: agendar, listar (agenda), editar/mover, cancelar y marcar asistencia."""
 
 import uuid
 from datetime import date
