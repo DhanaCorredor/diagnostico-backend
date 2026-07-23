@@ -1,9 +1,4 @@
-"""Lógica de negocio de pacientes: upsert al agendar + listar/ver/editar (CRUD).
-
-Al crear una cita, recepción teclea los datos y el sistema decide si el paciente
-ya existe o hay que crearlo (evita duplicados). Además, la gestión de pacientes
-permite listarlos, ver la ficha y editarla.
-"""
+"""Lógica de negocio de pacientes: upsert al agendar + listar/ver/editar/dar de baja."""
 
 import uuid
 
@@ -15,10 +10,7 @@ from app.services.comun import valor_en_uso
 
 
 class PacientesAmbiguos(Exception):
-    """Hay varios pacientes que coinciden; recepción debe elegir uno.
-
-    Lleva la lista de candidatos para que el endpoint la muestre.
-    """
+    """Varios pacientes coinciden; recepción debe elegir. Lleva la lista de candidatos."""
 
     def __init__(self, candidatos):
         self.candidatos = candidatos
@@ -26,14 +18,9 @@ class PacientesAmbiguos(Exception):
 
 
 def buscar_o_crear_paciente(db: Session, nombre_completo: str, edad: int) -> Usuario:
-    """Busca un paciente por nombre_completo + edad; si no existe, lo crea.
+    """Busca un paciente por nombre_completo + edad y lo devuelve; si no existe, lo crea.
 
-    - Uno solo coincide  -> lo devuelve (reutiliza).
-    - Ninguno coincide   -> crea uno nuevo con rol PACIENTE y lo devuelve.
-    - Varios coinciden   -> lanza PacientesAmbiguos (recepción debe elegir).
-
-    Hace flush (no commit): el paciente nuevo obtiene su id, pero se guarda dentro
-    de la transacción de quien llame (junto con la cita).
+    Lanza PacientesAmbiguos si coinciden varios (recepción debe elegir). Flush, no commit.
     """
     coincidencias = (
         db.query(Usuario)
@@ -87,11 +74,7 @@ def obtener_paciente(db: Session, paciente_id: uuid.UUID) -> Usuario:
 
 
 def crear_paciente(db: Session, datos: dict) -> Usuario:
-    """Da de alta un paciente de forma manual (sin agendar). Hace flush (no commit).
-
-    La cédula, si se indica, debe ser única. No se deduplica por nombre+edad: es un
-    alta explícita de recepción (para reutilizar uno existente está el upsert al agendar).
-    """
+    """Da de alta un paciente manualmente, sin deduplicar (cédula única si se indica). Flush, no commit."""
     cedula = datos.get("cedula")
     if cedula is not None and _cedula_en_uso(db, cedula):
         raise CedulaDuplicada()
@@ -103,11 +86,7 @@ def crear_paciente(db: Session, datos: dict) -> Usuario:
 
 
 def actualizar_paciente(db: Session, paciente_id: uuid.UUID, cambios: dict) -> Usuario:
-    """Actualiza SOLO los campos presentes en `cambios`. Hace flush (no commit).
-
-    `cambios` viene del schema con `exclude_unset`, así que un campo **omitido** no
-    se toca (no se borra). La cédula, si se cambia, debe ser única.
-    """
+    """Actualiza solo los campos presentes en `cambios` (cédula única si se cambia). Flush, no commit."""
     paciente = obtener_paciente(db, paciente_id)
 
     nueva_cedula = cambios.get("cedula")

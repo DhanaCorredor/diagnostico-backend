@@ -20,11 +20,7 @@ Base = declarative_base()
 
 
 def get_db():
-    """Dependencia de FastAPI: abre una sesión para la petición y la cierra al final.
-
-    El 'yield' entrega la sesión al endpoint; el 'finally' garantiza que se cierre
-    aunque haya un error. Cada petición usa su propia sesión.
-    """
+    """Dependencia de FastAPI: abre una sesión de BD para la petición y la cierra al terminar."""
     db = SessionLocal()
     try:
         yield db

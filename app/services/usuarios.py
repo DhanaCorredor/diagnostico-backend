@@ -1,9 +1,4 @@
-"""Lógica de negocio de la gestión de personal/médicos (CRUD, solo ADMIN).
-
-Gestiona los usuarios que hacen login (ADMIN, RECEPCION, MEDICO): alta, edición,
-hash de contraseña y asignación de especialidades (N:M) a los médicos. Los
-pacientes NO se gestionan aquí (entran por el upsert al agendar).
-"""
+"""Lógica de gestión del personal que hace login (ADMIN/RECEPCION/MEDICO): CRUD, solo ADMIN."""
 
 import uuid
 

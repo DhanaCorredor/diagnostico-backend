@@ -1,8 +1,4 @@
-"""Lógica de disponibilidad: ver y definir las franjas horarias semanales de un médico.
-
-La lee el calendario para bloquear los días/horas en que el médico no atiende.
-Vive en la capa de servicio para poder probarla sin levantar la API.
-"""
+"""Lógica de disponibilidad: ver y definir las franjas horarias semanales de un médico."""
 
 import uuid
 from datetime import time
@@ -39,10 +35,7 @@ def crear_disponibilidad(
     hora_inicio: time,
     hora_fin: time,
 ) -> Disponibilidad:
-    """Define una franja para un médico. Valida el médico y el orden de las horas.
-
-    Hace flush (no commit): el commit lo hace el endpoint.
-    """
+    """Crea una franja para un médico, validando el médico y que inicio < fin. Flush, no commit."""
     medico = db.get(Usuario, medico_id)
     if medico is None or medico.rol != Rol.MEDICO:
         raise MedicoNoEncontrado()

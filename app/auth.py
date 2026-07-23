@@ -1,8 +1,4 @@
-"""Piezas de seguridad: hash de contraseñas (bcrypt) y tokens JWT (PyJWT).
-
-Son funciones reutilizables, sin endpoints. Los routers de la Fase 2 las usan
-para el login y para verificar el token en cada petición.
-"""
+"""Piezas de seguridad reutilizables: hash de contraseñas (bcrypt) y tokens JWT (PyJWT)."""
 
 import os
 import uuid
@@ -29,11 +25,7 @@ JWT_EXPIRA_MINUTOS = 60 * 8
 
 
 def hashear_password(password: str) -> str:
-    """Convierte una contraseña en un hash seguro, listo para guardar en la BD.
-
-    bcrypt añade una 'sal' aleatoria: por eso dos hashes de la misma contraseña
-    salen distintos, pero ambos verifican correctamente.
-    """
+    """Devuelve el hash bcrypt (con sal aleatoria) de una contraseña, listo para guardar en la BD."""
     hash_bytes = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
     return hash_bytes.decode("utf-8")
 
@@ -44,11 +36,7 @@ def verificar_password(password: str, password_hash: str) -> bool:
 
 
 def crear_token(usuario_id: uuid.UUID) -> str:
-    """Crea un JWT firmado que identifica al usuario.
-
-    El token lleva 'sub' (subject = quién es) y 'exp' (cuándo caduca). El rol NO
-    se guarda: se consulta siempre en la BD (fresco), igual que el estado activo.
-    """
+    """Crea un JWT firmado con el id del usuario (`sub`) y su caducidad (`exp`); el rol no se guarda."""
     ahora = datetime.now(timezone.utc)
     payload = {
         "sub": str(usuario_id),
@@ -58,11 +46,7 @@ def crear_token(usuario_id: uuid.UUID) -> str:
 
 
 def decodificar_token(token: str) -> dict:
-    """Verifica la firma y la caducidad del token y devuelve su contenido.
-
-    Lanza jwt.InvalidTokenError (o una subclase, p.ej. ExpiredSignatureError)
-    si el token es inválido, fue manipulado o ya expiró.
-    """
+    """Verifica firma y caducidad del token y devuelve su payload; lanza jwt.InvalidTokenError si no es válido."""
     return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
 
 
@@ -73,11 +57,7 @@ def usuario_actual(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
 ) -> Usuario:
-    """Valida el token del header y devuelve el usuario actual.
-
-    Se usa como dependencia en los endpoints que requieren estar autenticado.
-    Lanza 401 si el token es inválido/expiró o el usuario ya no existe.
-    """
+    """Dependencia: valida el token del header y devuelve el usuario autenticado (401 si falla o está inactivo)."""
     no_autorizado = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Token inválido o expirado",
@@ -94,12 +74,7 @@ def usuario_actual(
 
 
 def requiere_rol(*roles_permitidos: Rol):
-    """Fábrica de dependencias: exige que el usuario actual tenga uno de estos roles.
-
-    Uso en un endpoint:  dependencies=[Depends(requiere_rol(Rol.ADMIN))]
-    Devuelve una dependencia que primero autentica (usuario_actual) y luego
-    comprueba el rol; lanza 403 si no está permitido.
-    """
+    """Fábrica de dependencias que exige que el usuario autenticado tenga uno de estos roles (403 si no)."""
 
     def verificar(usuario: Usuario = Depends(usuario_actual)) -> Usuario:
         if usuario.rol not in roles_permitidos:

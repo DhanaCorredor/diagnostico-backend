@@ -25,10 +25,7 @@ async def agendar_cita(
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION)),
 ):
-    """Agenda una cita (la crea recepción o admin), aplicando todas las reglas de negocio.
-
-    Cada regla que falla se traduce a un código HTTP claro. Si todo va bien, se hace commit.
-    """
+    """Agenda una cita (recepción o admin) aplicando las reglas de negocio; cada fallo devuelve su código HTTP."""
     try:
         cita = citas_service.crear_cita(
             db,
@@ -99,11 +96,9 @@ async def listar_citas(
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION, Rol.MEDICO)),
 ):
-    """Lista la agenda de un día ('fecha') o de un rango ('desde'..'hasta'), ambos incluidos.
+    """Lista la agenda de un día (`fecha`) o de un rango (`desde`..`hasta`), ambos incluidos.
 
-    Hay que indicar 'fecha' o bien 'desde' y 'hasta' (no se lista todo el histórico).
-    Por defecto solo devuelve citas vigentes; con incluir_canceladas=true, también las canceladas.
-    Un MÉDICO solo ve su propia agenda (se le fija su id, ignorando el medico_id que envíe).
+    Un MÉDICO solo ve su propia agenda. Por defecto excluye las canceladas.
     """
     if fecha is not None:
         desde = hasta = fecha
@@ -140,11 +135,7 @@ async def editar_cita(
     db: Session = Depends(get_db),
     _: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION)),
 ):
-    """Edita o mueve una cita activa, revalidando todas las reglas de negocio.
-
-    Actualización parcial: solo se cambian los campos enviados. Cada regla que falla
-    se traduce al mismo código HTTP que al agendar. ADMIN o RECEPCIÓN.
-    """
+    """Edita o mueve una cita activa (parcial, solo los campos enviados), revalidando las reglas. ADMIN o RECEPCIÓN."""
     try:
         cita = citas_service.editar_cita(
             db,

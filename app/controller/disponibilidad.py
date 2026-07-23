@@ -1,8 +1,4 @@
-"""Router de disponibilidad: ver las franjas de un médico y definirlas.
-
-- GET: cualquier usuario autenticado (el calendario la lee para bloquear).
-- POST: solo ADMIN (define los horarios de los médicos).
-"""
+"""Router de disponibilidad: ver las franjas de un médico (autenticado) y definirlas (ADMIN)."""
 
 import uuid
 

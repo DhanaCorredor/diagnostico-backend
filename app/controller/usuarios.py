@@ -1,8 +1,4 @@
-"""Router de gestión de personal/médicos (CRUD, solo ADMIN).
-
-Regla: RECEPCIÓN no accede a la gestión de usuarios. Los pacientes se gestionan
-en su propio router (aquí solo va el personal que hace login).
-"""
+"""Router de gestión del personal que hace login (ADMIN/RECEPCION/MEDICO): CRUD, solo ADMIN."""
 
 import uuid
 

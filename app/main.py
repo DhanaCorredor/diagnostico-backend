@@ -33,9 +33,7 @@ app.include_router(pacientes.router)
 
 @app.exception_handler(IntegrityError)
 def conflicto_de_integridad(request: Request, exc: IntegrityError):
-    """Red de seguridad para las reglas de unicidad: si dos peticiones concurrentes
-    intentan crear el mismo valor único, la restricción de la BD hace fallar a la
-    segunda. Se responde 409 (conflicto) en vez de un 500 confuso."""
+    """Traduce un fallo de restricción única de la BD a un 409 (conflicto) en vez de un 500."""
     return JSONResponse(status_code=409, content={"detail": "Conflicto de integridad de datos"})
 
 

@@ -1,10 +1,4 @@
-"""Catálogo de servicios, especialidades y médicos.
-
-Incluye las lecturas que alimentan los desplegables del frontend (elegir
-servicio, especialidad o médico al agendar) y la gestión de catálogos del ADMIN
-(alta/edición de servicios y alta de especialidades). Vive en la capa de
-servicio para poder probarlo sin levantar la API.
-"""
+"""Catálogo de servicios, especialidades y médicos: lecturas para los desplegables y gestión del ADMIN."""
 
 import uuid
 
@@ -26,11 +20,7 @@ class NombreDuplicado(Exception):
 def listar_servicios(
     db: Session, medico_id: uuid.UUID | None = None
 ) -> list[Servicio]:
-    """Devuelve los servicios activos del catálogo, ordenados por nombre.
-
-    Si se indica `medico_id`, solo devuelve los servicios de las especialidades que
-    ejerce ese médico (así el formulario de cita muestra únicamente lo que puede atender).
-    """
+    """Devuelve los servicios activos ordenados por nombre; con `medico_id`, solo los de sus especialidades."""
     consulta = (
         db.query(Servicio)
         .options(selectinload(Servicio.especialidades))
@@ -80,10 +70,7 @@ def crear_servicio(
 
 
 def actualizar_servicio(db: Session, servicio_id: uuid.UUID, cambios: dict) -> Servicio:
-    """Edita SOLO los campos enviados de un servicio (nombre, categoría, activo).
-
-    Permite desactivar un servicio (`activo=False`) sin borrarlo. Flush (no commit).
-    """
+    """Edita solo los campos enviados de un servicio; permite desactivarlo (`activo=False`). Flush, no commit."""
     servicio = db.get(Servicio, servicio_id)
     if servicio is None:
         raise ServicioNoEncontrado()

@@ -16,8 +16,7 @@ def _exigir_hora_local_naive(v: datetime | None) -> datetime | None:
 
 
 class CitaCreate(BaseModel):
-    """POST /citas. El paciente se identifica por nombre + edad (upsert); si hay varias
-    coincidencias, recepción reenvía con `paciente_id` para elegir uno."""
+    """Cuerpo del POST /citas: identifica al paciente por nombre + edad (upsert) o por `paciente_id`."""
 
     nombre_completo: str = Field(min_length=1)
     edad: int = Field(ge=0, le=120)

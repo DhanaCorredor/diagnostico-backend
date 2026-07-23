@@ -1,11 +1,4 @@
-"""Seed de datos base: catálogos (especialidades y servicios), personal y cuadro médico.
-
-Idempotente: se puede ejecutar varias veces sin duplicar. Inserta solo lo que
-falta (compara por `nombre`, que es único en catálogos; los médicos, por
-`nombre_completo`).
-
-Ejecutar con:  python -m app.seed
-"""
+"""Seed idempotente de datos base: catálogos, personal y cuadro médico. Ejecutar con `python -m app.seed`."""
 
 import os
 from datetime import time
@@ -143,11 +136,7 @@ def sembrar_especialidades(db):
 
 
 def sembrar_servicios(db):
-    """Inserta los servicios que aún no existan, cada uno vinculado (N:M) a su especialidad.
-
-    Requiere que las especialidades ya estén en la base (flush previo) para poder enlazarlas.
-    Devuelve cuántos servicios añadió.
-    """
+    """Inserta los servicios que falten, vinculando cada uno (N:M) a su especialidad. Devuelve cuántos añadió."""
     existentes = {s.nombre for s in db.query(Servicio.nombre).all()}
     catalogo = {e.nombre: e for e in db.query(Especialidad).all()}
     creados = 0
@@ -162,15 +151,7 @@ def sembrar_servicios(db):
 
 
 def sembrar_medicos(db):
-    """Crea los médicos del cuadro médico (rol MEDICO, sin login) que no existan.
-
-    - Sin email ni contraseña: no hacen login (recepción agenda por ellos).
-    - Vincula sus especialidades (N:M); deben existir ya (se siembran antes).
-    - Crea sus franjas del briefing; los que no traen ninguna reciben la jornada
-      completa del centro en sembrar_disponibilidad().
-
-    Idempotente: compara por `nombre_completo`. Devuelve cuántos creó.
-    """
+    """Crea los médicos que falten (rol MEDICO, sin login), con sus especialidades (N:M) y franjas. Devuelve cuántos creó."""
     existentes = {
         u.nombre_completo
         for u in db.query(Usuario.nombre_completo).filter(Usuario.rol == Rol.MEDICO).all()
@@ -198,11 +179,7 @@ def sembrar_medicos(db):
 
 
 def sembrar_pacientes(db):
-    """Crea los pacientes FICTICIOS de demo (rol PACIENTE) que no existan.
-
-    Datos inventados: nunca se usan pacientes reales del centro. Idempotente por
-    `nombre_completo`. Devuelve cuántos creó.
-    """
+    """Crea los pacientes ficticios de demo (rol PACIENTE) que falten; nunca datos reales. Devuelve cuántos creó."""
     existentes = {
         u.nombre_completo
         for u in db.query(Usuario.nombre_completo).filter(Usuario.rol == Rol.PACIENTE).all()
@@ -225,11 +202,7 @@ def sembrar_pacientes(db):
 
 
 def sembrar_staff(db):
-    """Crea el personal interno (admin, recepción, médico) que no exista. Devuelve cuántos creó.
-
-    Todos usan la contraseña del .env (ADMIN_PASSWORD); nunca se escribe en el código.
-    Si no está definida, no crea a nadie (no inventa contraseñas).
-    """
+    """Crea el personal interno con login (admin, recepción, médico) que falte, usando ADMIN_PASSWORD del .env. Devuelve cuántos creó."""
     password = os.getenv("ADMIN_PASSWORD")
     if not password:
         print("  (aviso) ADMIN_PASSWORD no está en el .env: me salto el personal.")
@@ -257,10 +230,7 @@ HORA_CIERRE = time(17, 30)
 
 
 def sembrar_disponibilidad(db):
-    """Da a cada médico SIN franjas la jornada del centro (L-S 07:30-17:30).
-
-    Idempotente: si el médico ya tiene alguna franja, no la toca. Devuelve cuántas creó.
-    """
+    """Da a cada médico sin franjas la jornada del centro (L-S 07:30-17:30); no toca a los que ya tienen. Devuelve cuántas creó."""
     creadas = 0
     for medico in db.query(Usuario).filter(Usuario.rol == Rol.MEDICO).all():
         ya_tiene = (

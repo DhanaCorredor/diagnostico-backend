@@ -1,9 +1,4 @@
-"""Router de catálogos: lectura (servicios, especialidades, médicos) y gestión (ADMIN).
-
-Las lecturas alimentan los desplegables del frontend al agendar y solo requieren
-estar autenticado (cualquier rol del personal). La gestión (alta/edición de
-servicios y alta de especialidades) es solo para ADMIN.
-"""
+"""Router de catálogos: lecturas de servicios/especialidades/médicos (autenticado) y su gestión (ADMIN)."""
 
 import uuid
 
@@ -33,10 +28,7 @@ async def listar_servicios(
     db: Session = Depends(get_db),
     _: object = Depends(usuario_actual),
 ):
-    """Devuelve el catálogo de servicios activos.
-
-    Con `?medico_id=...` filtra a los servicios de las especialidades de ese médico.
-    """
+    """Devuelve el catálogo de servicios activos; con `?medico_id=` filtra por las especialidades del médico."""
     return catalogo_service.listar_servicios(db, medico_id)
 
 
