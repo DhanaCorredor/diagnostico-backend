@@ -4,7 +4,8 @@ import uuid
 
 import pytest
 
-from app.models import Especialidad, Rol, Usuario
+from app.enums import Rol
+from app.models import Especialidad, Usuario
 from app.services import usuarios as U
 
 

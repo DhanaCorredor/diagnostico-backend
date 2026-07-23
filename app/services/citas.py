@@ -9,7 +9,8 @@ from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
-from app.models import Cita, Disponibilidad, EstadoCita, Rol, Servicio, Usuario
+from app.enums import EstadoCita, Rol
+from app.models import Cita, Disponibilidad, Servicio, Usuario
 from app.services.pacientes import buscar_o_crear_paciente, obtener_paciente
 
 GRID_MINUTOS = 15

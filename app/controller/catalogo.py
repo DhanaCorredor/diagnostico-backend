@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import requiere_rol, usuario_actual
 from app.db import get_db
-from app.models import Rol
+from app.enums import Rol
 from app.schemas import (
     EspecialidadCreate,
     EspecialidadOut,

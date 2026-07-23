@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
-from app.routers import auth, catalogo, citas, disponibilidad, pacientes, usuarios
+from app.controller import auth, catalogo, citas, disponibilidad, pacientes, usuarios
 
 load_dotenv()
 

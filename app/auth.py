@@ -16,7 +16,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Rol, Usuario
+from app.enums import Rol
+from app.models import Usuario
 
 load_dotenv()
 

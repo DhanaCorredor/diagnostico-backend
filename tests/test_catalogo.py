@@ -4,7 +4,8 @@ import uuid
 
 import pytest
 
-from app.models import Especialidad, Rol, Servicio, ServicioCategoria, Usuario
+from app.enums import Rol, ServicioCategoria
+from app.models import Especialidad, Servicio, Usuario
 from app.services import catalogo as C
 
 

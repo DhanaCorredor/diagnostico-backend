@@ -1,0 +1,54 @@
+"""Esquemas del personal (usuarios que hacen login)."""
+import uuid
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.enums import Rol
+from app.schemas.catalogo import EspecialidadOut
+
+
+class UsuarioOut(BaseModel):
+    """Datos públicos del usuario (nunca incluye el password_hash)."""
+
+    id: uuid.UUID
+    nombre_completo: str
+    email: str | None
+    rol: Rol
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UsuarioDetalle(BaseModel):
+    """Datos de un usuario del personal (lista/ficha), con especialidades si es médico."""
+
+    id: uuid.UUID
+    nombre_completo: str
+    email: str | None
+    rol: Rol
+    matricula: str | None
+    especialidades: list[EspecialidadOut]
+    activo: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UsuarioCreate(BaseModel):
+    """Alta de personal/médico (ADMIN). El rol no puede ser PACIENTE (se valida en el servicio)."""
+
+    nombre_completo: str = Field(min_length=1)
+    rol: Rol
+    email: str = Field(min_length=3)
+    password: str = Field(min_length=8)
+    matricula: str | None = None
+    especialidades: list[uuid.UUID] = []
+
+
+class UsuarioUpdate(BaseModel):
+    """Edición parcial de un usuario del personal. Solo se cambian los campos enviados."""
+
+    nombre_completo: str | None = Field(default=None, min_length=1)
+    email: str | None = Field(default=None, min_length=3)
+    password: str | None = Field(default=None, min_length=8)
+    matricula: str | None = None
+    especialidades: list[uuid.UUID] | None = None
+    activo: bool | None = None

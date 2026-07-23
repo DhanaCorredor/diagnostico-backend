@@ -10,7 +10,8 @@ import uuid
 from sqlalchemy.orm import Session, selectinload
 
 from app.auth import hashear_password
-from app.models import Especialidad, Rol, Usuario
+from app.enums import Rol
+from app.models import Especialidad, Usuario
 from app.services.comun import valor_en_uso
 
 ROLES_STAFF = (Rol.ADMIN, Rol.RECEPCION, Rol.MEDICO)

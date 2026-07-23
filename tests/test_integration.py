@@ -9,7 +9,8 @@ import uuid
 from datetime import datetime, time, timedelta
 
 from app.auth import hashear_password
-from app.models import Disponibilidad, Rol, Usuario
+from app.enums import Rol
+from app.models import Disponibilidad, Usuario
 
 
 def _slot_futuro_alineado() -> datetime:

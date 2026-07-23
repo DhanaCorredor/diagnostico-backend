@@ -12,7 +12,8 @@ from datetime import time
 
 from app.auth import hashear_password
 from app.db import SessionLocal
-from app.models import Disponibilidad, Especialidad, Rol, Servicio, ServicioCategoria, Usuario
+from app.enums import Rol, ServicioCategoria
+from app.models import Disponibilidad, Especialidad, Servicio, Usuario
 
 STAFF = [
     ("Administrador", "ADMIN", "admin@diagnostico.com", None),

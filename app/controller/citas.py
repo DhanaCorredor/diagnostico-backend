@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.auth import requiere_rol
 from app.db import get_db
-from app.models import Rol, Usuario
+from app.enums import Rol
+from app.models import Usuario
 from app.schemas import AsistenciaUpdate, CitaCreate, CitaOut, CitaUpdate
 from app.services import citas as citas_service
 from app.services.pacientes import PacienteNoEncontrado, PacientesAmbiguos

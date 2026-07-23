@@ -9,7 +9,8 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.models import Rol, Usuario
+from app.enums import Rol
+from app.models import Usuario
 from app.services.comun import valor_en_uso
 
 

@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 
 from app.auth import requiere_rol, usuario_actual
 from app.db import get_db
-from app.models import Rol, Usuario
+from app.enums import Rol
+from app.models import Usuario
 from app.schemas import DisponibilidadCreate, DisponibilidadOut
 from app.services import disponibilidad as disp_service
 

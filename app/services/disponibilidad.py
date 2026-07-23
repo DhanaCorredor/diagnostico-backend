@@ -9,7 +9,8 @@ from datetime import time
 
 from sqlalchemy.orm import Session
 
-from app.models import Disponibilidad, Rol, Usuario
+from app.enums import Rol
+from app.models import Disponibilidad, Usuario
 
 
 class MedicoNoEncontrado(Exception):

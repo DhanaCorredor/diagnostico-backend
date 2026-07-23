@@ -12,7 +12,8 @@ from fastapi.testclient import TestClient
 from app.auth import crear_token
 from app.db import SessionLocal, engine, get_db
 from app.main import app
-from app.models import Rol, Servicio, ServicioCategoria, Usuario
+from app.enums import Rol, ServicioCategoria
+from app.models import Servicio, Usuario
 
 
 @pytest.fixture

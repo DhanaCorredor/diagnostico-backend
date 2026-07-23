@@ -10,7 +10,8 @@ import uuid
 
 from sqlalchemy.orm import Session, selectinload
 
-from app.models import Especialidad, Rol, Servicio, ServicioCategoria, Usuario
+from app.enums import Rol, ServicioCategoria
+from app.models import Especialidad, Servicio, Usuario
 from app.services.comun import valor_en_uso
 
 

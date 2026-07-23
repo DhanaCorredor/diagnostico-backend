@@ -6,7 +6,8 @@ from datetime import date, datetime, time, timezone
 import pytest
 from pydantic import ValidationError
 
-from app.models import Cita, Disponibilidad, EstadoCita, Rol, Usuario
+from app.enums import EstadoCita, Rol
+from app.models import Cita, Disponibilidad, Usuario
 from app.schemas import CitaCreate, CitaUpdate
 from app.services import citas as C
 

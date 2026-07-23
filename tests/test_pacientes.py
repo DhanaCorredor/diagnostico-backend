@@ -4,7 +4,8 @@ import uuid
 
 import pytest
 
-from app.models import Rol, Usuario
+from app.enums import Rol
+from app.models import Usuario
 from app.services.pacientes import (
     CedulaDuplicada,
     PacienteNoEncontrado,
