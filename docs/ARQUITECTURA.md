@@ -40,7 +40,7 @@ flowchart TD
 | Capa | Responsabilidad | Ubicación |
 |------|-----------------|-----------|
 | **Presentación** | UI, formularios, calendario, navegación. Llamadas a la API. | frontend · `src/` |
-| **API / routers** | Endpoints REST, validación de entrada (Pydantic), verificación de rol. | backend · `app/routers` |
+| **API / controller** | Endpoints REST, validación de entrada (Pydantic), verificación de rol. | backend · `app/controller` |
 | **Dominio / servicios** | Reglas de negocio (citas, disponibilidad, upsert de paciente, auth). Aislada y testeable. | backend · `app/services` |
 | **Acceso a datos** | Modelos y consultas vía SQLAlchemy. | backend · `app/models`, `app/db.py` |
 | **Base de datos** | Almacenamiento e integridad. | PostgreSQL |
@@ -51,16 +51,18 @@ flowchart TD
 
 ```
 app/
-  main.py           # arranque FastAPI + montaje de routers
-  db.py             # engine + sesión SQLAlchemy
-  models.py         # modelos (usuarios, citas, servicios, ...)
-  schemas.py        # esquemas Pydantic (entrada/salida)
-  auth.py           # JWT, hash de contraseñas, dependencia requiere_rol
-  routers/          # endpoints: auth, usuarios, citas, catalogo, disponibilidad, pacientes
+  main.py           # arranque FastAPI: solo monta el enrutador (controller)
+  db.py             # engine + sesión SQLAlchemy (Base)
+  auth.py           # JWT, hash de contraseñas, dependencias de rol
+  enums/            # enums del dominio: Rol, EstadoCita, ServicioCategoria
+  models/           # una tabla por archivo (usuario, cita, servicio, ...)
+  schemas/          # esquemas Pydantic por dominio (auth, cita, catalogo, ...)
+  controller/       # endpoints: auth, usuarios, citas, catalogo, disponibilidad, pacientes
   services/         # lógica: citas (solapamiento/disponibilidad), pacientes (upsert)
+  seed.py           # datos base (catálogo, personal, cuadro médico)
 alembic/            # migraciones
 tests/              # pytest
-requirements.txt
+requirements.txt · ruff.toml
 docs/  mockup/       # documentación del proyecto
 ```
 
