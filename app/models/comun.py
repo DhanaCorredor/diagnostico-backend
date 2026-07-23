@@ -1,4 +1,4 @@
-"""Utilidades compartidas por los modelos: PK uuid y la tabla de asociación N:M."""
+"""Utilidades compartidas por los modelos: PK uuid y las tablas de asociación N:M."""
 import uuid
 
 from sqlalchemy import Column, ForeignKey, Table
@@ -16,5 +16,13 @@ usuario_especialidad = Table(
     "usuario_especialidad",
     Base.metadata,
     Column("usuario_id", UUID(as_uuid=True), ForeignKey("usuarios.id"), primary_key=True),
+    Column("especialidad_id", UUID(as_uuid=True), ForeignKey("especialidades.id"), primary_key=True),
+)
+
+
+servicio_especialidad = Table(
+    "servicio_especialidad",
+    Base.metadata,
+    Column("servicio_id", UUID(as_uuid=True), ForeignKey("servicios.id"), primary_key=True),
     Column("especialidad_id", UUID(as_uuid=True), ForeignKey("especialidades.id"), primary_key=True),
 )

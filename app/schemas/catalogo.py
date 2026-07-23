@@ -6,12 +6,28 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.enums import ServicioCategoria
 
 
+class EspecialidadOut(BaseModel):
+    """Una especialidad médica."""
+
+    id: uuid.UUID
+    nombre: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EspecialidadCreate(BaseModel):
+    """Cuerpo del POST /especialidades."""
+
+    nombre: str = Field(min_length=1)
+
+
 class ServicioOut(BaseModel):
-    """Un servicio del catálogo (para el formulario de cita)."""
+    """Un servicio del catálogo con las especialidades que lo ofrecen (para el formulario de cita)."""
 
     id: uuid.UUID
     nombre: str
     categoria: ServicioCategoria
+    especialidades: list[EspecialidadOut]
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -35,21 +51,6 @@ class ServicioUpdate(BaseModel):
     nombre: str | None = Field(default=None, min_length=1)
     categoria: ServicioCategoria | None = None
     activo: bool | None = None
-
-
-class EspecialidadOut(BaseModel):
-    """Una especialidad médica."""
-
-    id: uuid.UUID
-    nombre: str
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class EspecialidadCreate(BaseModel):
-    """Cuerpo del POST /especialidades."""
-
-    nombre: str = Field(min_length=1)
 
 
 class MedicoOut(BaseModel):

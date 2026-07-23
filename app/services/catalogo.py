@@ -23,14 +23,24 @@ class NombreDuplicado(Exception):
     """Ya existe un servicio o especialidad con ese nombre (el nombre es único)."""
 
 
-def listar_servicios(db: Session) -> list[Servicio]:
-    """Devuelve los servicios activos del catálogo, ordenados por nombre."""
-    return (
+def listar_servicios(
+    db: Session, medico_id: uuid.UUID | None = None
+) -> list[Servicio]:
+    """Devuelve los servicios activos del catálogo, ordenados por nombre.
+
+    Si se indica `medico_id`, solo devuelve los servicios de las especialidades que
+    ejerce ese médico (así el formulario de cita muestra únicamente lo que puede atender).
+    """
+    consulta = (
         db.query(Servicio)
+        .options(selectinload(Servicio.especialidades))
         .filter(Servicio.activo.is_(True))
-        .order_by(Servicio.nombre)
-        .all()
     )
+    if medico_id is not None:
+        consulta = consulta.filter(
+            Servicio.especialidades.any(Especialidad.medicos.any(Usuario.id == medico_id))
+        )
+    return consulta.order_by(Servicio.nombre).all()
 
 
 def listar_medicos(db: Session) -> list[Usuario]:

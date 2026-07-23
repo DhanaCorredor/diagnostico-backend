@@ -37,51 +37,51 @@ ESPECIALIDADES = [
 ]
 
 SERVICIOS = [
-    ("Consulta cardiología", ServicioCategoria.CONSULTA),
-    ("Consulta medicina interna", ServicioCategoria.CONSULTA),
-    ("Consulta cirugía general", ServicioCategoria.CONSULTA),
-    ("Consulta ginecología", ServicioCategoria.CONSULTA),
-    ("Consulta gastroenterología", ServicioCategoria.CONSULTA),
-    ("Consulta otorrinolaringología", ServicioCategoria.CONSULTA),
-    ("Consulta traumatología", ServicioCategoria.CONSULTA),
-    ("Consulta dermatología", ServicioCategoria.CONSULTA),
-    ("Consulta venereología", ServicioCategoria.CONSULTA),
-    ("Consulta neumonología", ServicioCategoria.CONSULTA),
-    ("Consulta psicología", ServicioCategoria.CONSULTA),
-    ("Ecografía abdominal", ServicioCategoria.ECOGRAFIA),
-    ("Ecografía pélvica", ServicioCategoria.ECOGRAFIA),
-    ("Ecografía renal", ServicioCategoria.ECOGRAFIA),
-    ("Ecografía testicular", ServicioCategoria.ECOGRAFIA),
-    ("Ecografía de partes blandas", ServicioCategoria.ECOGRAFIA),
-    ("Ecografía mamaria", ServicioCategoria.ECOGRAFIA),
-    ("Ecografía prostática", ServicioCategoria.ECOGRAFIA),
-    ("Ecografía tiroidea", ServicioCategoria.ECOGRAFIA),
-    ("Ecografía transvaginal", ServicioCategoria.ECOGRAFIA),
-    ("Ecografía músculo-esquelética", ServicioCategoria.ECOGRAFIA),
-    ("Doppler carotídeo", ServicioCategoria.DOPPLER),
-    ("Doppler hepático", ServicioCategoria.DOPPLER),
-    ("Doppler renal", ServicioCategoria.DOPPLER),
-    ("Doppler testicular", ServicioCategoria.DOPPLER),
-    ("Doppler de partes blandas", ServicioCategoria.DOPPLER),
-    ("Doppler mamario", ServicioCategoria.DOPPLER),
-    ("Doppler prostático", ServicioCategoria.DOPPLER),
-    ("Doppler tiroideo", ServicioCategoria.DOPPLER),
-    ("Doppler pélvico", ServicioCategoria.DOPPLER),
-    ("Doppler transvaginal", ServicioCategoria.DOPPLER),
-    ("Doppler arterial y venoso (un miembro)", ServicioCategoria.DOPPLER),
-    ("Doppler arterial y venoso (ambos miembros)", ServicioCategoria.DOPPLER),
-    ("Ecocardiograma", ServicioCategoria.ESTUDIO_CARDIACO),
-    ("Electrocardiograma informado", ServicioCategoria.ESTUDIO_CARDIACO),
-    ("Electrocardiograma básico", ServicioCategoria.ESTUDIO_CARDIACO),
-    ("Holter de ritmo", ServicioCategoria.ESTUDIO_CARDIACO),
-    ("MAPA", ServicioCategoria.ESTUDIO_CARDIACO),
-    ("Espirometría", ServicioCategoria.OTRO),
-    ("Endoscopia nasal", ServicioCategoria.OTRO),
-    ("Plan Mujer (chequeo ginecológico completo)", ServicioCategoria.PROMOCION),
-    ("Cardiología (Holter + MAPA)", ServicioCategoria.PROMOCION),
-    ("2 ecografías convencionales", ServicioCategoria.PROMOCION),
-    ("Eco Doppler completo", ServicioCategoria.PROMOCION),
-    ("Neumonología + espirometría", ServicioCategoria.PROMOCION),
+    ("Consulta cardiología", ServicioCategoria.CONSULTA, ["Cardiología"]),
+    ("Consulta medicina interna", ServicioCategoria.CONSULTA, ["Medicina Interna"]),
+    ("Consulta cirugía general", ServicioCategoria.CONSULTA, ["Cirugía General"]),
+    ("Consulta ginecología", ServicioCategoria.CONSULTA, ["Ginecología"]),
+    ("Consulta gastroenterología", ServicioCategoria.CONSULTA, ["Gastroenterología"]),
+    ("Consulta otorrinolaringología", ServicioCategoria.CONSULTA, ["Otorrinolaringología"]),
+    ("Consulta traumatología", ServicioCategoria.CONSULTA, ["Traumatología"]),
+    ("Consulta dermatología", ServicioCategoria.CONSULTA, ["Dermatología"]),
+    ("Consulta venereología", ServicioCategoria.CONSULTA, ["Venereología"]),
+    ("Consulta neumonología", ServicioCategoria.CONSULTA, ["Neumonología"]),
+    ("Consulta psicología", ServicioCategoria.CONSULTA, ["Psicología"]),
+    ("Ecografía abdominal", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía pélvica", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía renal", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía testicular", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía de partes blandas", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía mamaria", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía prostática", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía tiroidea", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía transvaginal", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía músculo-esquelética", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
+    ("Doppler carotídeo", ServicioCategoria.DOPPLER, ["Ecografía"]),
+    ("Doppler hepático", ServicioCategoria.DOPPLER, ["Ecografía"]),
+    ("Doppler renal", ServicioCategoria.DOPPLER, ["Ecografía"]),
+    ("Doppler testicular", ServicioCategoria.DOPPLER, ["Ecografía"]),
+    ("Doppler de partes blandas", ServicioCategoria.DOPPLER, ["Ecografía"]),
+    ("Doppler mamario", ServicioCategoria.DOPPLER, ["Ecografía"]),
+    ("Doppler prostático", ServicioCategoria.DOPPLER, ["Ecografía"]),
+    ("Doppler tiroideo", ServicioCategoria.DOPPLER, ["Ecografía"]),
+    ("Doppler pélvico", ServicioCategoria.DOPPLER, ["Ecografía"]),
+    ("Doppler transvaginal", ServicioCategoria.DOPPLER, ["Ecografía"]),
+    ("Doppler arterial y venoso (un miembro)", ServicioCategoria.DOPPLER, ["Ecografía"]),
+    ("Doppler arterial y venoso (ambos miembros)", ServicioCategoria.DOPPLER, ["Ecografía"]),
+    ("Ecocardiograma", ServicioCategoria.ESTUDIO_CARDIACO, ["Cardiología"]),
+    ("Electrocardiograma informado", ServicioCategoria.ESTUDIO_CARDIACO, ["Cardiología"]),
+    ("Electrocardiograma básico", ServicioCategoria.ESTUDIO_CARDIACO, ["Cardiología"]),
+    ("Holter de ritmo", ServicioCategoria.ESTUDIO_CARDIACO, ["Cardiología"]),
+    ("MAPA", ServicioCategoria.ESTUDIO_CARDIACO, ["Cardiología"]),
+    ("Espirometría", ServicioCategoria.OTRO, ["Neumonología"]),
+    ("Endoscopia nasal", ServicioCategoria.OTRO, ["Otorrinolaringología"]),
+    ("Plan Mujer (chequeo ginecológico completo)", ServicioCategoria.PROMOCION, ["Ginecología"]),
+    ("Cardiología (Holter + MAPA)", ServicioCategoria.PROMOCION, ["Cardiología"]),
+    ("2 ecografías convencionales", ServicioCategoria.PROMOCION, ["Ecografía"]),
+    ("Eco Doppler completo", ServicioCategoria.PROMOCION, ["Ecografía"]),
+    ("Neumonología + espirometría", ServicioCategoria.PROMOCION, ["Neumonología"]),
 ]
 
 LUN, MAR, MIE, JUE, VIE, SAB = 1, 2, 3, 4, 5, 6
@@ -143,15 +143,22 @@ def sembrar_especialidades(db):
 
 
 def sembrar_servicios(db):
-    """Inserta los servicios que aún no existan. Devuelve cuántos añadió."""
+    """Inserta los servicios que aún no existan, cada uno vinculado (N:M) a su especialidad.
+
+    Requiere que las especialidades ya estén en la base (flush previo) para poder enlazarlas.
+    Devuelve cuántos servicios añadió.
+    """
     existentes = {s.nombre for s in db.query(Servicio.nombre).all()}
-    nuevos = [
-        Servicio(nombre=nombre, categoria=categoria)
-        for (nombre, categoria) in SERVICIOS
-        if nombre not in existentes
-    ]
-    db.add_all(nuevos)
-    return len(nuevos)
+    catalogo = {e.nombre: e for e in db.query(Especialidad).all()}
+    creados = 0
+    for nombre, categoria, especialidades in SERVICIOS:
+        if nombre in existentes:
+            continue
+        servicio = Servicio(nombre=nombre, categoria=categoria)
+        servicio.especialidades = [catalogo[e] for e in especialidades]
+        db.add(servicio)
+        creados += 1
+    return creados
 
 
 def sembrar_medicos(db):
@@ -280,8 +287,8 @@ def main():
     db = SessionLocal()
     try:
         n_esp = sembrar_especialidades(db)
-        n_serv = sembrar_servicios(db)
         db.flush()
+        n_serv = sembrar_servicios(db)
         n_med = sembrar_medicos(db)
         n_staff = sembrar_staff(db)
         db.flush()

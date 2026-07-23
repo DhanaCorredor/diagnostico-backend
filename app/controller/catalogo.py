@@ -29,11 +29,15 @@ router = APIRouter(tags=["catálogos"])
 
 @router.get("/servicios", response_model=list[ServicioOut])
 def listar_servicios(
+    medico_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
     _: object = Depends(usuario_actual),
 ):
-    """Devuelve el catálogo de servicios activos."""
-    return catalogo_service.listar_servicios(db)
+    """Devuelve el catálogo de servicios activos.
+
+    Con `?medico_id=...` filtra a los servicios de las especialidades de ese médico.
+    """
+    return catalogo_service.listar_servicios(db, medico_id)
 
 
 @router.get("/medicos", response_model=list[MedicoOut])

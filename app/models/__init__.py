@@ -1,6 +1,6 @@
 """Modelos SQLAlchemy (las 7 tablas del sistema). Ver docs/MODELO-DATOS.md."""
 from app.models.cita import Cita
-from app.models.comun import usuario_especialidad
+from app.models.comun import servicio_especialidad, usuario_especialidad
 from app.models.disponibilidad import Disponibilidad
 from app.models.especialidad import Especialidad
 from app.models.nota_clinica import NotaClinica
@@ -14,5 +14,6 @@ __all__ = [
     "NotaClinica",
     "Servicio",
     "Usuario",
+    "servicio_especialidad",
     "usuario_especialidad",
 ]

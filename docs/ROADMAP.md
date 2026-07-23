@@ -70,7 +70,7 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 
 | Endpoint | Acción | Rol | Origen | Estado |
 |----------|--------|-----|--------|:------:|
-| `GET /servicios` · `GET /medicos` · `GET /especialidades` | Alimentar desplegables al agendar | autenticado | MANUAL §3 | ✅ |
+| `GET /servicios` (opc. `?medico_id=`) · `GET /medicos` · `GET /especialidades` | Alimentar desplegables al agendar (los servicios se filtran por las especialidades del médico elegido) | autenticado | MANUAL §3 | ✅ |
 
 **Disponibilidad — lectura autenticada / gestión ADMIN**
 
@@ -127,7 +127,7 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 
 **Definido** → ver [`MODELO-DATOS.md`](MODELO-DATOS.md) (incluye el diagrama entidad-relación).
 
-Resumen (7 tablas): `usuarios` (unificada), `especialidades` + `usuario_especialidad` (N:M), `servicios`, `disponibilidad`, `citas` (cero solapamientos por médico), `notas_clinicas` (**reservada para fase 2, fuera del MVP**).
+Resumen (8 tablas): `usuarios` (unificada), `especialidades` + `usuario_especialidad` (N:M), `servicios` + `servicio_especialidad` (N:M), `disponibilidad`, `citas` (cero solapamientos por médico), `notas_clinicas` (**reservada para fase 2, fuera del MVP**).
 
 > **Estructura de carpetas** y detalle técnico → ver [`ARQUITECTURA.md`](ARQUITECTURA.md).
 

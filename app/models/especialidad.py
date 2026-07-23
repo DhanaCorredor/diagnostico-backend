@@ -3,11 +3,11 @@ from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship
 
 from app.db import Base
-from app.models.comun import usuario_especialidad, uuid_pk
+from app.models.comun import servicio_especialidad, usuario_especialidad, uuid_pk
 
 
 class Especialidad(Base):
-    """Especialidad médica; se relaciona N:M con los médicos que la ejercen."""
+    """Especialidad médica; N:M con los médicos que la ejercen y con los servicios que abarca."""
 
     __tablename__ = "especialidades"
 
@@ -16,4 +16,7 @@ class Especialidad(Base):
 
     medicos = relationship(
         "Usuario", secondary=usuario_especialidad, back_populates="especialidades"
+    )
+    servicios = relationship(
+        "Servicio", secondary=servicio_especialidad, back_populates="especialidades"
     )

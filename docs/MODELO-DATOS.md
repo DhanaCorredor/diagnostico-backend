@@ -14,11 +14,11 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 
 ## Alcance del MVP
 
-**7 tablas** (una, `notas_clinicas`, **reservada para fase 2**). Se prioriza lo demostrable y las validaciones que pidió la profe.
+**8 tablas** (una, `notas_clinicas`, **reservada para fase 2**). Se prioriza lo demostrable y las validaciones que pidió la profe.
 
 | Núcleo (MVP) | Fuera del MVP (→ fase 2) |
 |--------------|--------------------------|
-| `usuarios`, `especialidades`, `usuario_especialidad`, `servicios`, `disponibilidad`, `citas` | historia clínica / notas (`notas_clinicas`, tabla creada como andamiaje) · Reportes · recordatorios WhatsApp · auditoría · visitas (agrupar estudios) · duración por médico · recursos/salas + anti-solapamiento por recurso · holter colocación+retiro · constraint `gist` en BD · PWA offline |
+| `usuarios`, `especialidades`, `usuario_especialidad`, `servicios`, `servicio_especialidad`, `disponibilidad`, `citas` | historia clínica / notas (`notas_clinicas`, tabla creada como andamiaje) · Reportes · recordatorios WhatsApp · auditoría · visitas (agrupar estudios) · duración por médico · recursos/salas + anti-solapamiento por recurso · holter colocación+retiro · constraint `gist` en BD · PWA offline |
 
 ## Decisiones cerradas (con datos reales del centro)
 
@@ -72,6 +72,11 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 | nombre | string, único | ej. Consulta cardiología, Ecocardiograma, Holter de ritmo, Ecografía abdominal, Doppler carotídeo… |
 | categoria | `ServicioCategoria` | CONSULTA · ECOGRAFIA · DOPPLER · ESTUDIO_CARDIACO · PROMOCION · OTRO |
 | activo | bool (def. true) | |
+
+### `servicio_especialidad` — N:M servicio ↔ especialidad
+`servicio_id` (FK → servicios) · `especialidad_id` (FK → especialidades) · PK compuesta.
+
+> Permite que al elegir un médico el formulario muestre **solo** los servicios de sus especialidades (`GET /servicios?medico_id=…`).
 
 ### `disponibilidad` — franjas semanales del médico
 `id` · `usuario_id` (FK → usuarios, médico) · `dia_semana` (0–6, 0=domingo) · `hora_inicio` (time) · `hora_fin` (time).
@@ -141,6 +146,8 @@ def hay_solapamiento(db, medico_id, starts_at, ends_at):
 erDiagram
     usuarios ||--o{ usuario_especialidad : tiene
     especialidades ||--o{ usuario_especialidad : agrupa
+    servicios ||--o{ servicio_especialidad : pertenece
+    especialidades ||--o{ servicio_especialidad : agrupa
     usuarios ||--o{ disponibilidad : define
     usuarios ||--o{ citas : "paciente / médico"
     servicios ||--o{ citas : tipifica
@@ -164,7 +171,10 @@ erDiagram
         uuid especialidad_id FK }
     servicios { uuid id PK
         string nombre UK
-        ServicioCategoria categoria }
+        ServicioCategoria categoria
+        boolean activo }
+    servicio_especialidad { uuid servicio_id FK
+        uuid especialidad_id FK }
     disponibilidad { uuid id PK
         uuid usuario_id FK
         int dia_semana
@@ -191,6 +201,7 @@ erDiagram
 | Relación | Cardinalidad | Nota |
 |----------|--------------|------|
 | `usuarios` (médico) – `especialidades` | N : M | Vía `usuario_especialidad`. |
+| `servicios` – `especialidades` | N : M | Vía `servicio_especialidad`. Filtra los servicios por médico al agendar. |
 | `usuarios` (médico) – `disponibilidad` | 1 : N | Franjas horarias semanales. |
 | `usuarios` (paciente) – `citas` | 1 : N | Citas del paciente. |
 | `usuarios` (médico) – `citas` | 1 : N | Citas que atiende (anti-solapamiento por médico). |

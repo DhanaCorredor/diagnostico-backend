@@ -24,6 +24,24 @@ def test_listar_servicios_solo_activos_y_ordenados(db):
     assert nombres.index(activo_a.nombre) < nombres.index(activo_b.nombre)
 
 
+def test_listar_servicios_filtra_por_medico(db):
+    cardio = Especialidad(nombre=f"Cardio {uuid.uuid4()}")
+    derma = Especialidad(nombre=f"Derma {uuid.uuid4()}")
+    medico = Usuario(
+        nombre_completo=f"Dr. Cardio {uuid.uuid4()}", rol=Rol.MEDICO, especialidades=[cardio]
+    )
+    serv_cardio = Servicio(nombre=f"Eco cardíaca {uuid.uuid4()}", categoria=ServicioCategoria.ESTUDIO_CARDIACO)
+    serv_cardio.especialidades = [cardio]
+    serv_derma = Servicio(nombre=f"Consulta piel {uuid.uuid4()}", categoria=ServicioCategoria.CONSULTA)
+    serv_derma.especialidades = [derma]
+    db.add_all([cardio, derma, medico, serv_cardio, serv_derma])
+    db.flush()
+
+    ids = [s.id for s in C.listar_servicios(db, medico.id)]
+    assert serv_cardio.id in ids
+    assert serv_derma.id not in ids
+
+
 def test_listar_medicos_activos_con_especialidades(db):
     esp = Especialidad(nombre=f"Cardio {uuid.uuid4()}")
     activo = Usuario(
