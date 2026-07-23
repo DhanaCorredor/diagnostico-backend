@@ -20,7 +20,7 @@ MAX_RANGO_DIAS = 60
 
 
 @router.post("", response_model=CitaOut, status_code=status.HTTP_201_CREATED)
-def agendar_cita(
+async def agendar_cita(
     datos: CitaCreate,
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION)),
@@ -90,7 +90,7 @@ def agendar_cita(
 
 
 @router.get("", response_model=list[CitaOut])
-def listar_citas(
+async def listar_citas(
     fecha: date | None = None,
     desde: date | None = None,
     hasta: date | None = None,
@@ -134,7 +134,7 @@ def listar_citas(
 
 
 @router.put("/{cita_id}", response_model=CitaOut)
-def editar_cita(
+async def editar_cita(
     cita_id: uuid.UUID,
     datos: CitaUpdate,
     db: Session = Depends(get_db),
@@ -193,7 +193,7 @@ def editar_cita(
 
 
 @router.post("/{cita_id}/cancelar", response_model=CitaOut)
-def cancelar_cita(
+async def cancelar_cita(
     cita_id: uuid.UUID,
     db: Session = Depends(get_db),
     _: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION)),
@@ -213,7 +213,7 @@ def cancelar_cita(
 
 
 @router.post("/{cita_id}/asistencia", response_model=CitaOut)
-def marcar_asistencia(
+async def marcar_asistencia(
     cita_id: uuid.UUID,
     datos: AsistenciaUpdate,
     db: Session = Depends(get_db),

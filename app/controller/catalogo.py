@@ -28,7 +28,7 @@ router = APIRouter(tags=["catálogos"])
 
 
 @router.get("/servicios", response_model=list[ServicioOut])
-def listar_servicios(
+async def listar_servicios(
     medico_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
     _: object = Depends(usuario_actual),
@@ -41,7 +41,7 @@ def listar_servicios(
 
 
 @router.get("/medicos", response_model=list[MedicoOut])
-def listar_medicos(
+async def listar_medicos(
     db: Session = Depends(get_db),
     _: object = Depends(usuario_actual),
 ):
@@ -50,7 +50,7 @@ def listar_medicos(
 
 
 @router.get("/especialidades", response_model=list[EspecialidadOut])
-def listar_especialidades(
+async def listar_especialidades(
     db: Session = Depends(get_db),
     _: object = Depends(usuario_actual),
 ):
@@ -63,7 +63,7 @@ def listar_especialidades(
     response_model=ServicioDetalle,
     status_code=status.HTTP_201_CREATED,
 )
-def crear_servicio(
+async def crear_servicio(
     datos: ServicioCreate,
     db: Session = Depends(get_db),
     _: object = Depends(requiere_rol(Rol.ADMIN)),
@@ -81,7 +81,7 @@ def crear_servicio(
 
 
 @router.put("/servicios/{servicio_id}", response_model=ServicioDetalle)
-def actualizar_servicio(
+async def actualizar_servicio(
     servicio_id: uuid.UUID,
     datos: ServicioUpdate,
     db: Session = Depends(get_db),
@@ -105,7 +105,7 @@ def actualizar_servicio(
     response_model=EspecialidadOut,
     status_code=status.HTTP_201_CREATED,
 )
-def crear_especialidad(
+async def crear_especialidad(
     datos: EspecialidadCreate,
     db: Session = Depends(get_db),
     _: object = Depends(requiere_rol(Rol.ADMIN)),

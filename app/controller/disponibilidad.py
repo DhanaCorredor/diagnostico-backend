@@ -20,7 +20,7 @@ router = APIRouter(prefix="/disponibilidad", tags=["disponibilidad"])
 
 
 @router.get("", response_model=list[DisponibilidadOut])
-def listar_disponibilidad(
+async def listar_disponibilidad(
     medico_id: uuid.UUID,
     db: Session = Depends(get_db),
     _: object = Depends(usuario_actual),
@@ -30,7 +30,7 @@ def listar_disponibilidad(
 
 
 @router.post("", response_model=DisponibilidadOut, status_code=status.HTTP_201_CREATED)
-def crear_disponibilidad(
+async def crear_disponibilidad(
     datos: DisponibilidadCreate,
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(requiere_rol(Rol.ADMIN)),

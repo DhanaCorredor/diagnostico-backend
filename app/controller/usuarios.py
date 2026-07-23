@@ -23,13 +23,13 @@ router = APIRouter(
 
 
 @router.get("", response_model=list[UsuarioDetalle])
-def listar_personal(db: Session = Depends(get_db)):
+async def listar_personal(db: Session = Depends(get_db)):
     """Lista el personal (ADMIN, RECEPCIÓN, MEDICO). No incluye pacientes."""
     return usr_service.listar_personal(db)
 
 
 @router.get("/{usuario_id}", response_model=UsuarioDetalle)
-def obtener_usuario(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
+async def obtener_usuario(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
     """Devuelve la ficha de un usuario del personal."""
     try:
         return usr_service.obtener_usuario(db, usuario_id)
@@ -38,7 +38,7 @@ def obtener_usuario(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
 
 
 @router.post("", response_model=UsuarioDetalle, status_code=status.HTTP_201_CREATED)
-def crear_usuario(datos: UsuarioCreate, db: Session = Depends(get_db)):
+async def crear_usuario(datos: UsuarioCreate, db: Session = Depends(get_db)):
     """Crea un usuario de personal (médico o staff), con su contraseña y especialidades."""
     try:
         usuario = usr_service.crear_usuario(
@@ -68,7 +68,7 @@ def crear_usuario(datos: UsuarioCreate, db: Session = Depends(get_db)):
 
 
 @router.delete("/{usuario_id}", response_model=UsuarioDetalle)
-def desactivar_usuario(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
+async def desactivar_usuario(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
     """Da de baja (lógica) a un usuario: `activo=False`. Reactivar con PUT {"activo": true}."""
     try:
         usuario = usr_service.desactivar_usuario(db, usuario_id)
@@ -80,7 +80,7 @@ def desactivar_usuario(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
 
 
 @router.put("/{usuario_id}", response_model=UsuarioDetalle)
-def actualizar_usuario(
+async def actualizar_usuario(
     usuario_id: uuid.UUID,
     datos: UsuarioUpdate,
     db: Session = Depends(get_db),

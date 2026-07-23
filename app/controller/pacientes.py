@@ -20,13 +20,13 @@ router = APIRouter(
 
 
 @router.get("", response_model=list[PacienteOut])
-def listar_pacientes(db: Session = Depends(get_db)):
+async def listar_pacientes(db: Session = Depends(get_db)):
     """Lista los pacientes activos."""
     return pac_service.listar_pacientes(db)
 
 
 @router.post("", response_model=PacienteOut, status_code=status.HTTP_201_CREATED)
-def crear_paciente(datos: PacienteCreate, db: Session = Depends(get_db)):
+async def crear_paciente(datos: PacienteCreate, db: Session = Depends(get_db)):
     """Da de alta un paciente manualmente (sin agendarle una cita)."""
     try:
         paciente = pac_service.crear_paciente(db, datos.model_dump())
@@ -39,7 +39,7 @@ def crear_paciente(datos: PacienteCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/{paciente_id}", response_model=PacienteOut)
-def obtener_paciente(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
+async def obtener_paciente(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
     """Devuelve la ficha de un paciente."""
     try:
         return pac_service.obtener_paciente(db, paciente_id)
@@ -48,7 +48,7 @@ def obtener_paciente(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
 
 
 @router.get("/{paciente_id}/citas", response_model=list[CitaOut])
-def historial_citas(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
+async def historial_citas(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
     """Devuelve el historial de citas de un paciente (de la más reciente a la más antigua)."""
     try:
         pac_service.obtener_paciente(db, paciente_id)
@@ -58,7 +58,7 @@ def historial_citas(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
 
 
 @router.put("/{paciente_id}", response_model=PacienteOut)
-def actualizar_paciente(
+async def actualizar_paciente(
     paciente_id: uuid.UUID,
     datos: PacienteUpdate,
     db: Session = Depends(get_db),
@@ -79,7 +79,7 @@ def actualizar_paciente(
 
 
 @router.delete("/{paciente_id}", response_model=PacienteOut)
-def desactivar_paciente(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
+async def desactivar_paciente(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
     """Da de baja (lógica) a un paciente: `activo=False`. Reactivar con PUT."""
     try:
         paciente = pac_service.desactivar_paciente(db, paciente_id)

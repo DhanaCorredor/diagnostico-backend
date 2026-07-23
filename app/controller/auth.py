@@ -14,7 +14,7 @@ _HASH_SENUELO = hashear_password("timing-attack-decoy")
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(datos: LoginRequest, db: Session = Depends(get_db)):
+async def login(datos: LoginRequest, db: Session = Depends(get_db)):
     """Verifica email + contraseña y, si son correctos, devuelve un token JWT."""
     usuario = db.query(Usuario).filter_by(email=datos.email).first()
     hash_a_verificar = usuario.password_hash if usuario and usuario.password_hash else _HASH_SENUELO
@@ -34,6 +34,6 @@ def login(datos: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UsuarioOut)
-def me(usuario: Usuario = Depends(usuario_actual)):
+async def me(usuario: Usuario = Depends(usuario_actual)):
     """Devuelve los datos del usuario autenticado (según el token del header)."""
     return usuario
