@@ -13,6 +13,7 @@ from app.services.pacientes import (
     actualizar_paciente,
     buscar_o_crear_paciente,
     crear_paciente,
+    desactivar_paciente,
     listar_pacientes,
     obtener_paciente,
 )
@@ -112,3 +113,10 @@ def test_actualizar_paciente_cedula_duplicada(db):
     pac = buscar_o_crear_paciente(db, f"Pac {uuid.uuid4()}", 40)
     with pytest.raises(CedulaDuplicada):
         actualizar_paciente(db, pac.id, {"cedula": ced})
+
+
+def test_desactivar_paciente_baja_logica(db):
+    pac = buscar_o_crear_paciente(db, f"Pac {uuid.uuid4()}", 40)
+    desactivado = desactivar_paciente(db, pac.id)
+    assert desactivado.activo is False
+    assert pac.id not in [p.id for p in listar_pacientes(db)]

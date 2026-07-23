@@ -38,6 +38,7 @@ def buscar_o_crear_paciente(db: Session, nombre_completo: str, edad: int) -> Usu
     coincidencias = (
         db.query(Usuario)
         .filter(Usuario.rol == Rol.PACIENTE)
+        .filter(Usuario.activo.is_(True))
         .filter(Usuario.nombre_completo == nombre_completo)
         .filter(Usuario.edad == edad)
         .all()
@@ -67,10 +68,11 @@ def _cedula_en_uso(db: Session, cedula: str, excluir_id: uuid.UUID | None = None
 
 
 def listar_pacientes(db: Session) -> list[Usuario]:
-    """Devuelve todos los pacientes, ordenados por nombre."""
+    """Devuelve los pacientes activos, ordenados por nombre."""
     return (
         db.query(Usuario)
         .filter(Usuario.rol == Rol.PACIENTE)
+        .filter(Usuario.activo.is_(True))
         .order_by(Usuario.nombre_completo)
         .all()
     )
@@ -114,5 +116,13 @@ def actualizar_paciente(db: Session, paciente_id: uuid.UUID, cambios: dict) -> U
 
     for campo, valor in cambios.items():
         setattr(paciente, campo, valor)
+    db.flush()
+    return paciente
+
+
+def desactivar_paciente(db: Session, paciente_id: uuid.UUID) -> Usuario:
+    """Da de baja (lógica) a un paciente: `activo=False`. Hace flush (no commit)."""
+    paciente = obtener_paciente(db, paciente_id)
+    paciente.activo = False
     db.flush()
     return paciente

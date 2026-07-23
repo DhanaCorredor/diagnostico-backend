@@ -21,7 +21,7 @@ router = APIRouter(
 
 @router.get("", response_model=list[PacienteOut])
 def listar_pacientes(db: Session = Depends(get_db)):
-    """Lista todos los pacientes."""
+    """Lista los pacientes activos."""
     return pac_service.listar_pacientes(db)
 
 
@@ -74,5 +74,16 @@ def actualizar_paciente(
             status.HTTP_409_CONFLICT, "La cédula ya pertenece a otra persona"
         ) from None
 
+    db.commit()
+    return paciente
+
+
+@router.delete("/{paciente_id}", response_model=PacienteOut)
+def desactivar_paciente(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
+    """Da de baja (lógica) a un paciente: `activo=False`. Reactivar con PUT."""
+    try:
+        paciente = pac_service.desactivar_paciente(db, paciente_id)
+    except pac_service.PacienteNoEncontrado:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado") from None
     db.commit()
     return paciente
