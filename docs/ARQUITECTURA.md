@@ -99,6 +99,28 @@ package.json        # pnpm
 | **Upsert de paciente al agendar** | Evita duplicados y agiliza el flujo real de recepción. |
 | **IDs `uuid`** | Evitan colisiones al migrar entre entornos. |
 
+## 5.b Principios y patrones de diseño
+
+**Principios**
+- **KISS / Simplicidad primero** — menos abstracciones, funciones cortas, sin patrones innecesarios.
+- **Separación de responsabilidades (SRP)** — cada capa y cada módulo hacen una sola cosa.
+- **DRY** — la lógica repetida se centraliza (ej. `value_in_use` para unicidad; helpers `_validate_*`).
+
+**Patrones**
+| Patrón | Dónde / cómo |
+|--------|--------------|
+| **Arquitectura en capas** | `controller/` (HTTP) → `services/` (negocio) → SQLAlchemy (datos). |
+| **Service Layer** | Toda la lógica de negocio en `app/services/`, testeable sin levantar la API. |
+| **Inyección de dependencias** | `Depends()` de FastAPI: `get_db`, `current_user`, `require_role`. |
+| **Factory de dependencias** | `require_role(*roles)` devuelve una dependencia que valida el rol del usuario. |
+| **DTO / esquemas de frontera** | Pydantic (`app/schemas/`) valida la entrada y serializa la salida; el modelo ORM no se expone directo. |
+| **Excepciones de dominio → HTTP** | Los servicios lanzan excepciones propias; el router las traduce a 400/404/409. |
+| **Unit of Work** | Una transacción por petición: los servicios hacen `flush`, el endpoint hace `commit`. |
+| **Tabla de asociación N:M** | `usuario_especialidad`, `servicio_especialidad`. |
+| **Soft delete (baja lógica)** | `activo = False` en vez de borrar (conserva histórico; HIPAA/GDPR). |
+| **Upsert** | `find_or_create_patient` evita duplicados al agendar. |
+| **Enums de dominio** | Listas cerradas (`Role`, `AppointmentStatus`, `ServiceCategory`) validadas por Pydantic y la BD. |
+
 ## 6. Seguridad y privacidad
 
 - Contraseñas con **hash** (bcrypt); nunca en texto plano.

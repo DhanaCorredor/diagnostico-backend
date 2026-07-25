@@ -156,7 +156,9 @@ Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 | [`docs/FLUJO-USUARIO.md`](docs/FLUJO-USUARIO.md) | User-flow flowchart (Mermaid) |
 | [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md) | Entities, fields, relations, ER diagram and rules |
 | [`docs/REGLAS-DE-NEGOCIO.md`](docs/REGLAS-DE-NEGOCIO.md) | Canonical business rules and how they are implemented |
-| [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Architecture, layers, data flow and technical decisions |
+| [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Architecture, layers, data flow, design principles/patterns and technical decisions |
+| [`docs/SERVICIOS-BACKEND.md`](docs/SERVICIOS-BACKEND.md) | Backend service layer: what each service does and the exceptions it raises |
+| [`docs/TESTING.md`](docs/TESTING.md) | Testing strategy and what the 100 tests cover |
 | [`docs/MANUAL-USUARIO.md`](docs/MANUAL-USUARIO.md) | Step-by-step usage guide for the staff |
 | [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) | Deployment guide (Render + PostgreSQL) |
 
