@@ -5,7 +5,7 @@ import uuid
 from sqlalchemy.orm import Session, selectinload
 
 from app.enums import Role, ServiceCategory
-from app.models import Especialidad, Servicio, Usuario
+from app.models import Specialty, Service, User
 from app.services.comun import valor_en_uso
 
 
@@ -19,59 +19,59 @@ class NombreDuplicado(Exception):
 
 def listar_servicios(
     db: Session, medico_id: uuid.UUID | None = None
-) -> list[Servicio]:
+) -> list[Service]:
     """Devuelve los servicios activos ordenados por nombre; con `medico_id`, solo los de sus especialidades."""
     consulta = (
-        db.query(Servicio)
-        .options(selectinload(Servicio.especialidades))
-        .filter(Servicio.activo.is_(True))
+        db.query(Service)
+        .options(selectinload(Service.especialidades))
+        .filter(Service.activo.is_(True))
     )
     if medico_id is not None:
         consulta = consulta.filter(
-            Servicio.especialidades.any(Especialidad.medicos.any(Usuario.id == medico_id))
+            Service.especialidades.any(Specialty.medicos.any(User.id == medico_id))
         )
-    return consulta.order_by(Servicio.nombre).all()
+    return consulta.order_by(Service.nombre).all()
 
 
-def listar_medicos(db: Session) -> list[Usuario]:
+def listar_medicos(db: Session) -> list[User]:
     """Devuelve los médicos activos, ordenados por nombre, con sus especialidades."""
     return (
-        db.query(Usuario)
-        .options(selectinload(Usuario.especialidades))
-        .filter(Usuario.rol == Role.MEDICO)
-        .filter(Usuario.activo.is_(True))
-        .order_by(Usuario.nombre_completo)
+        db.query(User)
+        .options(selectinload(User.especialidades))
+        .filter(User.rol == Role.MEDICO)
+        .filter(User.activo.is_(True))
+        .order_by(User.nombre_completo)
         .all()
     )
 
 
-def listar_especialidades(db: Session) -> list[Especialidad]:
+def listar_especialidades(db: Session) -> list[Specialty]:
     """Devuelve todas las especialidades del catálogo, ordenadas por nombre."""
-    return db.query(Especialidad).order_by(Especialidad.nombre).all()
+    return db.query(Specialty).order_by(Specialty.nombre).all()
 
 
 def _servicio_nombre_en_uso(
     db: Session, nombre: str, excluir_id: uuid.UUID | None = None
 ) -> bool:
     """True si ya hay un servicio con ese nombre (excluyendo, si se indica, uno propio)."""
-    return valor_en_uso(db, Servicio, Servicio.nombre, nombre, excluir_id)
+    return valor_en_uso(db, Service, Service.nombre, nombre, excluir_id)
 
 
 def crear_servicio(
     db: Session, *, nombre: str, categoria: ServiceCategory
-) -> Servicio:
+) -> Service:
     """Da de alta un servicio en el catálogo. Nombre único. Flush (no commit)."""
     if _servicio_nombre_en_uso(db, nombre):
         raise NombreDuplicado()
-    servicio = Servicio(nombre=nombre, categoria=categoria)
+    servicio = Service(nombre=nombre, categoria=categoria)
     db.add(servicio)
     db.flush()
     return servicio
 
 
-def actualizar_servicio(db: Session, servicio_id: uuid.UUID, cambios: dict) -> Servicio:
+def actualizar_servicio(db: Session, servicio_id: uuid.UUID, cambios: dict) -> Service:
     """Edita solo los campos enviados de un servicio; permite desactivarlo (`activo=False`). Flush, no commit."""
-    servicio = db.get(Servicio, servicio_id)
+    servicio = db.get(Service, servicio_id)
     if servicio is None:
         raise ServicioNoEncontrado()
     if cambios.get("nombre") is not None and _servicio_nombre_en_uso(
@@ -85,11 +85,11 @@ def actualizar_servicio(db: Session, servicio_id: uuid.UUID, cambios: dict) -> S
     return servicio
 
 
-def crear_especialidad(db: Session, *, nombre: str) -> Especialidad:
+def crear_especialidad(db: Session, *, nombre: str) -> Specialty:
     """Da de alta una especialidad en el catálogo. Nombre único. Flush (no commit)."""
-    if valor_en_uso(db, Especialidad, Especialidad.nombre, nombre):
+    if valor_en_uso(db, Specialty, Specialty.nombre, nombre):
         raise NombreDuplicado()
-    especialidad = Especialidad(nombre=nombre)
+    especialidad = Specialty(nombre=nombre)
     db.add(especialidad)
     db.flush()
     return especialidad

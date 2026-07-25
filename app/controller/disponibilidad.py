@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.auth import requiere_rol, usuario_actual
 from app.db import get_db
 from app.enums import Role
-from app.models import Usuario
+from app.models import User
 from app.schemas import DisponibilidadCreate, DisponibilidadOut
 from app.services import disponibilidad as disp_service
 
@@ -29,7 +29,7 @@ async def listar_disponibilidad(
 async def crear_disponibilidad(
     datos: DisponibilidadCreate,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(requiere_rol(Role.ADMIN)),
+    usuario: User = Depends(requiere_rol(Role.ADMIN)),
 ):
     """Define una franja de disponibilidad para un médico (solo ADMIN)."""
     try:

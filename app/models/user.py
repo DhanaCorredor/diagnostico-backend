@@ -7,7 +7,7 @@ from app.enums.role import Role
 from app.models.comun import usuario_especialidad, uuid_pk
 
 
-class Usuario(Base):
+class User(Base):
     """Personal, médicos y pacientes comparten esta tabla; los campos que no aplican quedan a NULL."""
 
     __tablename__ = "usuarios"
@@ -34,5 +34,5 @@ class Usuario(Base):
     updated_at = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
     especialidades = relationship(
-        "Especialidad", secondary=usuario_especialidad, back_populates="medicos"
+        "Specialty", secondary=usuario_especialidad, back_populates="medicos"
     )

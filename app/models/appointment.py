@@ -7,7 +7,7 @@ from app.enums.appointment_status import AppointmentStatus
 from app.models.comun import uuid_pk
 
 
-class Cita(Base):
+class Appointment(Base):
     """Cita médica: paciente + médico + servicio en una franja, con estado y auditoría mínima."""
 
     __tablename__ = "citas"

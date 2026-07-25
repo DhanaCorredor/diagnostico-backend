@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.enums import Role
-from app.models import Usuario
+from app.models import User
 
 load_dotenv()
 
@@ -56,7 +56,7 @@ security = HTTPBearer()
 def usuario_actual(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
-) -> Usuario:
+) -> User:
     """Dependencia: valida el token del header y devuelve el usuario autenticado (401 si falla o está inactivo)."""
     no_autorizado = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -67,7 +67,7 @@ def usuario_actual(
         usuario_id = uuid.UUID(datos["sub"])
     except (jwt.InvalidTokenError, KeyError, ValueError):
         raise no_autorizado from None
-    usuario = db.get(Usuario, usuario_id)
+    usuario = db.get(User, usuario_id)
     if usuario is None or not usuario.activo:
         raise no_autorizado
     return usuario
@@ -76,7 +76,7 @@ def usuario_actual(
 def requiere_rol(*roles_permitidos: Role):
     """Fábrica de dependencias que exige que el usuario autenticado tenga uno de estos roles (403 si no)."""
 
-    def verificar(usuario: Usuario = Depends(usuario_actual)) -> Usuario:
+    def verificar(usuario: User = Depends(usuario_actual)) -> User:
         if usuario.rol not in roles_permitidos:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

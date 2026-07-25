@@ -7,7 +7,7 @@ from app.enums.service_category import ServiceCategory
 from app.models.comun import servicio_especialidad, uuid_pk
 
 
-class Servicio(Base):
+class Service(Base):
     """Servicio del catálogo; se relaciona N:M con las especialidades que lo ofrecen."""
 
     __tablename__ = "servicios"
@@ -18,5 +18,5 @@ class Servicio(Base):
     activo = Column(Boolean, nullable=False, default=True)
 
     especialidades = relationship(
-        "Especialidad", secondary=servicio_especialidad, back_populates="servicios"
+        "Specialty", secondary=servicio_especialidad, back_populates="servicios"
     )

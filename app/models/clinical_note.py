@@ -6,7 +6,7 @@ from app.db import Base
 from app.models.comun import uuid_pk
 
 
-class NotaClinica(Base):
+class ClinicalNote(Base):
     """Nota de texto que el médico escribe sobre un paciente (sin funcionalidad en el MVP)."""
 
     __tablename__ = "notas_clinicas"

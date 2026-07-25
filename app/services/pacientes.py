@@ -5,7 +5,7 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app.enums import Role
-from app.models import Usuario
+from app.models import User
 from app.services.comun import valor_en_uso
 
 
@@ -17,17 +17,17 @@ class PacientesAmbiguos(Exception):
         super().__init__(f"{len(candidatos)} pacientes coinciden; recepción debe elegir")
 
 
-def buscar_o_crear_paciente(db: Session, nombre_completo: str, edad: int) -> Usuario:
+def buscar_o_crear_paciente(db: Session, nombre_completo: str, edad: int) -> User:
     """Busca un paciente por nombre_completo + edad y lo devuelve; si no existe, lo crea.
 
     Lanza PacientesAmbiguos si coinciden varios (recepción debe elegir). Flush, no commit.
     """
     coincidencias = (
-        db.query(Usuario)
-        .filter(Usuario.rol == Role.PACIENTE)
-        .filter(Usuario.activo.is_(True))
-        .filter(Usuario.nombre_completo == nombre_completo)
-        .filter(Usuario.edad == edad)
+        db.query(User)
+        .filter(User.rol == Role.PACIENTE)
+        .filter(User.activo.is_(True))
+        .filter(User.nombre_completo == nombre_completo)
+        .filter(User.edad == edad)
         .all()
     )
     if len(coincidencias) == 1:
@@ -35,7 +35,7 @@ def buscar_o_crear_paciente(db: Session, nombre_completo: str, edad: int) -> Usu
     if len(coincidencias) > 1:
         raise PacientesAmbiguos(coincidencias)
 
-    paciente = Usuario(nombre_completo=nombre_completo, edad=edad, rol=Role.PACIENTE)
+    paciente = User(nombre_completo=nombre_completo, edad=edad, rol=Role.PACIENTE)
     db.add(paciente)
     db.flush()
     return paciente
@@ -51,41 +51,41 @@ class CedulaDuplicada(Exception):
 
 def _cedula_en_uso(db: Session, cedula: str, excluir_id: uuid.UUID | None = None) -> bool:
     """True si la cédula ya pertenece a otra persona (excluyendo, si se indica, un id)."""
-    return valor_en_uso(db, Usuario, Usuario.cedula, cedula, excluir_id)
+    return valor_en_uso(db, User, User.cedula, cedula, excluir_id)
 
 
-def listar_pacientes(db: Session) -> list[Usuario]:
+def listar_pacientes(db: Session) -> list[User]:
     """Devuelve los pacientes activos, ordenados por nombre."""
     return (
-        db.query(Usuario)
-        .filter(Usuario.rol == Role.PACIENTE)
-        .filter(Usuario.activo.is_(True))
-        .order_by(Usuario.nombre_completo)
+        db.query(User)
+        .filter(User.rol == Role.PACIENTE)
+        .filter(User.activo.is_(True))
+        .order_by(User.nombre_completo)
         .all()
     )
 
 
-def obtener_paciente(db: Session, paciente_id: uuid.UUID) -> Usuario:
+def obtener_paciente(db: Session, paciente_id: uuid.UUID) -> User:
     """Devuelve un paciente por id, o lanza PacienteNoEncontrado."""
-    paciente = db.get(Usuario, paciente_id)
+    paciente = db.get(User, paciente_id)
     if paciente is None or paciente.rol != Role.PACIENTE:
         raise PacienteNoEncontrado()
     return paciente
 
 
-def crear_paciente(db: Session, datos: dict) -> Usuario:
+def crear_paciente(db: Session, datos: dict) -> User:
     """Da de alta un paciente manualmente, sin deduplicar (cédula única si se indica). Flush, no commit."""
     cedula = datos.get("cedula")
     if cedula is not None and _cedula_en_uso(db, cedula):
         raise CedulaDuplicada()
 
-    paciente = Usuario(rol=Role.PACIENTE, **datos)
+    paciente = User(rol=Role.PACIENTE, **datos)
     db.add(paciente)
     db.flush()
     return paciente
 
 
-def actualizar_paciente(db: Session, paciente_id: uuid.UUID, cambios: dict) -> Usuario:
+def actualizar_paciente(db: Session, paciente_id: uuid.UUID, cambios: dict) -> User:
     """Actualiza solo los campos presentes en `cambios` (cédula única si se cambia). Flush, no commit."""
     paciente = obtener_paciente(db, paciente_id)
 
@@ -99,7 +99,7 @@ def actualizar_paciente(db: Session, paciente_id: uuid.UUID, cambios: dict) -> U
     return paciente
 
 
-def desactivar_paciente(db: Session, paciente_id: uuid.UUID) -> Usuario:
+def desactivar_paciente(db: Session, paciente_id: uuid.UUID) -> User:
     """Da de baja (lógica) a un paciente: `activo=False`. Hace flush (no commit)."""
     paciente = obtener_paciente(db, paciente_id)
     paciente.activo = False

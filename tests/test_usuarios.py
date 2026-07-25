@@ -5,7 +5,7 @@ import uuid
 import pytest
 
 from app.enums import Role
-from app.models import Especialidad, Usuario
+from app.models import Specialty, User
 from app.services import usuarios as U
 
 
@@ -30,7 +30,7 @@ def test_crear_usuario_hashea_password(db):
 
 
 def test_crear_medico_con_especialidades(db):
-    esp = Especialidad(nombre=f"Cardio {uuid.uuid4()}")
+    esp = Specialty(nombre=f"Cardio {uuid.uuid4()}")
     db.add(esp)
     db.flush()
     u = _crear(db, rol=Role.MEDICO, especialidades=[esp.id])
@@ -55,7 +55,7 @@ def test_crear_usuario_especialidad_inexistente(db):
 
 
 def test_no_medico_con_especialidades_falla(db):
-    esp = Especialidad(nombre=f"E {uuid.uuid4()}")
+    esp = Specialty(nombre=f"E {uuid.uuid4()}")
     db.add(esp)
     db.flush()
     with pytest.raises(U.DatosSoloDeMedico):
@@ -69,7 +69,7 @@ def test_no_medico_con_matricula_falla(db):
 
 def test_listar_personal_excluye_pacientes(db):
     med = _crear(db, rol=Role.MEDICO)
-    pac = Usuario(nombre_completo=f"Pac {uuid.uuid4()}", edad=30, rol=Role.PACIENTE)
+    pac = User(nombre_completo=f"Pac {uuid.uuid4()}", edad=30, rol=Role.PACIENTE)
     db.add(pac)
     db.flush()
     ids = [u.id for u in U.listar_personal(db)]
@@ -105,7 +105,7 @@ def test_actualizar_usuario_email_duplicado(db):
 
 
 def test_actualizar_usuario_especialidades(db):
-    esp = Especialidad(nombre=f"Neuro {uuid.uuid4()}")
+    esp = Specialty(nombre=f"Neuro {uuid.uuid4()}")
     db.add(esp)
     db.flush()
     u = _crear(db, rol=Role.MEDICO)

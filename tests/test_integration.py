@@ -10,7 +10,7 @@ from datetime import datetime, time, timedelta
 
 from app.auth import hashear_password
 from app.enums import Role
-from app.models import Disponibilidad, Usuario
+from app.models import Availability, User
 
 
 def _slot_futuro_alineado() -> datetime:
@@ -25,7 +25,7 @@ def _con_disponibilidad(db, medico, slot):
     """Da al médico una franja amplia (08:00-18:00) el día del slot."""
     dia = (slot.weekday() + 1) % 7
     db.add(
-        Disponibilidad(
+        Availability(
             usuario_id=medico.id, dia_semana=dia, hora_inicio=time(8, 0), hora_fin=time(18, 0)
         )
     )
@@ -42,7 +42,7 @@ def test_openapi_accesible(client):
 
 
 def test_login_ok_y_me(client, db):
-    u = Usuario(
+    u = User(
         nombre_completo="Admin Login",
         rol=Role.ADMIN,
         email=f"login-{uuid.uuid4()}@test.local",
@@ -58,7 +58,7 @@ def test_login_ok_y_me(client, db):
 
 
 def test_login_password_mala(client, db):
-    u = Usuario(
+    u = User(
         nombre_completo="Admin Malo",
         rol=Role.ADMIN,
         email=f"malo-{uuid.uuid4()}@test.local",
@@ -161,8 +161,8 @@ def test_cita_paciente_ambiguo_devuelve_candidatos(
     slot = _slot_futuro_alineado()
     _con_disponibilidad(db, medico, slot)
     nombre = f"Ambiguo {uuid.uuid4()}"
-    db.add(Usuario(nombre_completo=nombre, edad=50, rol=Role.PACIENTE))
-    db.add(Usuario(nombre_completo=nombre, edad=50, rol=Role.PACIENTE))
+    db.add(User(nombre_completo=nombre, edad=50, rol=Role.PACIENTE))
+    db.add(User(nombre_completo=nombre, edad=50, rol=Role.PACIENTE))
     db.flush()
     body = {
         "nombre_completo": nombre,

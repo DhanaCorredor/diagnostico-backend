@@ -6,7 +6,7 @@ from datetime import time
 from app.auth import hashear_password
 from app.db import SessionLocal
 from app.enums import Role, ServiceCategory
-from app.models import Disponibilidad, Especialidad, Servicio, Usuario
+from app.models import Availability, Specialty, Service, User
 
 STAFF = [
     ("Administrador", "ADMIN", "admin@diagnostico.com", None),
@@ -129,21 +129,21 @@ PACIENTES = [
 
 def sembrar_especialidades(db):
     """Inserta las especialidades que aún no existan. Devuelve cuántas añadió."""
-    existentes = {e.nombre for e in db.query(Especialidad.nombre).all()}
-    nuevas = [Especialidad(nombre=n) for n in ESPECIALIDADES if n not in existentes]
+    existentes = {e.nombre for e in db.query(Specialty.nombre).all()}
+    nuevas = [Specialty(nombre=n) for n in ESPECIALIDADES if n not in existentes]
     db.add_all(nuevas)
     return len(nuevas)
 
 
 def sembrar_servicios(db):
     """Inserta los servicios que falten, vinculando cada uno (N:M) a su especialidad. Devuelve cuántos añadió."""
-    existentes = {s.nombre for s in db.query(Servicio.nombre).all()}
-    catalogo = {e.nombre: e for e in db.query(Especialidad).all()}
+    existentes = {s.nombre for s in db.query(Service.nombre).all()}
+    catalogo = {e.nombre: e for e in db.query(Specialty).all()}
     creados = 0
     for nombre, categoria, especialidades in SERVICIOS:
         if nombre in existentes:
             continue
-        servicio = Servicio(nombre=nombre, categoria=categoria)
+        servicio = Service(nombre=nombre, categoria=categoria)
         servicio.especialidades = [catalogo[e] for e in especialidades]
         db.add(servicio)
         creados += 1
@@ -154,20 +154,20 @@ def sembrar_medicos(db):
     """Crea los médicos que falten (rol MEDICO, sin login), con sus especialidades (N:M) y franjas. Devuelve cuántos creó."""
     existentes = {
         u.nombre_completo
-        for u in db.query(Usuario.nombre_completo).filter(Usuario.rol == Role.MEDICO).all()
+        for u in db.query(User.nombre_completo).filter(User.rol == Role.MEDICO).all()
     }
-    catalogo = {e.nombre: e for e in db.query(Especialidad).all()}
+    catalogo = {e.nombre: e for e in db.query(Specialty).all()}
     creados = 0
     for nombre, especialidades, franjas in MEDICOS:
         if nombre in existentes:
             continue
-        medico = Usuario(nombre_completo=nombre, rol=Role.MEDICO)
+        medico = User(nombre_completo=nombre, rol=Role.MEDICO)
         medico.especialidades = [catalogo[e] for e in especialidades]
         db.add(medico)
         db.flush()
         for dia, inicio, fin in franjas:
             db.add(
-                Disponibilidad(
+                Availability(
                     usuario_id=medico.id,
                     dia_semana=dia,
                     hora_inicio=inicio,
@@ -182,14 +182,14 @@ def sembrar_pacientes(db):
     """Crea los pacientes ficticios de demo (rol PACIENTE) que falten; nunca datos reales. Devuelve cuántos creó."""
     existentes = {
         u.nombre_completo
-        for u in db.query(Usuario.nombre_completo).filter(Usuario.rol == Role.PACIENTE).all()
+        for u in db.query(User.nombre_completo).filter(User.rol == Role.PACIENTE).all()
     }
     creados = 0
     for nombre, edad, cedula, telefono in PACIENTES:
         if nombre in existentes:
             continue
         db.add(
-            Usuario(
+            User(
                 nombre_completo=nombre,
                 rol=Role.PACIENTE,
                 edad=edad,
@@ -209,10 +209,10 @@ def sembrar_staff(db):
         return 0
     creados = 0
     for nombre, rol, email, matricula in STAFF:
-        if db.query(Usuario).filter_by(email=email).first():
+        if db.query(User).filter_by(email=email).first():
             continue
         db.add(
-            Usuario(
+            User(
                 nombre_completo=nombre,
                 rol=Role(rol),
                 email=email,
@@ -232,17 +232,17 @@ HORA_CIERRE = time(17, 30)
 def sembrar_disponibilidad(db):
     """Da a cada médico sin franjas la jornada del centro (L-S 07:30-17:30); no toca a los que ya tienen. Devuelve cuántas creó."""
     creadas = 0
-    for medico in db.query(Usuario).filter(Usuario.rol == Role.MEDICO).all():
+    for medico in db.query(User).filter(User.rol == Role.MEDICO).all():
         ya_tiene = (
-            db.query(Disponibilidad)
-            .filter(Disponibilidad.usuario_id == medico.id)
+            db.query(Availability)
+            .filter(Availability.usuario_id == medico.id)
             .first()
         )
         if ya_tiene:
             continue
         for dia in DIAS_LABORABLES:
             db.add(
-                Disponibilidad(
+                Availability(
                     usuario_id=medico.id,
                     dia_semana=dia,
                     hora_inicio=HORA_APERTURA,

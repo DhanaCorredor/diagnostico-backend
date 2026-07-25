@@ -6,7 +6,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from sqlalchemy.orm import Session
 
 from app.enums import AppointmentStatus, Role
-from app.models import Cita, Disponibilidad, Servicio, Usuario
+from app.models import Appointment, Availability, Service, User
 from app.services.pacientes import buscar_o_crear_paciente, obtener_paciente
 
 GRID_MINUTOS = 15
@@ -82,9 +82,9 @@ def dentro_de_disponibilidad(
     hora_fin = ends_at.time()
 
     franjas = (
-        db.query(Disponibilidad)
-        .filter(Disponibilidad.usuario_id == medico_id)
-        .filter(Disponibilidad.dia_semana == dia_semana)
+        db.query(Availability)
+        .filter(Availability.usuario_id == medico_id)
+        .filter(Availability.dia_semana == dia_semana)
         .all()
     )
     return any(
@@ -105,14 +105,14 @@ def hay_solapamiento(
     `excluir_cita_id` omite una cita (al mover, para que no choque consigo misma).
     """
     q = (
-        db.query(Cita)
-        .filter(Cita.medico_id == medico_id)
-        .filter(Cita.estado.in_([AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED]))
-        .filter(Cita.starts_at < ends_at)
-        .filter(Cita.ends_at > starts_at)
+        db.query(Appointment)
+        .filter(Appointment.medico_id == medico_id)
+        .filter(Appointment.estado.in_([AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED]))
+        .filter(Appointment.starts_at < ends_at)
+        .filter(Appointment.ends_at > starts_at)
     )
     if excluir_cita_id is not None:
-        q = q.filter(Cita.id != excluir_cita_id)
+        q = q.filter(Appointment.id != excluir_cita_id)
     return db.query(q.exists()).scalar()
 
 
@@ -124,10 +124,10 @@ def _validar_servicio_medico_y_rejilla(
     starts_at: datetime,
 ) -> None:
     """Valida servicio activo, médico activo con rol MEDICO y rejilla de minutos (crear/editar)."""
-    servicio = db.get(Servicio, servicio_id)
+    servicio = db.get(Service, servicio_id)
     if servicio is None or not servicio.activo:
         raise ServicioNoEncontrado()
-    medico = db.get(Usuario, medico_id)
+    medico = db.get(User, medico_id)
     if medico is None or medico.rol != Role.MEDICO or not medico.activo:
         raise MedicoNoEncontrado()
     if not esta_alineado(starts_at):
@@ -166,7 +166,7 @@ def crear_cita(
     motivo: str | None = None,
     permitir_sobrecupo: bool = False,
     ahora: datetime | None = None,
-) -> Cita:
+) -> Appointment:
     """Valida las reglas y crea la cita (upsert del paciente incluido). Flush, no commit.
 
     `ahora` se inyecta para poder probar en test la regla de "no en el pasado".
@@ -195,7 +195,7 @@ def crear_cita(
         permitir_sobrecupo=permitir_sobrecupo,
     )
 
-    cita = Cita(
+    cita = Appointment(
         paciente_id=paciente.id,
         medico_id=medico_id,
         servicio_id=servicio_id,
@@ -217,36 +217,36 @@ def listar_citas(
     hasta: date,
     medico_id: uuid.UUID | None = None,
     incluir_canceladas: bool = False,
-) -> list[Cita]:
+) -> list[Appointment]:
     """Citas del rango [desde, hasta] (ambos incluidos), ordenadas por inicio.
 
     `medico_id` filtra por médico; `incluir_canceladas` añade también las canceladas.
     """
     inicio = datetime.combine(desde, time.min)
     fin = datetime.combine(hasta, time.min) + timedelta(days=1)
-    q = db.query(Cita).filter(Cita.starts_at >= inicio).filter(Cita.starts_at < fin)
+    q = db.query(Appointment).filter(Appointment.starts_at >= inicio).filter(Appointment.starts_at < fin)
     if medico_id is not None:
-        q = q.filter(Cita.medico_id == medico_id)
+        q = q.filter(Appointment.medico_id == medico_id)
     if not incluir_canceladas:
-        q = q.filter(Cita.estado != AppointmentStatus.CANCELLED)
-    return q.order_by(Cita.starts_at).all()
+        q = q.filter(Appointment.estado != AppointmentStatus.CANCELLED)
+    return q.order_by(Appointment.starts_at).all()
 
 
-def listar_citas_de_paciente(db: Session, paciente_id: uuid.UUID) -> list[Cita]:
+def listar_citas_de_paciente(db: Session, paciente_id: uuid.UUID) -> list[Appointment]:
     """Historial completo de un paciente (todas sus citas, de la más reciente a la más antigua)."""
     return (
-        db.query(Cita)
-        .filter(Cita.paciente_id == paciente_id)
-        .order_by(Cita.starts_at.desc())
+        db.query(Appointment)
+        .filter(Appointment.paciente_id == paciente_id)
+        .order_by(Appointment.starts_at.desc())
         .all()
     )
 
 
 def _obtener_cita_activa(
     db: Session, cita_id: uuid.UUID, exc_no_activa: type[Exception]
-) -> Cita:
+) -> Appointment:
     """Devuelve la cita activa (SCHEDULED/CONFIRMED); lanza si no existe o ya está cerrada."""
-    cita = db.get(Cita, cita_id)
+    cita = db.get(Appointment, cita_id)
     if cita is None:
         raise CitaNoEncontrada()
     if cita.estado not in (AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED):
@@ -254,7 +254,7 @@ def _obtener_cita_activa(
     return cita
 
 
-def cancelar_cita(db: Session, cita_id: uuid.UUID) -> Cita:
+def cancelar_cita(db: Session, cita_id: uuid.UUID) -> Appointment:
     """Cancela una cita activa (estado CANCELLED, libera el cupo). Flush, no commit."""
     cita = _obtener_cita_activa(db, cita_id, CitaNoCancelable)
     cita.estado = AppointmentStatus.CANCELLED
@@ -262,7 +262,7 @@ def cancelar_cita(db: Session, cita_id: uuid.UUID) -> Cita:
     return cita
 
 
-def marcar_asistencia(db: Session, cita_id: uuid.UUID, estado: AppointmentStatus) -> Cita:
+def marcar_asistencia(db: Session, cita_id: uuid.UUID, estado: AppointmentStatus) -> Appointment:
     """Marca una cita activa como atendida (COMPLETED) o no-show (NO_SHOW). Flush, no commit."""
     cita = _obtener_cita_activa(db, cita_id, CitaNoActiva)
     cita.estado = estado
@@ -281,7 +281,7 @@ def editar_cita(
     motivo: str | None = None,
     permitir_sobrecupo: bool = False,
     ahora: datetime | None = None,
-) -> Cita:
+) -> Appointment:
     """Edita o mueve una cita activa, revalidando las reglas de creación (excluye la propia cita).
 
     Actualización parcial: los campos en None se dejan igual. No cambia el paciente.

@@ -1,19 +1,19 @@
 """Modelos SQLAlchemy (las 7 tablas del sistema). Ver docs/MODELO-DATOS.md."""
-from app.models.cita import Cita
+from app.models.appointment import Appointment
 from app.models.comun import servicio_especialidad, usuario_especialidad
-from app.models.disponibilidad import Disponibilidad
-from app.models.especialidad import Especialidad
-from app.models.nota_clinica import NotaClinica
-from app.models.servicio import Servicio
-from app.models.usuario import Usuario
+from app.models.availability import Availability
+from app.models.specialty import Specialty
+from app.models.clinical_note import ClinicalNote
+from app.models.service import Service
+from app.models.user import User
 
 __all__ = [
-    "Cita",
-    "Disponibilidad",
-    "Especialidad",
-    "NotaClinica",
-    "Servicio",
-    "Usuario",
+    "Appointment",
+    "Availability",
+    "Specialty",
+    "ClinicalNote",
+    "Service",
+    "User",
     "servicio_especialidad",
     "usuario_especialidad",
 ]

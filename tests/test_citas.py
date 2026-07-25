@@ -7,7 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.enums import AppointmentStatus, Role
-from app.models import Cita, Disponibilidad, Usuario
+from app.models import Appointment, Availability, User
 from app.schemas import CitaCreate, CitaUpdate
 from app.services import citas as C
 
@@ -18,7 +18,7 @@ ANTES = datetime(2026, 7, 20, 0, 0)
 
 def _franja(db, medico, hora_inicio=time(8, 0), hora_fin=time(14, 0)):
     db.add(
-        Disponibilidad(
+        Availability(
             usuario_id=medico.id,
             dia_semana=DIA_LUNES,
             hora_inicio=hora_inicio,
@@ -111,11 +111,11 @@ def test_disponibilidad_dentro_y_fuera(db, medico):
 
 
 def test_solapamiento_y_citas_pegadas(db, medico, servicio, admin):
-    pac = Usuario(nombre_completo=f"P {uuid.uuid4()}", edad=1, rol=Role.PACIENTE)
+    pac = User(nombre_completo=f"P {uuid.uuid4()}", edad=1, rol=Role.PACIENTE)
     db.add(pac)
     db.flush()
     db.add(
-        Cita(
+        Appointment(
             paciente_id=pac.id,
             medico_id=medico.id,
             servicio_id=servicio.id,
@@ -153,8 +153,8 @@ def test_crear_cita_feliz(db, medico, servicio, admin):
 
 def test_crear_cita_con_paciente_id_resuelve_ambiguedad(db, medico, servicio, admin):
     _franja(db, medico)
-    p1 = Usuario(nombre_completo="Ambiguo", edad=40, rol=Role.PACIENTE)
-    p2 = Usuario(nombre_completo="Ambiguo", edad=40, rol=Role.PACIENTE)
+    p1 = User(nombre_completo="Ambiguo", edad=40, rol=Role.PACIENTE)
+    p2 = User(nombre_completo="Ambiguo", edad=40, rol=Role.PACIENTE)
     db.add_all([p1, p2])
     db.flush()
     cita = C.crear_cita(
@@ -308,7 +308,7 @@ def test_crear_cita_en_el_pasado(db, medico, servicio, admin):
 
 
 def test_crear_cita_medico_inactivo(db, servicio, admin):
-    inactivo = Usuario(
+    inactivo = User(
         nombre_completo=f"Dr. Baja {uuid.uuid4()}",
         rol=Role.MEDICO,
         email=f"baja-{uuid.uuid4()}@test.local",

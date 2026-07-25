@@ -13,7 +13,7 @@ from app.auth import crear_token
 from app.db import SessionLocal, engine, get_db
 from app.main import app
 from app.enums import Role, ServiceCategory
-from app.models import Servicio, Usuario
+from app.models import Service, User
 
 
 @pytest.fixture
@@ -63,7 +63,7 @@ def token_for():
 @pytest.fixture
 def medico(db):
     """Un médico de prueba (email único para no chocar con otros)."""
-    m = Usuario(
+    m = User(
         nombre_completo="Dr. Test",
         rol=Role.MEDICO,
         email=f"med-{uuid.uuid4()}@test.local",
@@ -76,7 +76,7 @@ def medico(db):
 @pytest.fixture
 def admin(db):
     """Un admin de prueba (hace de 'creado_por' de las citas)."""
-    a = Usuario(
+    a = User(
         nombre_completo="Admin Test",
         rol=Role.ADMIN,
         email=f"adm-{uuid.uuid4()}@test.local",
@@ -89,7 +89,7 @@ def admin(db):
 @pytest.fixture
 def recepcion(db):
     """Un usuario de recepción de prueba (para los guardas por rol)."""
-    r = Usuario(
+    r = User(
         nombre_completo="Recep Test",
         rol=Role.RECEPCION,
         email=f"rec-{uuid.uuid4()}@test.local",
@@ -102,7 +102,7 @@ def recepcion(db):
 @pytest.fixture
 def servicio(db):
     """Un servicio de prueba del catálogo (nombre único)."""
-    s = Servicio(
+    s = Service(
         nombre=f"Servicio {uuid.uuid4()}",
         categoria=ServiceCategory.CONSULTA,
     )

@@ -5,14 +5,14 @@ import uuid
 import pytest
 
 from app.enums import Role, ServiceCategory
-from app.models import Especialidad, Servicio, Usuario
+from app.models import Specialty, Service, User
 from app.services import catalogo as C
 
 
 def test_listar_servicios_solo_activos_y_ordenados(db):
-    activo_b = Servicio(nombre=f"B {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA)
-    activo_a = Servicio(nombre=f"A {uuid.uuid4()}", categoria=ServiceCategory.ECOGRAFIA)
-    inactivo = Servicio(
+    activo_b = Service(nombre=f"B {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA)
+    activo_a = Service(nombre=f"A {uuid.uuid4()}", categoria=ServiceCategory.ECOGRAFIA)
+    inactivo = Service(
         nombre=f"Z {uuid.uuid4()}", categoria=ServiceCategory.OTRO, activo=False
     )
     db.add_all([activo_b, activo_a, inactivo])
@@ -25,14 +25,14 @@ def test_listar_servicios_solo_activos_y_ordenados(db):
 
 
 def test_listar_servicios_filtra_por_medico(db):
-    cardio = Especialidad(nombre=f"Cardio {uuid.uuid4()}")
-    derma = Especialidad(nombre=f"Derma {uuid.uuid4()}")
-    medico = Usuario(
+    cardio = Specialty(nombre=f"Cardio {uuid.uuid4()}")
+    derma = Specialty(nombre=f"Derma {uuid.uuid4()}")
+    medico = User(
         nombre_completo=f"Dr. Cardio {uuid.uuid4()}", rol=Role.MEDICO, especialidades=[cardio]
     )
-    serv_cardio = Servicio(nombre=f"Eco cardíaca {uuid.uuid4()}", categoria=ServiceCategory.ESTUDIO_CARDIACO)
+    serv_cardio = Service(nombre=f"Eco cardíaca {uuid.uuid4()}", categoria=ServiceCategory.ESTUDIO_CARDIACO)
     serv_cardio.especialidades = [cardio]
-    serv_derma = Servicio(nombre=f"Consulta piel {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA)
+    serv_derma = Service(nombre=f"Consulta piel {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA)
     serv_derma.especialidades = [derma]
     db.add_all([cardio, derma, medico, serv_cardio, serv_derma])
     db.flush()
@@ -43,12 +43,12 @@ def test_listar_servicios_filtra_por_medico(db):
 
 
 def test_listar_medicos_activos_con_especialidades(db):
-    esp = Especialidad(nombre=f"Cardio {uuid.uuid4()}")
-    activo = Usuario(
+    esp = Specialty(nombre=f"Cardio {uuid.uuid4()}")
+    activo = User(
         nombre_completo=f"Dr. Activo {uuid.uuid4()}", rol=Role.MEDICO, especialidades=[esp]
     )
-    inactivo = Usuario(nombre_completo=f"Dr. Baja {uuid.uuid4()}", rol=Role.MEDICO, activo=False)
-    paciente = Usuario(nombre_completo=f"Paciente {uuid.uuid4()}", rol=Role.PACIENTE)
+    inactivo = User(nombre_completo=f"Dr. Baja {uuid.uuid4()}", rol=Role.MEDICO, activo=False)
+    paciente = User(nombre_completo=f"Paciente {uuid.uuid4()}", rol=Role.PACIENTE)
     db.add_all([esp, activo, inactivo, paciente])
     db.flush()
 
@@ -62,8 +62,8 @@ def test_listar_medicos_activos_con_especialidades(db):
 
 
 def test_listar_especialidades_ordenadas(db):
-    e_a = Especialidad(nombre=f"A {uuid.uuid4()}")
-    e_z = Especialidad(nombre=f"Z {uuid.uuid4()}")
+    e_a = Specialty(nombre=f"A {uuid.uuid4()}")
+    e_z = Specialty(nombre=f"Z {uuid.uuid4()}")
     db.add_all([e_z, e_a])
     db.flush()
     nombres = [e.nombre for e in C.listar_especialidades(db)]

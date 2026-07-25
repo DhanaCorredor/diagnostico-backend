@@ -6,7 +6,7 @@ from app.db import Base
 from app.models.comun import uuid_pk
 
 
-class Disponibilidad(Base):
+class Availability(Base):
     """Franja semanal (día + hora inicio/fin) de un médico; el calendario la usa para bloquear."""
 
     __tablename__ = "disponibilidad"
