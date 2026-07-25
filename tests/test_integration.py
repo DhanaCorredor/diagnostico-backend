@@ -13,7 +13,7 @@ from app.enums import Role
 from app.models import Availability, User
 
 
-def _slot_futuro_alineado() -> datetime:
+def _aligned_future_slot() -> datetime:
     """Un inicio válido: mañana (o el siguiente día laborable) a las 10:00, en rejilla."""
     d = datetime.now() + timedelta(days=1)
     while d.weekday() == 6:
@@ -21,7 +21,7 @@ def _slot_futuro_alineado() -> datetime:
     return d.replace(hour=10, minute=0, second=0, microsecond=0)
 
 
-def _con_disponibilidad(db, doctor, slot):
+def _with_availability(db, doctor, slot):
     """Da al médico una franja amplia (08:00-18:00) el día del slot."""
     dia = (slot.weekday() + 1) % 7
     db.add(
@@ -37,11 +37,11 @@ def test_health(client):
     assert r.status_code == 200 and r.json()["status"] == "ok"
 
 
-def test_openapi_accesible(client):
+def test_openapi_accessible(client):
     assert client.get("/openapi.json").status_code == 200
 
 
-def test_login_ok_y_me(client, db):
+def test_login_ok_and_me(client, db):
     u = User(
         nombre_completo="Admin Login",
         rol=Role.ADMIN,
@@ -57,7 +57,7 @@ def test_login_ok_y_me(client, db):
     assert me.status_code == 200 and me.json()["rol"] == "ADMIN"
 
 
-def test_login_password_mala(client, db):
+def test_login_wrong_password(client, db):
     u = User(
         nombre_completo="Admin Malo",
         rol=Role.ADMIN,
@@ -70,24 +70,24 @@ def test_login_password_mala(client, db):
     assert r.status_code == 401
 
 
-def test_me_sin_token(client):
+def test_me_without_token(client):
     assert client.get("/auth/me").status_code in (401, 403)
 
 
-def test_recepcion_no_ve_usuarios(client, recepcion, token_for):
+def test_reception_cannot_see_users(client, recepcion, token_for):
     assert client.get("/usuarios", headers=token_for(recepcion)).status_code == 403
 
 
-def test_admin_si_ve_usuarios(client, admin, token_for):
+def test_admin_sees_users(client, admin, token_for):
     assert client.get("/usuarios", headers=token_for(admin)).status_code == 200
 
 
-def test_medico_no_cancela(client, doctor, token_for):
+def test_doctor_cannot_cancel(client, doctor, token_for):
     r = client.post(f"/citas/{uuid.uuid4()}/cancelar", headers=token_for(doctor))
     assert r.status_code == 403
 
 
-def test_medico_no_marca_asistencia(client, doctor, token_for):
+def test_doctor_cannot_mark_attendance(client, doctor, token_for):
     r = client.post(
         f"/citas/{uuid.uuid4()}/asistencia",
         headers=token_for(doctor),
@@ -96,19 +96,19 @@ def test_medico_no_marca_asistencia(client, doctor, token_for):
     assert r.status_code == 403
 
 
-def test_medico_no_crea_cita(client, doctor, token_for):
+def test_doctor_cannot_create_appointment(client, doctor, token_for):
     assert client.post("/citas", headers=token_for(doctor), json={}).status_code == 403
 
 
-def test_medico_ve_su_agenda(client, doctor, token_for):
+def test_doctor_sees_own_agenda(client, doctor, token_for):
     fecha = datetime.now().strftime("%Y-%m-%d")
     r = client.get(f"/citas?fecha={fecha}", headers=token_for(doctor))
     assert r.status_code == 200
 
 
-def test_flujo_cita_completo(client, db, admin, doctor, service, token_for):
-    slot = _slot_futuro_alineado()
-    _con_disponibilidad(db, doctor, slot)
+def test_full_appointment_flow(client, db, admin, doctor, service, token_for):
+    slot = _aligned_future_slot()
+    _with_availability(db, doctor, slot)
     hdr = token_for(admin)
     body = {
         "nombre_completo": f"Integración {uuid.uuid4()}",
@@ -139,10 +139,10 @@ def test_flujo_cita_completo(client, db, admin, doctor, service, token_for):
     assert canc.status_code == 200 and canc.json()["estado"] == "CANCELLED"
 
 
-def test_cita_fecha_con_zona_se_rechaza(client, db, admin, doctor, service, token_for):
+def test_appointment_tzaware_date_rejected(client, db, admin, doctor, service, token_for):
     """Contrato: una fecha con zona (la 'Z' del navegador) se rechaza con 422."""
-    slot = _slot_futuro_alineado()
-    _con_disponibilidad(db, doctor, slot)
+    slot = _aligned_future_slot()
+    _with_availability(db, doctor, slot)
     body = {
         "nombre_completo": f"TZ {uuid.uuid4()}",
         "edad": 30,
@@ -155,11 +155,11 @@ def test_cita_fecha_con_zona_se_rechaza(client, db, admin, doctor, service, toke
     assert r.status_code == 422, r.text
 
 
-def test_cita_paciente_ambiguo_devuelve_candidatos(
+def test_appointment_ambiguous_patient_returns_candidates(
     client, db, admin, doctor, service, token_for
 ):
-    slot = _slot_futuro_alineado()
-    _con_disponibilidad(db, doctor, slot)
+    slot = _aligned_future_slot()
+    _with_availability(db, doctor, slot)
     nombre = f"Ambiguo {uuid.uuid4()}"
     db.add(User(nombre_completo=nombre, edad=50, rol=Role.PACIENTE))
     db.add(User(nombre_completo=nombre, edad=50, rol=Role.PACIENTE))

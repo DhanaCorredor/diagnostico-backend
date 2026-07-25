@@ -21,7 +21,7 @@ JWT_SECRET = os.getenv("JWT_SECRET")
 if not JWT_SECRET:
     raise RuntimeError("Falta JWT_SECRET en el .env (secreto para firmar los tokens JWT).")
 JWT_ALGORITHM = "HS256"
-JWT_EXPIRA_MINUTOS = 60 * 8
+JWT_EXPIRE_MINUTES = 60 * 8
 
 
 def hash_password(password: str) -> str:
@@ -40,7 +40,7 @@ def create_token(usuario_id: uuid.UUID) -> str:
     ahora = datetime.now(timezone.utc)
     payload = {
         "sub": str(usuario_id),
-        "exp": ahora + timedelta(minutes=JWT_EXPIRA_MINUTOS),
+        "exp": ahora + timedelta(minutes=JWT_EXPIRE_MINUTES),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 

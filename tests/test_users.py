@@ -9,7 +9,7 @@ from app.models import Specialty, User
 from app.services import users as U
 
 
-def _crear(db, **over):
+def _create(db, **over):
     """Crea un usuario de personal con datos por defecto (médico), sobreescribibles."""
     base = dict(
         nombre_completo=f"Dr {uuid.uuid4()}",
@@ -23,52 +23,52 @@ def _crear(db, **over):
     return U.create_user(db, **base)
 
 
-def test_crear_usuario_hashea_password(db):
-    u = _crear(db, rol=Role.RECEPCION)
+def test_create_user_hashes_password(db):
+    u = _create(db, rol=Role.RECEPCION)
     assert u.id is not None
     assert u.password_hash and u.password_hash != "password123"
 
 
-def test_crear_medico_con_especialidades(db):
+def test_create_doctor_with_specialties(db):
     esp = Specialty(nombre=f"Cardio {uuid.uuid4()}")
     db.add(esp)
     db.flush()
-    u = _crear(db, rol=Role.MEDICO, especialidades=[esp.id])
+    u = _create(db, rol=Role.MEDICO, especialidades=[esp.id])
     assert esp.id in [e.id for e in u.especialidades]
 
 
-def test_crear_usuario_rol_paciente_no_permitido(db):
+def test_create_user_patient_role_not_allowed(db):
     with pytest.raises(U.RoleNotAllowed):
-        _crear(db, rol=Role.PACIENTE)
+        _create(db, rol=Role.PACIENTE)
 
 
-def test_crear_usuario_email_duplicado(db):
+def test_create_user_duplicate_email(db):
     email = f"dup-{uuid.uuid4()}@test.local"
-    _crear(db, email=email)
+    _create(db, email=email)
     with pytest.raises(U.DuplicateEmail):
-        _crear(db, email=email)
+        _create(db, email=email)
 
 
-def test_crear_usuario_especialidad_inexistente(db):
+def test_create_user_specialty_not_found(db):
     with pytest.raises(U.SpecialtyNotFound):
-        _crear(db, especialidades=[uuid.uuid4()])
+        _create(db, especialidades=[uuid.uuid4()])
 
 
-def test_no_medico_con_especialidades_falla(db):
+def test_non_doctor_with_specialties_fails(db):
     esp = Specialty(nombre=f"E {uuid.uuid4()}")
     db.add(esp)
     db.flush()
     with pytest.raises(U.DoctorOnlyData):
-        _crear(db, rol=Role.RECEPCION, especialidades=[esp.id])
+        _create(db, rol=Role.RECEPCION, especialidades=[esp.id])
 
 
-def test_no_medico_con_matricula_falla(db):
+def test_non_doctor_with_license_fails(db):
     with pytest.raises(U.DoctorOnlyData):
-        _crear(db, rol=Role.ADMIN, matricula="MAT-1")
+        _create(db, rol=Role.ADMIN, matricula="MAT-1")
 
 
-def test_listar_personal_excluye_pacientes(db):
-    med = _crear(db, rol=Role.MEDICO)
+def test_list_staff_excludes_patients(db):
+    med = _create(db, rol=Role.MEDICO)
     pac = User(nombre_completo=f"Pac {uuid.uuid4()}", edad=30, rol=Role.PACIENTE)
     db.add(pac)
     db.flush()
@@ -77,56 +77,56 @@ def test_listar_personal_excluye_pacientes(db):
     assert pac.id not in ids
 
 
-def test_obtener_usuario_no_encontrado(db):
+def test_get_user_not_found(db):
     with pytest.raises(U.UserNotFound):
         U.get_user(db, uuid.uuid4())
 
 
-def test_actualizar_usuario_parcial_no_toca_password(db):
-    u = _crear(db, rol=Role.RECEPCION)
+def test_update_user_partial_keeps_password(db):
+    u = _create(db, rol=Role.RECEPCION)
     hash_original = u.password_hash
     U.update_user(db, u.id, {"nombre_completo": "Nuevo"})
     assert u.nombre_completo == "Nuevo"
     assert u.password_hash == hash_original
 
 
-def test_actualizar_usuario_cambia_password(db):
-    u = _crear(db, rol=Role.RECEPCION)
+def test_update_user_changes_password(db):
+    u = _create(db, rol=Role.RECEPCION)
     hash_original = u.password_hash
     U.update_user(db, u.id, {"password": "nuevopass1"})
     assert u.password_hash != hash_original
 
 
-def test_actualizar_usuario_email_duplicado(db):
-    otro = _crear(db, rol=Role.RECEPCION)
-    u = _crear(db, rol=Role.MEDICO)
+def test_update_user_duplicate_email(db):
+    otro = _create(db, rol=Role.RECEPCION)
+    u = _create(db, rol=Role.MEDICO)
     with pytest.raises(U.DuplicateEmail):
         U.update_user(db, u.id, {"email": otro.email})
 
 
-def test_actualizar_usuario_especialidades(db):
+def test_update_user_specialties(db):
     esp = Specialty(nombre=f"Neuro {uuid.uuid4()}")
     db.add(esp)
     db.flush()
-    u = _crear(db, rol=Role.MEDICO)
+    u = _create(db, rol=Role.MEDICO)
     U.update_user(db, u.id, {"especialidades": [esp.id]})
     assert esp.id in [e.id for e in u.especialidades]
 
 
-def test_actualizar_usuario_no_encontrado(db):
+def test_update_user_not_found(db):
     with pytest.raises(U.UserNotFound):
         U.update_user(db, uuid.uuid4(), {"nombre_completo": "X"})
 
 
-def test_desactivar_usuario(db):
-    u = _crear(db, rol=Role.MEDICO)
+def test_deactivate_user(db):
+    u = _create(db, rol=Role.MEDICO)
     assert u.activo is True
     U.deactivate_user(db, u.id)
     assert u.activo is False
 
 
-def test_reactivar_usuario_por_put(db):
-    u = _crear(db, rol=Role.MEDICO)
+def test_reactivate_user_via_put(db):
+    u = _create(db, rol=Role.MEDICO)
     U.deactivate_user(db, u.id)
     U.update_user(db, u.id, {"activo": True})
     assert u.activo is True

@@ -9,7 +9,7 @@ from app.models import Specialty, Service, User
 from app.services import catalog as C
 
 
-def test_listar_servicios_solo_activos_y_ordenados(db):
+def test_list_services_active_and_ordered(db):
     activo_b = Service(nombre=f"B {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA)
     activo_a = Service(nombre=f"A {uuid.uuid4()}", categoria=ServiceCategory.ECOGRAFIA)
     inactivo = Service(
@@ -24,7 +24,7 @@ def test_listar_servicios_solo_activos_y_ordenados(db):
     assert nombres.index(activo_a.nombre) < nombres.index(activo_b.nombre)
 
 
-def test_listar_servicios_filtra_por_medico(db):
+def test_list_services_filters_by_doctor(db):
     cardio = Specialty(nombre=f"Cardio {uuid.uuid4()}")
     derma = Specialty(nombre=f"Derma {uuid.uuid4()}")
     doctor = User(
@@ -42,7 +42,7 @@ def test_listar_servicios_filtra_por_medico(db):
     assert serv_derma.id not in ids
 
 
-def test_listar_medicos_activos_con_especialidades(db):
+def test_list_active_doctors_with_specialties(db):
     esp = Specialty(nombre=f"Cardio {uuid.uuid4()}")
     activo = User(
         nombre_completo=f"Dr. Activo {uuid.uuid4()}", rol=Role.MEDICO, especialidades=[esp]
@@ -61,7 +61,7 @@ def test_listar_medicos_activos_con_especialidades(db):
     assert esp.nombre in [e.nombre for e in m.especialidades]
 
 
-def test_listar_especialidades_ordenadas(db):
+def test_list_specialties_ordered(db):
     e_a = Specialty(nombre=f"A {uuid.uuid4()}")
     e_z = Specialty(nombre=f"Z {uuid.uuid4()}")
     db.add_all([e_z, e_a])
@@ -71,7 +71,7 @@ def test_listar_especialidades_ordenadas(db):
     assert nombres.index(e_a.nombre) < nombres.index(e_z.nombre)
 
 
-def test_crear_servicio(db):
+def test_create_service(db):
     service = C.create_service(
         db, nombre=f"Ecografía {uuid.uuid4()}", categoria=ServiceCategory.ECOGRAFIA
     )
@@ -79,14 +79,14 @@ def test_crear_servicio(db):
     assert service.activo is True
 
 
-def test_crear_servicio_nombre_duplicado(db):
+def test_create_service_duplicate_name(db):
     nombre = f"Repetido {uuid.uuid4()}"
     C.create_service(db, nombre=nombre, categoria=ServiceCategory.CONSULTA)
     with pytest.raises(C.DuplicateName):
         C.create_service(db, nombre=nombre, categoria=ServiceCategory.OTRO)
 
 
-def test_actualizar_servicio_cambia_campos(db):
+def test_update_service_changes_fields(db):
     service = C.create_service(
         db, nombre=f"Viejo {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
     )
@@ -98,7 +98,7 @@ def test_actualizar_servicio_cambia_campos(db):
     assert service.categoria == ServiceCategory.OTRO
 
 
-def test_actualizar_servicio_desactiva(db):
+def test_update_service_deactivates(db):
     service = C.create_service(
         db, nombre=f"Baja {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
     )
@@ -107,19 +107,19 @@ def test_actualizar_servicio_desactiva(db):
     assert service.id not in [s.id for s in C.list_services(db)]
 
 
-def test_actualizar_servicio_inexistente(db):
+def test_update_service_not_found(db):
     with pytest.raises(C.ServiceNotFound):
         C.update_service(db, uuid.uuid4(), {"nombre": "x"})
 
 
-def test_actualizar_servicio_nombre_duplicado(db):
+def test_update_service_duplicate_name(db):
     a = C.create_service(db, nombre=f"A {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA)
     b = C.create_service(db, nombre=f"B {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA)
     with pytest.raises(C.DuplicateName):
         C.update_service(db, b.id, {"nombre": a.nombre})
 
 
-def test_actualizar_servicio_mismo_nombre_no_choca(db):
+def test_update_service_same_name_ok(db):
     service = C.create_service(
         db, nombre=f"Igual {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
     )
@@ -127,12 +127,12 @@ def test_actualizar_servicio_mismo_nombre_no_choca(db):
     assert service.activo is True
 
 
-def test_crear_especialidad(db):
+def test_create_specialty(db):
     esp = C.create_specialty(db, nombre=f"Neurología {uuid.uuid4()}")
     assert esp.id is not None
 
 
-def test_crear_especialidad_nombre_duplicado(db):
+def test_create_specialty_duplicate_name(db):
     nombre = f"Cardiología {uuid.uuid4()}"
     C.create_specialty(db, nombre=nombre)
     with pytest.raises(C.DuplicateName):
