@@ -14,7 +14,7 @@ STAFF = [
     ("Dra. Ana Médico", "MEDICO", "medico@diagnostico.com", "MAT-0001"),
 ]
 
-ESPECIALIDADES = [
+SPECIALTIES = [
     "Cardiología",
     "Medicina Interna",
     "Cirugía General",
@@ -29,7 +29,7 @@ ESPECIALIDADES = [
     "Ecografía",
 ]
 
-SERVICIOS = [
+SERVICES = [
     ("Consulta cardiología", ServiceCategory.CONSULTA, ["Cardiología"]),
     ("Consulta medicina interna", ServiceCategory.CONSULTA, ["Medicina Interna"]),
     ("Consulta cirugía general", ServiceCategory.CONSULTA, ["Cirugía General"]),
@@ -77,22 +77,22 @@ SERVICIOS = [
     ("Neumonología + espirometría", ServiceCategory.PROMOCION, ["Neumonología"]),
 ]
 
-LUN, MAR, MIE, JUE, VIE, SAB = 1, 2, 3, 4, 5, 6
-MANANA = (time(8, 0), time(13, 0))
-TARDE = (time(14, 0), time(17, 30))
-CIERRE = time(17, 30)
+MON, TUE, WED, THU, FRI, SAT = 1, 2, 3, 4, 5, 6
+MORNING = (time(8, 0), time(13, 0))
+AFTERNOON = (time(14, 0), time(17, 30))
+CLOSE = time(17, 30)
 
-MEDICOS = [
+DOCTORS = [
     ("Dra. Fabiola González", ["Cardiología"],
-     [(LUN, *MANANA), (MAR, *MANANA), (MIE, *TARDE), (JUE, *TARDE)]),
+     [(MON, *MORNING), (TUE, *MORNING), (WED, *AFTERNOON), (THU, *AFTERNOON)]),
     ("Divian Herrera", ["Cardiología"],
-     [(MAR, *TARDE), (JUE, *MANANA), (VIE, *TARDE)]),
+     [(TUE, *AFTERNOON), (THU, *MORNING), (FRI, *AFTERNOON)]),
     ("Dr. Richard Rodríguez", ["Cardiología"],
-     [(MIE, time(8, 0), CIERRE)]),
+     [(WED, time(8, 0), CLOSE)]),
     ("Dra. Mariana Contreras", ["Cardiología"],
-     [(LUN, *TARDE), (VIE, *MANANA), (SAB, *MANANA)]),
+     [(MON, *AFTERNOON), (FRI, *MORNING), (SAT, *MORNING)]),
     ("Dr. Luis Peralta", ["Cardiología"],
-     [(SAB, time(12, 0), CIERRE)]),
+     [(SAT, time(12, 0), CLOSE)]),
     ("Dra. Elsa Blanco", ["Otorrinolaringología"], []),
     ("Dra. Andrea Blanco", ["Dermatología", "Venereología"], []),
     ("Dra. Milaurys Fernández", ["Cirugía General"], []),
@@ -100,25 +100,25 @@ MEDICOS = [
     ("Dra. Katherinne Castro", ["Traumatología"], []),
     ("Dra. Cristina Jiménez", ["Traumatología"], []),
     ("Dra. Neirys Magdaleno", ["Gastroenterología", "Medicina Interna"],
-     [(VIE, time(13, 0), CIERRE)]),
+     [(FRI, time(13, 0), CLOSE)]),
     ("Dr. José Reyes", ["Gastroenterología"],
-     [(MAR, time(8, 0), CIERRE)]),
+     [(TUE, time(8, 0), CLOSE)]),
     ("Dra. Jessika Colmenarez", ["Ginecología"],
-     [(JUE, time(8, 0), CIERRE)]),
+     [(THU, time(8, 0), CLOSE)]),
     ("Dra. Nancy Borgas", ["Neumonología"],
-     [(MIE, time(13, 0), CIERRE)]),
+     [(WED, time(13, 0), CLOSE)]),
     ("Dra. Nena Alvarado", ["Medicina Interna"],
-     [(SAB, time(8, 0), CIERRE)]),
+     [(SAT, time(8, 0), CLOSE)]),
     ("Dra. Tania Hernández", ["Ecografía"],
-     [(LUN, time(13, 0), CIERRE), (MAR, time(13, 0), CIERRE),
-      (MIE, time(13, 0), CIERRE), (JUE, time(7, 30), CIERRE)]),
+     [(MON, time(13, 0), CLOSE), (TUE, time(13, 0), CLOSE),
+      (WED, time(13, 0), CLOSE), (THU, time(7, 30), CLOSE)]),
     ("Dr. Michell Caballero", ["Ecografía"],
-     [(LUN, time(7, 30), CIERRE), (MAR, time(7, 30), CIERRE),
-      (MIE, time(7, 30), CIERRE), (VIE, time(7, 30), CIERRE),
-      (SAB, time(7, 30), CIERRE)]),
+     [(MON, time(7, 30), CLOSE), (TUE, time(7, 30), CLOSE),
+      (WED, time(7, 30), CLOSE), (FRI, time(7, 30), CLOSE),
+      (SAT, time(7, 30), CLOSE)]),
 ]
 
-PACIENTES = [
+PATIENTS = [
     ("María Fernández", 34, "V-13245678", "0412-1112233"),
     ("José Rodríguez", 51, "V-16234567", "0414-2223344"),
     ("Ana Gómez", 8, None, "0416-3334455"),
@@ -130,7 +130,7 @@ PACIENTES = [
 def seed_specialties(db):
     """Inserta las especialidades que aún no existan. Devuelve cuántas añadió."""
     existentes = {e.nombre for e in db.query(Specialty.nombre).all()}
-    nuevas = [Specialty(nombre=n) for n in ESPECIALIDADES if n not in existentes]
+    nuevas = [Specialty(nombre=n) for n in SPECIALTIES if n not in existentes]
     db.add_all(nuevas)
     return len(nuevas)
 
@@ -140,7 +140,7 @@ def seed_services(db):
     existentes = {s.nombre for s in db.query(Service.nombre).all()}
     catalog = {e.nombre: e for e in db.query(Specialty).all()}
     creados = 0
-    for nombre, categoria, especialidades in SERVICIOS:
+    for nombre, categoria, especialidades in SERVICES:
         if nombre in existentes:
             continue
         service = Service(nombre=nombre, categoria=categoria)
@@ -158,7 +158,7 @@ def seed_doctors(db):
     }
     catalog = {e.nombre: e for e in db.query(Specialty).all()}
     creados = 0
-    for nombre, especialidades, slots in MEDICOS:
+    for nombre, especialidades, slots in DOCTORS:
         if nombre in existentes:
             continue
         doctor = User(nombre_completo=nombre, rol=Role.MEDICO)
@@ -185,7 +185,7 @@ def seed_patients(db):
         for u in db.query(User.nombre_completo).filter(User.rol == Role.PACIENTE).all()
     }
     creados = 0
-    for nombre, edad, cedula, telefono in PACIENTES:
+    for nombre, edad, cedula, telefono in PATIENTS:
         if nombre in existentes:
             continue
         db.add(
@@ -224,9 +224,9 @@ def seed_staff(db):
     return creados
 
 
-DIAS_LABORABLES = (1, 2, 3, 4, 5, 6)
-HORA_APERTURA = time(7, 30)
-HORA_CIERRE = time(17, 30)
+WORKDAYS = (1, 2, 3, 4, 5, 6)
+OPEN_TIME = time(7, 30)
+CLOSE_TIME = time(17, 30)
 
 
 def seed_availability(db):
@@ -240,13 +240,13 @@ def seed_availability(db):
         )
         if ya_tiene:
             continue
-        for dia in DIAS_LABORABLES:
+        for dia in WORKDAYS:
             db.add(
                 Availability(
                     usuario_id=doctor.id,
                     dia_semana=dia,
-                    hora_inicio=HORA_APERTURA,
-                    hora_fin=HORA_CIERRE,
+                    hora_inicio=OPEN_TIME,
+                    hora_fin=CLOSE_TIME,
                 )
             )
             creadas += 1

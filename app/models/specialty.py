@@ -3,7 +3,7 @@ from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship
 
 from app.db import Base
-from app.models.common import servicio_especialidad, usuario_especialidad, uuid_pk
+from app.models.common import service_specialty, user_specialty, uuid_pk
 
 
 class Specialty(Base):
@@ -15,8 +15,8 @@ class Specialty(Base):
     nombre = Column(String, unique=True, nullable=False)
 
     medicos = relationship(
-        "User", secondary=usuario_especialidad, back_populates="especialidades"
+        "User", secondary=user_specialty, back_populates="especialidades"
     )
     servicios = relationship(
-        "Service", secondary=servicio_especialidad, back_populates="especialidades"
+        "Service", secondary=service_specialty, back_populates="especialidades"
     )

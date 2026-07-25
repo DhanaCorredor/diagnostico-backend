@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 
 from app.db import Base
 from app.enums.service_category import ServiceCategory
-from app.models.common import servicio_especialidad, uuid_pk
+from app.models.common import service_specialty, uuid_pk
 
 
 class Service(Base):
@@ -18,5 +18,5 @@ class Service(Base):
     activo = Column(Boolean, nullable=False, default=True)
 
     especialidades = relationship(
-        "Specialty", secondary=servicio_especialidad, back_populates="servicios"
+        "Specialty", secondary=service_specialty, back_populates="servicios"
     )

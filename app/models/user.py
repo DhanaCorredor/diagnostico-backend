@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 
 from app.db import Base
 from app.enums.role import Role
-from app.models.common import usuario_especialidad, uuid_pk
+from app.models.common import user_specialty, uuid_pk
 
 
 class User(Base):
@@ -34,5 +34,5 @@ class User(Base):
     updated_at = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
     especialidades = relationship(
-        "Specialty", secondary=usuario_especialidad, back_populates="medicos"
+        "Specialty", secondary=user_specialty, back_populates="medicos"
     )

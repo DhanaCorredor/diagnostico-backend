@@ -9,14 +9,14 @@ from app.enums import AppointmentStatus, Role
 from app.models import Appointment, Availability, Service, User
 from app.services.patients import find_or_create_patient, get_patient
 
-GRID_MINUTOS = 15
+GRID_MINUTES = 15
 
-ZONA_CENTRO = timezone(timedelta(hours=-4))
+CENTER_TZ = timezone(timedelta(hours=-4))
 
 
 def now_center() -> datetime:
     """Hora actual en la zona del centro (UTC-4), naive (sin tzinfo)."""
-    return datetime.now(ZONA_CENTRO).replace(tzinfo=None)
+    return datetime.now(CENTER_TZ).replace(tzinfo=None)
 
 
 class ServiceNotFound(Exception):
@@ -62,7 +62,7 @@ class AppointmentNotEditable(Exception):
 def is_aligned(starts_at: datetime) -> bool:
     """True si el inicio cae en la rejilla de GRID_MINUTOS, sin segundos ni microsegundos."""
     return (
-        starts_at.minute % GRID_MINUTOS == 0
+        starts_at.minute % GRID_MINUTES == 0
         and starts_at.second == 0
         and starts_at.microsecond == 0
     )

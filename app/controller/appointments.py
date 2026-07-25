@@ -16,7 +16,7 @@ from app.services.patients import PatientNotFound, AmbiguousPatients
 
 router = APIRouter(prefix="/citas", tags=["citas"])
 
-MAX_RANGO_DIAS = 60
+MAX_RANGE_DAYS = 60
 
 
 @router.post("", response_model=AppointmentOut, status_code=status.HTTP_201_CREATED)
@@ -112,10 +112,10 @@ async def list_appointments(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
             "'hasta' no puede ser anterior a 'desde'.",
         )
-    if (hasta - desde).days > MAX_RANGO_DIAS:
+    if (hasta - desde).days > MAX_RANGE_DAYS:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
-            f"El rango no puede superar los {MAX_RANGO_DIAS} días.",
+            f"El rango no puede superar los {MAX_RANGE_DAYS} días.",
         )
     if user.rol == Role.MEDICO:
         medico_id = user.id

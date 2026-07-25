@@ -12,7 +12,7 @@ def uuid_pk():
     return Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
 
-usuario_especialidad = Table(
+user_specialty = Table(
     "usuario_especialidad",
     Base.metadata,
     Column("usuario_id", UUID(as_uuid=True), ForeignKey("usuarios.id"), primary_key=True),
@@ -20,7 +20,7 @@ usuario_especialidad = Table(
 )
 
 
-servicio_especialidad = Table(
+service_specialty = Table(
     "servicio_especialidad",
     Base.metadata,
     Column("servicio_id", UUID(as_uuid=True), ForeignKey("servicios.id"), primary_key=True),
