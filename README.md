@@ -111,11 +111,12 @@ pnpm dev                     # http://localhost:5173
 ```
 ├── app/
 │   ├── main.py          # FastAPI app + routers
-│   ├── models.py        # SQLAlchemy models
-│   ├── schemas.py       # Pydantic schemas
 │   ├── auth.py          # JWT, hashing, role guard
-│   ├── routers/         # auth, usuarios, citas, catalogo, disponibilidad, pacientes
-│   └── services/        # appointment & patient logic
+│   ├── enums/           # Rol, EstadoCita, ServicioCategoria
+│   ├── models/          # SQLAlchemy models (one file per table)
+│   ├── schemas/         # Pydantic schemas
+│   ├── controller/      # routers: auth, usuarios, citas, catalogo, disponibilidad, pacientes
+│   └── services/        # business logic (appointments, patients, catalog…)
 ├── alembic/             # migrations
 ├── tests/               # pytest
 ├── requirements.txt
