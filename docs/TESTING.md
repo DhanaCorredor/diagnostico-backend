@@ -4,6 +4,25 @@
 > (tests unitarios sobre la capa de servicios) y el **contrato HTTP** (tests de integración
 > con `TestClient`, incluyendo auth y permisos por rol).
 
+## ¿Por qué se hicieron estos tests?
+
+El valor del sistema está en unas reglas **críticas**: un fallo no es un detalle estético, es un **médico con dos citas a la misma hora** o una cita agendada fuera de su horario. Por eso se testea:
+
+1. **Garantizar las reglas de negocio.** Cada test comprueba que una regla real se cumple (cero solapamientos, disponibilidad, rejilla de minutos, no agendar en el pasado, roles). Son la traducción ejecutable de [`REGLAS-DE-NEGOCIO.md`](REGLAS-DE-NEGOCIO.md).
+2. **Red de seguridad ante cambios (regresión).** Los tests permiten refactorizar sin miedo: si algo se rompe, saltan. **Ejemplo real de este proyecto:** durante el renombrado masivo del código a inglés (cientos de identificadores, archivos y clases), los **100 tests en verde en cada paso** demostraron que el comportamiento no cambió ni una coma.
+3. **Cubrir los casos límite, no solo el camino feliz.** Se prueban también los errores esperados (paciente ambiguo, cédula duplicada, cita ya cancelada, rol sin permiso) y los bordes finos (citas **pegadas** que no se solapan, edición que no choca **consigo misma**).
+
+**Trazabilidad regla → test (ejemplos):**
+
+| Regla de negocio | Test que la garantiza |
+|------------------|-----------------------|
+| R4 · Cero solapamientos por médico | `test_create_appointment_blocks_overlap`, `test_overlap_and_adjacent_appointments` |
+| R3 · Dentro de la disponibilidad | `test_create_appointment_outside_availability`, `test_availability_inside_and_outside` |
+| R0 · Rejilla :00/:15/:30/:45 | `test_create_appointment_unaligned_time` |
+| R0.b · No agendar en el pasado | `test_create_appointment_in_the_past` |
+| R1 · Upsert de paciente | `test_creates_if_not_exists`, `test_reuses_if_exists`, `test_multiple_matches_raises_ambiguous` |
+| Permisos por rol | `test_doctor_cannot_create_appointment`, `test_reception_cannot_see_users` |
+
 ## Estrategia
 
 Dos niveles, para probar cada cosa en su capa:
