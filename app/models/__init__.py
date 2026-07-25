@@ -1,6 +1,6 @@
 """Modelos SQLAlchemy (las 7 tablas del sistema). Ver docs/MODELO-DATOS.md."""
 from app.models.appointment import Appointment
-from app.models.comun import servicio_especialidad, usuario_especialidad
+from app.models.common import servicio_especialidad, usuario_especialidad
 from app.models.availability import Availability
 from app.models.specialty import Specialty
 from app.models.clinical_note import ClinicalNote

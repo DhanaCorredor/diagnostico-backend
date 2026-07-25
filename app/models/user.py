@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 
 from app.db import Base
 from app.enums.role import Role
-from app.models.comun import usuario_especialidad, uuid_pk
+from app.models.common import usuario_especialidad, uuid_pk
 
 
 class User(Base):

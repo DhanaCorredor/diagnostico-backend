@@ -4,7 +4,7 @@ from sqlalchemy.dialects.postgresql import UUID
 
 from app.db import Base
 from app.enums.appointment_status import AppointmentStatus
-from app.models.comun import uuid_pk
+from app.models.common import uuid_pk
 
 
 class Appointment(Base):

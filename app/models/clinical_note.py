@@ -3,7 +3,7 @@ from sqlalchemy import Column, DateTime, ForeignKey, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.db import Base
-from app.models.comun import uuid_pk
+from app.models.common import uuid_pk
 
 
 class ClinicalNote(Base):

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.enums import Role
 from app.models import User
-from app.services.comun import value_in_use
+from app.services.common import value_in_use
 
 
 class AmbiguousPatients(Exception):

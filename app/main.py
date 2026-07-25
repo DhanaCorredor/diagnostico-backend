@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
-from app.controller import auth, catalogo, citas, disponibilidad, pacientes, usuarios
+from app.controller import auth, catalog, appointments, availability, patients, users
 
 load_dotenv()
 
@@ -24,11 +24,11 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
-app.include_router(usuarios.router)
-app.include_router(citas.router)
-app.include_router(catalogo.router)
-app.include_router(disponibilidad.router)
-app.include_router(pacientes.router)
+app.include_router(users.router)
+app.include_router(appointments.router)
+app.include_router(catalog.router)
+app.include_router(availability.router)
+app.include_router(patients.router)
 
 
 @app.exception_handler(IntegrityError)

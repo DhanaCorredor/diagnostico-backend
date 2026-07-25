@@ -138,13 +138,13 @@ def seed_specialties(db):
 def seed_services(db):
     """Inserta los servicios que falten, vinculando cada uno (N:M) a su especialidad. Devuelve cuántos añadió."""
     existentes = {s.nombre for s in db.query(Service.nombre).all()}
-    catalogo = {e.nombre: e for e in db.query(Specialty).all()}
+    catalog = {e.nombre: e for e in db.query(Specialty).all()}
     creados = 0
     for nombre, categoria, especialidades in SERVICIOS:
         if nombre in existentes:
             continue
         service = Service(nombre=nombre, categoria=categoria)
-        service.especialidades = [catalogo[e] for e in especialidades]
+        service.especialidades = [catalog[e] for e in especialidades]
         db.add(service)
         creados += 1
     return creados
@@ -156,13 +156,13 @@ def seed_doctors(db):
         u.nombre_completo
         for u in db.query(User.nombre_completo).filter(User.rol == Role.MEDICO).all()
     }
-    catalogo = {e.nombre: e for e in db.query(Specialty).all()}
+    catalog = {e.nombre: e for e in db.query(Specialty).all()}
     creados = 0
     for nombre, especialidades, slots in MEDICOS:
         if nombre in existentes:
             continue
         doctor = User(nombre_completo=nombre, rol=Role.MEDICO)
-        doctor.especialidades = [catalogo[e] for e in especialidades]
+        doctor.especialidades = [catalog[e] for e in especialidades]
         db.add(doctor)
         db.flush()
         for dia, inicio, fin in slots:

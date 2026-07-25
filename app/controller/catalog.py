@@ -17,7 +17,7 @@ from app.schemas import (
     ServiceOut,
     ServiceUpdate,
 )
-from app.services import catalogo as catalogo_service
+from app.services import catalog as catalog_service
 
 router = APIRouter(tags=["catálogos"])
 
@@ -29,7 +29,7 @@ async def list_services(
     _: object = Depends(current_user),
 ):
     """Devuelve el catálogo de servicios activos; con `?medico_id=` filtra por las especialidades del médico."""
-    return catalogo_service.list_services(db, medico_id)
+    return catalog_service.list_services(db, medico_id)
 
 
 @router.get("/medicos", response_model=list[DoctorOut])
@@ -38,7 +38,7 @@ async def list_doctors(
     _: object = Depends(current_user),
 ):
     """Devuelve los médicos activos con sus especialidades (para elegir al agendar)."""
-    return catalogo_service.list_doctors(db)
+    return catalog_service.list_doctors(db)
 
 
 @router.get("/especialidades", response_model=list[SpecialtyOut])
@@ -47,7 +47,7 @@ async def list_specialties(
     _: object = Depends(current_user),
 ):
     """Devuelve el catálogo de especialidades médicas."""
-    return catalogo_service.list_specialties(db)
+    return catalog_service.list_specialties(db)
 
 
 @router.post(
@@ -62,10 +62,10 @@ async def create_service(
 ):
     """Da de alta un servicio en el catálogo (ADMIN)."""
     try:
-        service = catalogo_service.create_service(
+        service = catalog_service.create_service(
             db, nombre=datos.nombre, categoria=datos.categoria
         )
-    except catalogo_service.DuplicateName:
+    except catalog_service.DuplicateName:
         raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe un servicio con ese nombre") from None
 
     db.commit()
@@ -82,10 +82,10 @@ async def update_service(
     """Edita un servicio del catálogo (ADMIN). Permite desactivarlo sin borrarlo."""
     cambios = datos.model_dump(exclude_unset=True)
     try:
-        service = catalogo_service.update_service(db, servicio_id, cambios)
-    except catalogo_service.ServiceNotFound:
+        service = catalog_service.update_service(db, servicio_id, cambios)
+    except catalog_service.ServiceNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado") from None
-    except catalogo_service.DuplicateName:
+    except catalog_service.DuplicateName:
         raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe un servicio con ese nombre") from None
 
     db.commit()
@@ -104,8 +104,8 @@ async def create_specialty(
 ):
     """Da de alta una especialidad médica (ADMIN)."""
     try:
-        especialidad = catalogo_service.create_specialty(db, nombre=datos.nombre)
-    except catalogo_service.DuplicateName:
+        especialidad = catalog_service.create_specialty(db, nombre=datos.nombre)
+    except catalog_service.DuplicateName:
         raise HTTPException(
             status.HTTP_409_CONFLICT, "Ya existe una especialidad con ese nombre"
         ) from None

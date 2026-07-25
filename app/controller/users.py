@@ -9,7 +9,7 @@ from app.auth import require_role
 from app.db import get_db
 from app.enums import Role
 from app.schemas import UserCreate, UserDetail, UserUpdate
-from app.services import usuarios as usr_service
+from app.services import users as user_service
 
 router = APIRouter(
     prefix="/usuarios",
@@ -21,15 +21,15 @@ router = APIRouter(
 @router.get("", response_model=list[UserDetail])
 async def list_staff(db: Session = Depends(get_db)):
     """Lista el personal (ADMIN, RECEPCIÓN, MEDICO). No incluye pacientes."""
-    return usr_service.list_staff(db)
+    return user_service.list_staff(db)
 
 
 @router.get("/{usuario_id}", response_model=UserDetail)
 async def get_user(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
     """Devuelve la ficha de un usuario del personal."""
     try:
-        return usr_service.get_user(db, usuario_id)
-    except usr_service.UserNotFound:
+        return user_service.get_user(db, usuario_id)
+    except user_service.UserNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado") from None
 
 
@@ -37,7 +37,7 @@ async def get_user(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
 async def create_user(datos: UserCreate, db: Session = Depends(get_db)):
     """Crea un usuario de personal (médico o staff), con su contraseña y especialidades."""
     try:
-        user = usr_service.create_user(
+        user = user_service.create_user(
             db,
             nombre_completo=datos.nombre_completo,
             rol=datos.rol,
@@ -46,15 +46,15 @@ async def create_user(datos: UserCreate, db: Session = Depends(get_db)):
             matricula=datos.matricula,
             especialidades=datos.especialidades,
         )
-    except usr_service.RoleNotAllowed:
+    except user_service.RoleNotAllowed:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST, "No se puede crear un usuario con ese rol"
         ) from None
-    except usr_service.DuplicateEmail:
+    except user_service.DuplicateEmail:
         raise HTTPException(status.HTTP_409_CONFLICT, "El email ya está en uso") from None
-    except usr_service.SpecialtyNotFound:
+    except user_service.SpecialtyNotFound:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Alguna especialidad no existe") from None
-    except usr_service.DoctorOnlyData:
+    except user_service.DoctorOnlyData:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST, "Especialidades y matrícula son solo para médicos"
         ) from None
@@ -67,8 +67,8 @@ async def create_user(datos: UserCreate, db: Session = Depends(get_db)):
 async def deactivate_user(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
     """Da de baja (lógica) a un usuario: `activo=False`. Reactivar con PUT {"activo": true}."""
     try:
-        user = usr_service.deactivate_user(db, usuario_id)
-    except usr_service.UserNotFound:
+        user = user_service.deactivate_user(db, usuario_id)
+    except user_service.UserNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado") from None
 
     db.commit()
@@ -84,14 +84,14 @@ async def update_user(
     """Edita un usuario del personal (solo los campos enviados)."""
     cambios = datos.model_dump(exclude_unset=True)
     try:
-        user = usr_service.update_user(db, usuario_id, cambios)
-    except usr_service.UserNotFound:
+        user = user_service.update_user(db, usuario_id, cambios)
+    except user_service.UserNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado") from None
-    except usr_service.DuplicateEmail:
+    except user_service.DuplicateEmail:
         raise HTTPException(status.HTTP_409_CONFLICT, "El email ya está en uso") from None
-    except usr_service.SpecialtyNotFound:
+    except user_service.SpecialtyNotFound:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Alguna especialidad no existe") from None
-    except usr_service.DoctorOnlyData:
+    except user_service.DoctorOnlyData:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST, "Especialidades y matrícula son solo para médicos"
         ) from None

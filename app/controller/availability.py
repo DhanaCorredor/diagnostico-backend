@@ -10,7 +10,7 @@ from app.db import get_db
 from app.enums import Role
 from app.models import User
 from app.schemas import AvailabilityCreate, AvailabilityOut
-from app.services import disponibilidad as disp_service
+from app.services import availability as availability_service
 
 router = APIRouter(prefix="/disponibilidad", tags=["disponibilidad"])
 
@@ -22,7 +22,7 @@ async def list_availability(
     _: object = Depends(current_user),
 ):
     """Devuelve las franjas de disponibilidad de un médico."""
-    return disp_service.list_availability(db, medico_id)
+    return availability_service.list_availability(db, medico_id)
 
 
 @router.post("", response_model=AvailabilityOut, status_code=status.HTTP_201_CREATED)
@@ -33,16 +33,16 @@ async def create_availability(
 ):
     """Define una franja de disponibilidad para un médico (solo ADMIN)."""
     try:
-        slot = disp_service.create_availability(
+        slot = availability_service.create_availability(
             db,
             medico_id=datos.medico_id,
             dia_semana=datos.dia_semana,
             hora_inicio=datos.hora_inicio,
             hora_fin=datos.hora_fin,
         )
-    except disp_service.DoctorNotFound:
+    except availability_service.DoctorNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Médico no encontrado") from None
-    except disp_service.InvalidSlot:
+    except availability_service.InvalidSlot:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "La hora de inicio debe ser anterior a la de fin",

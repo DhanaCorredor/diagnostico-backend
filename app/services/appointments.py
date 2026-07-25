@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.enums import AppointmentStatus, Role
 from app.models import Appointment, Availability, Service, User
-from app.services.pacientes import find_or_create_patient, get_patient
+from app.services.patients import find_or_create_patient, get_patient
 
 GRID_MINUTOS = 15
 

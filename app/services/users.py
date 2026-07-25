@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.auth import hash_password
 from app.enums import Role
 from app.models import Specialty, User
-from app.services.comun import value_in_use
+from app.services.common import value_in_use
 
 ROLES_STAFF = (Role.ADMIN, Role.RECEPCION, Role.MEDICO)
 

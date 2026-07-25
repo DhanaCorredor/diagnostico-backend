@@ -6,7 +6,7 @@ import pytest
 
 from app.enums import Role, ServiceCategory
 from app.models import Specialty, Service, User
-from app.services import catalogo as C
+from app.services import catalog as C
 
 
 def test_listar_servicios_solo_activos_y_ordenados(db):

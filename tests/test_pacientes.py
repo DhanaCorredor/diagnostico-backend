@@ -6,7 +6,7 @@ import pytest
 
 from app.enums import Role
 from app.models import User
-from app.services.pacientes import (
+from app.services.patients import (
     DuplicateNationalId,
     PatientNotFound,
     AmbiguousPatients,

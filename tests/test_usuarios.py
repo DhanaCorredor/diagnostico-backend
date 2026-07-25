@@ -6,7 +6,7 @@ import pytest
 
 from app.enums import Role
 from app.models import Specialty, User
-from app.services import usuarios as U
+from app.services import users as U
 
 
 def _crear(db, **over):

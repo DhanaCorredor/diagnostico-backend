@@ -4,7 +4,7 @@ from datetime import time
 
 import pytest
 
-from app.services import disponibilidad as D
+from app.services import availability as D
 
 
 def test_crear_y_listar_disponibilidad(db, doctor):

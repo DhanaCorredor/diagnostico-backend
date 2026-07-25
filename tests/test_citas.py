@@ -9,7 +9,7 @@ from pydantic import ValidationError
 from app.enums import AppointmentStatus, Role
 from app.models import Appointment, Availability, User
 from app.schemas import AppointmentCreate, AppointmentUpdate
-from app.services import citas as C
+from app.services import appointments as C
 
 LUNES_10 = datetime(2026, 7, 20, 10, 0)
 DIA_LUNES = (LUNES_10.weekday() + 1) % 7
