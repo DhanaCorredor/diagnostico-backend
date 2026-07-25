@@ -64,4 +64,4 @@ flowchart TD
 - La validación (disponibilidad del médico + **cero solapamientos por médico**) y el **upsert de paciente** se ejecutan en la **capa de servicio** del backend (FastAPI) antes de guardar.
 - El calendario **bloquea** (grisa) los días/horas fuera de la disponibilidad del médico; recepción puede **forzar un cupo extra** (sobrecupo) con confirmación.
 - Los pacientes **no acceden** al sistema; toda gestión la realiza el personal.
-- **Fase 2:** historia clínica (notas del médico), anti-solapamiento por recurso/sala, agrupar varios estudios (visita), recordatorios WhatsApp, auditoría y refuerzo con restricciones a nivel de base de datos.
+- **Fase 2:** ver [`MEJORAS-Y-PROXIMOS-PASOS.md`](MEJORAS-Y-PROXIMOS-PASOS.md).

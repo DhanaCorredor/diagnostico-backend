@@ -18,7 +18,7 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 
 | Núcleo (MVP) | Fuera del MVP (→ fase 2) |
 |--------------|--------------------------|
-| `usuarios`, `especialidades`, `usuario_especialidad`, `servicios`, `servicio_especialidad`, `disponibilidad`, `citas` | historia clínica / notas (`notas_clinicas`, tabla creada como andamiaje) · Reportes · recordatorios WhatsApp · auditoría · visitas (agrupar estudios) · duración por médico · recursos/salas + anti-solapamiento por recurso · holter colocación+retiro · constraint `gist` en BD · PWA offline |
+| `usuarios`, `especialidades`, `usuario_especialidad`, `servicios`, `servicio_especialidad`, `disponibilidad`, `citas` | `notas_clinicas` (tabla creada como andamiaje) · resto de funcionalidades → ver [`MEJORAS-Y-PROXIMOS-PASOS.md`](MEJORAS-Y-PROXIMOS-PASOS.md) |
 
 ## Decisiones cerradas (con datos reales del centro)
 
@@ -208,4 +208,4 @@ erDiagram
 | `servicios` – `citas` | 1 : N | Servicio de la cita. |
 | `usuarios` – `notas_clinicas` | 1 : N | Historia clínica (paciente y médico). **Reservada para fase 2, fuera del MVP.** |
 
-> **Fase 2** (si sobra tiempo): historia clínica / notas del médico (`notas_clinicas`, ya creada como andamiaje), recursos/salas + anti-solapamiento por recurso, duración por médico (`medico_servicio`), visitas para agrupar estudios, recordatorios WhatsApp, auditoría, reportes y PWA. El diseño actual permite añadirlas sin romper lo existente.
+> **Fase 2:** el diseño actual (p. ej. `notas_clinicas` como andamiaje) permite añadir nuevas funcionalidades sin romper lo existente. Lista completa en [`MEJORAS-Y-PROXIMOS-PASOS.md`](MEJORAS-Y-PROXIMOS-PASOS.md).

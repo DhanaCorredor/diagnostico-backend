@@ -20,7 +20,7 @@ flowchart TD
     end
 
     subgraph Backend["API FastAPI (Python)"]
-        ROUTERS["Routers REST<br/>(auth, usuarios, citas, catalogo,<br/>disponibilidad, pacientes)"]
+        ROUTERS["Routers REST<br/>(auth, users, appointments, catalog,<br/>availability, patients)"]
         AUTHDEP["Dependencia de auth<br/>(verifica JWT + rol)"]
         SERV["Capa de servicio<br/>(citas: solapamiento + disponibilidad,<br/>pacientes: upsert)"]
         ORM["SQLAlchemy (models)"]

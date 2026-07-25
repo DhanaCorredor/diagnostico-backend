@@ -129,7 +129,4 @@ El servicio `create_appointment` llama a las reglas **en este orden** y guarda t
 
 ## Fuera del MVP (fase 2)
 
-- **Anti-solapamiento por recurso/sala** (equipos únicos: ecógrafo, etc.) — hoy solo por médico.
-- **Constraint `gist` en la base de datos** como segunda barrera al solapamiento.
-- **Duración por médico** (`medico_servicio`) automática — hoy la duración la elige recepción a mano.
-- **Holter/MAPA con retiro** enlazado a la colocación.
+Reglas que evolucionarán en fase 2 (anti-solapamiento por recurso/sala, constraint `gist` en BD, duración por médico, Holter con retiro): ver **[`MEJORAS-Y-PROXIMOS-PASOS.md`](MEJORAS-Y-PROXIMOS-PASOS.md)**.

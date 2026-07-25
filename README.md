@@ -36,7 +36,7 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 - 🩺 **Doctors** — specialties (**N:M**) and **weekly availability**.
 - 📅 **Appointments & calendar** — book with **overlap validation per doctor** and **availability-based blocking** (days/hours the doctor is off are not selectable).
 
-> **Out of MVP (phase 2):** clinical history / doctor's notes, reports, WhatsApp reminders, audit log, visits (grouped studies), per-doctor duration, rooms/resources + resource overlap, Holter placement/removal, PWA offline. · **Billing** is handled separately (SENIAT); **direct payment only**.
+> **Out of MVP (phase 2):** clinical history, reports, reminders, audit log, rooms/resources and more — full list in [`docs/MEJORAS-Y-PROXIMOS-PASOS.md`](docs/MEJORAS-Y-PROXIMOS-PASOS.md). **Billing** is handled separately (SENIAT); direct payment only.
 
 ## 👥 Roles and permissions
 
@@ -159,6 +159,7 @@ Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 | [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Architecture, layers, data flow, design principles/patterns and technical decisions |
 | [`docs/SERVICIOS-BACKEND.md`](docs/SERVICIOS-BACKEND.md) | Backend service layer: what each service does and the exceptions it raises |
 | [`docs/TESTING.md`](docs/TESTING.md) | Testing strategy and what the 100 tests cover |
+| [`docs/MEJORAS-Y-PROXIMOS-PASOS.md`](docs/MEJORAS-Y-PROXIMOS-PASOS.md) | Improvements and next steps: immediate, phase-2 features and technical debt |
 | [`docs/MANUAL-USUARIO.md`](docs/MANUAL-USUARIO.md) | Step-by-step usage guide for the staff |
 | [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) | Deployment guide (Render + PostgreSQL) |
 

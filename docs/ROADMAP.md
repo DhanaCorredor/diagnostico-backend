@@ -44,7 +44,7 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 5. **Citas y calendario** — agendar con **anti-solapamiento por médico** y **bloqueo por disponibilidad**; estados y cancelación (libera cupo).
 6. **Agenda del médico (solo lectura)** — el médico consulta su propia agenda; **no** marca asistencia ni cancela (lo hace recepción/admin) ni escribe notas clínicas en el MVP.
 
-> **Fuera del MVP (→ fase 2):** identificación robusta del paciente (por `fecha_nacimiento` obligatoria y/o `cédula`) — en el MVP se identifica por `nombre_completo + edad`, con la limitación conocida de posibles duplicados —, historia clínica / notas clínicas del médico, reportes, recordatorios WhatsApp, auditoría, visitas (agrupar estudios), duración por médico (`medico_servicio`), recursos/salas + anti-solapamiento por recurso, holter colocación+retiro, constraint `gist` en BD, PWA offline, portal de pacientes, Google Calendar, facturación (SENIAT).
+> **Fuera del MVP (→ fase 2):** ver **[`MEJORAS-Y-PROXIMOS-PASOS.md`](MEJORAS-Y-PROXIMOS-PASOS.md)** (funcionalidades de fase 2 + deuda técnica).
 
 ## 3.1 Contrato de la API — checklist de endpoints (derivado del MANUAL/RF)
 
@@ -112,16 +112,9 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 - `POST /pacientes`, `GET /pacientes/{id}/citas` y `PUT /citas/{id}` (editar/mover) cierran las vistas de **Pacientes** y **Citas**.
 - La gestión de `servicios`/`especialidades` (ADMIN) queda cubierta; los catálogos siguen precargándose por el seed y ahora además se pueden mantener por API.
 
-### Deuda técnica detectada (revisión) → fase 2
+### Deuda técnica y mejoras → fase 2
 
-> De una revisión de código del backend. No bloquean el MVP; se anotan para no perderlas.
-
-- **Convención de fechas:** la API trabaja en **hora local naive**: el frontend envía la hora local del centro **sin zona**; si llega con zona (p. ej. la `Z` de `toISOString()`), **se rechaza con 422** (contrato explícito, sin conversiones a ciegas). La regla "no en el pasado" calcula el "ahora" en **hora local del centro (UTC-4)** en el backend, para no descuadrar aunque el servidor corra en UTC (Render).
-- **Router de citas:** el mapeo excepción→HTTP se repite entre agendar y editar (se dejó **explícito a propósito** por legibilidad).
-- **Disponibilidad:** `crear_disponibilidad` no valida franjas duplicadas/solapadas por médico y día.
-- **Sin paginación** en los listados de pacientes/personal.
-- **Unicidad sensible a mayúsculas/acentos** en `nombre`/`email`/`cédula`.
-- **CORS de un solo origen:** al desplegar, permitir local + producción a la vez.
+> Detalle completo (deuda técnica + funcionalidades de fase 2 + próximos pasos) en **[`MEJORAS-Y-PROXIMOS-PASOS.md`](MEJORAS-Y-PROXIMOS-PASOS.md)** — hogar único de las mejoras.
 
 ## 4. Modelo de datos
 

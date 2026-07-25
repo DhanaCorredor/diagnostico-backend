@@ -18,17 +18,7 @@ Dar al centro **Diagnóstico** una herramienta para **gestionar citas médicas**
 5. Gestión de **citas** con **anti-solapamiento por médico** y **bloqueo por disponibilidad** del médico.
 6. **Calendario / agenda** del día por médico.
 
-**Fuera del alcance (→ fase 2 / si sobra tiempo):**
-- **Historia clínica / notas del médico** (la tabla `notas_clinicas` queda como andamiaje; sin funcionalidad en el MVP).
-- **Reportes / métricas**.
-- **Recordatorios por WhatsApp**.
-- **Auditoría** detallada.
-- **Visitas** (agrupar varios estudios en un paso).
-- **Duración por médico** automática (hoy la elige recepción a mano).
-- **Recursos** (consultorios/salas/equipos) y anti-solapamiento por recurso.
-- **Holter/MAPA** colocación + retiro enlazados.
-- Facturación y cobros (máquinas fiscales del SENIAT; **solo pago directo, sin seguros**).
-- **Portal de pacientes**, Google Calendar, PWA offline.
+**Fuera del alcance (→ fase 2):** historia clínica, reportes, recordatorios, auditoría, recursos/salas, portal de pacientes y más — lista completa en [`MEJORAS-Y-PROXIMOS-PASOS.md`](MEJORAS-Y-PROXIMOS-PASOS.md). La **facturación y cobros** quedan **fuera del sistema** (máquinas fiscales del SENIAT; solo pago directo, sin seguros).
 
 ## 3. Usuarios y roles
 
