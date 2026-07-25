@@ -52,14 +52,14 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 
 **Auth**
 
-| Endpoint | Acción | Rol | Origen | Estado |
+| Endpoint | Acción | Role | Origen | Estado |
 |----------|--------|-----|--------|:------:|
 | `POST /auth/login` | Iniciar sesión (JWT) | público | RF-01 · MANUAL §1 | ✅ |
 | `GET /auth/me` | Usuario y rol de la sesión | autenticado | MANUAL §2 | ✅ |
 
 **Usuarios (personal y médicos) — ADMIN**
 
-| Endpoint | Acción | Rol | Origen | Estado |
+| Endpoint | Acción | Role | Origen | Estado |
 |----------|--------|-----|--------|:------:|
 | `GET /usuarios` · `GET /usuarios/{id}` | Listar / ficha de personal | ADMIN | MANUAL §6,§7 | ✅ |
 | `POST /usuarios` | Alta de personal/médico (+ especialidades) | ADMIN | RF-02/04 · MANUAL §6,§7 | ✅ |
@@ -68,20 +68,20 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 
 **Catálogos (lectura) — autenticado**
 
-| Endpoint | Acción | Rol | Origen | Estado |
+| Endpoint | Acción | Role | Origen | Estado |
 |----------|--------|-----|--------|:------:|
 | `GET /servicios` (opc. `?medico_id=`) · `GET /medicos` · `GET /especialidades` | Alimentar desplegables al agendar (los servicios se filtran por las especialidades del médico elegido) | autenticado | MANUAL §3 | ✅ |
 
 **Disponibilidad — lectura autenticada / gestión ADMIN**
 
-| Endpoint | Acción | Rol | Origen | Estado |
+| Endpoint | Acción | Role | Origen | Estado |
 |----------|--------|-----|--------|:------:|
 | `GET /disponibilidad` | Ver las franjas de un médico | autenticado | MANUAL §6.3 | ✅ |
 | `POST /disponibilidad` | Definir una franja del médico | ADMIN | MANUAL §6.3 | ✅ |
 
 **Pacientes — ADMIN/RECEPCION**
 
-| Endpoint | Acción | Rol | Origen | Estado |
+| Endpoint | Acción | Role | Origen | Estado |
 |----------|--------|-----|--------|:------:|
 | `GET /pacientes` · `GET /pacientes/{id}` | Listar / ficha | ADMIN·RECEP | MANUAL §5 | ✅ |
 | `PUT /pacientes/{id}` | Editar ficha (parcial) | ADMIN·RECEP | MANUAL §5 | ✅ |
@@ -91,7 +91,7 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 
 **Citas**
 
-| Endpoint | Acción | Rol | Origen | Estado |
+| Endpoint | Acción | Role | Origen | Estado |
 |----------|--------|-----|--------|:------:|
 | `POST /citas` | Agendar (aplica todas las reglas) | ADMIN·RECEP | RF-07 · MANUAL §3 | ✅ |
 | `GET /citas` | Agenda por día / rango | ADMIN·RECEP·MED | MANUAL §4,§8 | ✅ |
@@ -101,7 +101,7 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 
 **Servicios y especialidades (gestión) — ADMIN**
 
-| Endpoint | Acción | Rol | Origen | Estado |
+| Endpoint | Acción | Role | Origen | Estado |
 |----------|--------|-----|--------|:------:|
 | `POST /servicios` · `PUT /servicios/{id}` | Crear / editar servicio | ADMIN | RF-02 · MANUAL §6.4 | ✅ |
 | `POST /especialidades` | Crear especialidad | ADMIN | MANUAL §6 | ✅ |
@@ -138,7 +138,7 @@ Resumen (8 tablas): `usuarios` (unificada), `especialidades` + `usuario_especial
 | **Documentación** | Requisitos, modelo, diagramas (actualizados al nuevo stack) | ✅ Docs en `docs/` | — |
 | **Fase 0 — Andamiaje** | Backend FastAPI (este repo) + frontend React/Vite (**repo aparte**) corriendo; conexión a PostgreSQL | "Hola mundo" front↔back | 1 d |
 | **Fase 1 — Datos** | Modelos SQLAlchemy + migración Alembic + seed (usuarios, especialidades, servicios) | BD conectada con datos base | 2 d |
-| **Fase 2 — Auth y roles** | Login JWT, hash de contraseñas, dependencia `requiere_rol` | Acceso por rol funcionando | 2 d |
+| **Fase 2 — Auth y roles** | Login JWT, hash de contraseñas, dependencia `require_role` | Acceso por rol funcionando | 2 d |
 | **Fase 3 — Citas (core)** | Servicio de citas: upsert de paciente + disponibilidad + anti-solapamiento por médico + tests | Reglas de negocio validadas | 3 d |
 | **Fase 4 — UI** | Login, calendario/agenda, vistas Pacientes y Médicos, formulario de cita | Flujo de citas usable | 3 d |
 | **Fase 5 — Cierre y despliegue** | Pulido, pruebas manuales, despliegue | MVP demostrable | 2 d |
@@ -188,8 +188,8 @@ gantt
 - Documentación actualizada al stack React + Python
 - **Fase 0** — Andamiaje backend FastAPI + conexión a PostgreSQL (frontend React/Vite en repo aparte)
 - **Fase 1** — Modelos SQLAlchemy (7 tablas) + Alembic + migración inicial + seed de catálogos (12 especialidades, 45 servicios)
-- **Fase 2** — Auth JWT (bcrypt), dependencia `requiere_rol` y guardas por rol (ADMIN/RECEPCION/MEDICO)
-- **Fase 3 — Citas (núcleo)** — Servicio `crear_cita`: upsert de paciente + disponibilidad + anti-solapamiento por médico + **rejilla de inicio (:00/:15/:30/:45)**; endpoints de citas (crear, listar por fecha/rango, cancelar, marcar asistencia), catálogos de lectura (`servicios`, `medicos`, `especialidades`), disponibilidad, pacientes (listar/ficha/editar) y CRUD de usuarios/médicos; **99 tests en verde** (tras completar el contrato y la revisión de código).
+- **Fase 2** — Auth JWT (bcrypt), dependencia `require_role` y guardas por rol (ADMIN/RECEPCION/MEDICO)
+- **Fase 3 — Citas (núcleo)** — Servicio `create_appointment`: upsert de paciente + disponibilidad + anti-solapamiento por médico + **rejilla de inicio (:00/:15/:30/:45)**; endpoints de citas (crear, listar por fecha/rango, cancelar, marcar asistencia), catálogos de lectura (`servicios`, `medicos`, `especialidades`), disponibilidad, pacientes (listar/ficha/editar) y CRUD de usuarios/médicos; **99 tests en verde** (tras completar el contrato y la revisión de código).
 - **Fase 5 — Despliegue** — Backend en producción en **Render** (release **v0.5.0**, auto-deploy en push a `main`, ejecuta `alembic upgrade head` y el seed)
 
 ## 7. Riesgos y mitigación

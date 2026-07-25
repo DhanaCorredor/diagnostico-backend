@@ -54,7 +54,7 @@ app/
   main.py           # arranque FastAPI: solo monta el enrutador (controller)
   db.py             # engine + sesión SQLAlchemy (Base)
   auth.py           # JWT, hash de contraseñas, dependencias de rol
-  enums/            # enums del dominio: Rol, EstadoCita, ServicioCategoria
+  enums/            # enums del dominio: Role, AppointmentStatus, ServiceCategory
   models/           # una tabla por archivo (usuario, cita, servicio, ...)
   schemas/          # esquemas Pydantic por dominio (auth, cita, catalogo, ...)
   controller/       # endpoints: auth, usuarios, citas, catalogo, disponibilidad, pacientes
@@ -103,7 +103,7 @@ package.json        # pnpm
 
 - Contraseñas con **hash** (bcrypt); nunca en texto plano.
 - **JWT** firmado con secreto en variable de entorno; expiración razonable.
-- **Control de acceso por rol** en cada endpoint (dependencia `requiere_rol`): RECEPCIÓN no accede a usuarios, configuración ni reportes.
+- **Control de acceso por rol** en cada endpoint (dependencia `require_role`): RECEPCIÓN no accede a usuarios, configuración ni reportes.
 - **Secretos** solo en variables de entorno (`.env`), nunca en el repositorio.
 - **Datos médicos** (HIPAA/GDPR): bajas lógicas (`activo`), sin borrado físico. *(Auditoría completa → fase 2.)*
 

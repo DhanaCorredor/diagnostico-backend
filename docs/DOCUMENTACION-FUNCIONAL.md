@@ -34,7 +34,7 @@ Dar al centro **Diagnóstico** una herramienta para **gestionar citas médicas**
 
 Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (campo `rol`); en la UI hay **dos vistas separadas** —**Pacientes** y **Médicos**— que filtran por rol. Solo el personal interno hace login.
 
-| Rol | Permisos |
+| Role | Permisos |
 |-----|----------|
 | **ADMIN** | **Todo**: usuarios, médicos, especialidades, servicios, configuración. |
 | **RECEPCION** | Agenda y cancela citas; marca asistencia (atendida/no-show); gestiona pacientes; **consulta** médicos y agendas. **No** accede a **usuarios**, **configuración** ni **reportes**. |

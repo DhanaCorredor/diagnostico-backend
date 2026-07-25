@@ -41,7 +41,7 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 |-------|------|------|
 | id | uuid (PK) | |
 | nombre_completo | string | |
-| rol | `Rol` | ADMIN · RECEPCION · MEDICO · PACIENTE |
+| rol | `Role` | ADMIN · RECEPCION · MEDICO · PACIENTE |
 | email | string?, único | login (solo staff) |
 | password_hash | string? | bcrypt (solo staff) |
 | cedula | string?, **única si se indica** | documento; **opcional**, la añaden los especialistas después |
@@ -70,7 +70,7 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 |-------|------|------|
 | id | uuid (PK) | |
 | nombre | string, único | ej. Consulta cardiología, Ecocardiograma, Holter de ritmo, Ecografía abdominal, Doppler carotídeo… |
-| categoria | `ServicioCategoria` | CONSULTA · ECOGRAFIA · DOPPLER · ESTUDIO_CARDIACO · PROMOCION · OTRO |
+| categoria | `ServiceCategory` | CONSULTA · ECOGRAFIA · DOPPLER · ESTUDIO_CARDIACO · PROMOCION · OTRO |
 | activo | bool (def. true) | |
 
 ### `servicio_especialidad` — N:M servicio ↔ especialidad
@@ -92,7 +92,7 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 | servicio_id | uuid (FK → servicios) | |
 | starts_at | datetime | |
 | ends_at | datetime | = starts_at + la duración elegida al agendar |
-| estado | `EstadoCita` | SCHEDULED · CONFIRMED · CANCELLED · COMPLETED · NO_SHOW |
+| estado | `AppointmentStatus` | SCHEDULED · CONFIRMED · CANCELLED · COMPLETED · NO_SHOW |
 | motivo | string? | |
 | creado_por_id | uuid (FK → usuarios) | recepción que la agendó |
 | created_at / updated_at | datetime | |
@@ -111,9 +111,9 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 
 ## Enums
 
-- `Rol`: `ADMIN`, `RECEPCION`, `MEDICO`, `PACIENTE`
-- `EstadoCita`: `SCHEDULED`, `CONFIRMED`, `CANCELLED`, `COMPLETED`, `NO_SHOW`
-- `ServicioCategoria`: `CONSULTA`, `ECOGRAFIA`, `DOPPLER`, `ESTUDIO_CARDIACO`, `PROMOCION`, `OTRO`
+- `Role`: `ADMIN`, `RECEPCION`, `MEDICO`, `PACIENTE`
+- `AppointmentStatus`: `SCHEDULED`, `CONFIRMED`, `CANCELLED`, `COMPLETED`, `NO_SHOW`
+- `ServiceCategory`: `CONSULTA`, `ECOGRAFIA`, `DOPPLER`, `ESTUDIO_CARDIACO`, `PROMOCION`, `OTRO`
 
 ## Reglas de validación (en el backend FastAPI)
 
@@ -122,14 +122,14 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 
 Toda la validación vive en la **capa de servicio** del backend (Python), antes de guardar:
 
-1. **Upsert de paciente** — `buscar_o_crear_paciente(db, nombre_completo, edad)`: reutiliza si existe, crea con `rol = PACIENTE` si no; si hay varias coincidencias, recepción elige. La cédula se añade después.
+1. **Upsert de paciente** — `find_or_create_patient(db, nombre_completo, edad)`: reutiliza si existe, crea con `rol = PACIENTE` si no; si hay varias coincidencias, recepción elige. La cédula se añade después.
 2. **Disponibilidad (con sobrecupo)** — la cita debe caer en la `disponibilidad` del médico; si está fuera, se avisa y recepción puede **forzar un cupo extra** (override). El solapamiento exacto por médico (regla 3) se bloquea siempre.
 3. **Cero solapamientos (por médico)** — una cita nueva/modificada **no puede intersectar** con otra cita **activa** (`SCHEDULED`/`CONFIRMED`) del **mismo médico**. Intersección = `nueva.starts_at < existente.ends_at` **y** `nueva.ends_at > existente.starts_at`.
 4. **Cancelar libera** — al pasar a `CANCELLED` la cita sale de los estados activos y su hueco se reutiliza.
 
 ```python
 # Anti-solapamiento por médico (pseudocódigo del servicio de citas)
-def hay_solapamiento(db, medico_id, starts_at, ends_at):
+def has_overlap(db, medico_id, starts_at, ends_at):
     q = (
         db.query(Cita)
         .filter(Cita.medico_id == medico_id)
@@ -157,7 +157,7 @@ erDiagram
     usuarios {
         uuid id PK
         string nombre_completo
-        Rol rol
+        Role rol
         string email UK "opc"
         string password_hash "opc"
         string cedula UK "opc"
@@ -171,7 +171,7 @@ erDiagram
         uuid especialidad_id FK }
     servicios { uuid id PK
         string nombre UK
-        ServicioCategoria categoria
+        ServiceCategory categoria
         boolean activo }
     servicio_especialidad { uuid servicio_id FK
         uuid especialidad_id FK }
@@ -186,7 +186,7 @@ erDiagram
         uuid servicio_id FK
         datetime starts_at
         datetime ends_at
-        EstadoCita estado
+        AppointmentStatus estado
         uuid creado_por_id FK }
     notas_clinicas { uuid id PK
         uuid paciente_id FK

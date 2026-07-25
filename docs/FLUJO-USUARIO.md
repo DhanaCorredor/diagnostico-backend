@@ -9,7 +9,7 @@ flowchart TD
     A([Inicio]) --> B[Pantalla de login]
     B --> C{¿Credenciales válidas?}
     C -- No --> B
-    C -- Sí --> D{¿Rol del usuario?}
+    C -- Sí --> D{¿Role del usuario?}
 
     %% ADMIN
     D -- ADMIN --> E[Panel de administración]
