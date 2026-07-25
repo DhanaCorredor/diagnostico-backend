@@ -6,10 +6,10 @@ from sqlalchemy.orm import Session
 
 from app.enums import Role
 from app.models import User
-from app.services.comun import valor_en_uso
+from app.services.comun import value_in_use
 
 
-class PacientesAmbiguos(Exception):
+class AmbiguousPatients(Exception):
     """Varios pacientes coinciden; recepción debe elegir. Lleva la lista de candidatos."""
 
     def __init__(self, candidatos):
@@ -17,7 +17,7 @@ class PacientesAmbiguos(Exception):
         super().__init__(f"{len(candidatos)} pacientes coinciden; recepción debe elegir")
 
 
-def buscar_o_crear_paciente(db: Session, nombre_completo: str, edad: int) -> User:
+def find_or_create_patient(db: Session, nombre_completo: str, edad: int) -> User:
     """Busca un paciente por nombre_completo + edad y lo devuelve; si no existe, lo crea.
 
     Lanza PacientesAmbiguos si coinciden varios (recepción debe elegir). Flush, no commit.
@@ -33,28 +33,28 @@ def buscar_o_crear_paciente(db: Session, nombre_completo: str, edad: int) -> Use
     if len(coincidencias) == 1:
         return coincidencias[0]
     if len(coincidencias) > 1:
-        raise PacientesAmbiguos(coincidencias)
+        raise AmbiguousPatients(coincidencias)
 
-    paciente = User(nombre_completo=nombre_completo, edad=edad, rol=Role.PACIENTE)
-    db.add(paciente)
+    patient = User(nombre_completo=nombre_completo, edad=edad, rol=Role.PACIENTE)
+    db.add(patient)
     db.flush()
-    return paciente
+    return patient
 
 
-class PacienteNoEncontrado(Exception):
+class PatientNotFound(Exception):
     """No existe un paciente con ese id."""
 
 
-class CedulaDuplicada(Exception):
+class DuplicateNationalId(Exception):
     """La cédula indicada ya pertenece a otra persona."""
 
 
-def _cedula_en_uso(db: Session, cedula: str, excluir_id: uuid.UUID | None = None) -> bool:
+def _national_id_in_use(db: Session, cedula: str, excluir_id: uuid.UUID | None = None) -> bool:
     """True si la cédula ya pertenece a otra persona (excluyendo, si se indica, un id)."""
-    return valor_en_uso(db, User, User.cedula, cedula, excluir_id)
+    return value_in_use(db, User, User.cedula, cedula, excluir_id)
 
 
-def listar_pacientes(db: Session) -> list[User]:
+def list_patients(db: Session) -> list[User]:
     """Devuelve los pacientes activos, ordenados por nombre."""
     return (
         db.query(User)
@@ -65,43 +65,43 @@ def listar_pacientes(db: Session) -> list[User]:
     )
 
 
-def obtener_paciente(db: Session, paciente_id: uuid.UUID) -> User:
+def get_patient(db: Session, paciente_id: uuid.UUID) -> User:
     """Devuelve un paciente por id, o lanza PacienteNoEncontrado."""
-    paciente = db.get(User, paciente_id)
-    if paciente is None or paciente.rol != Role.PACIENTE:
-        raise PacienteNoEncontrado()
-    return paciente
+    patient = db.get(User, paciente_id)
+    if patient is None or patient.rol != Role.PACIENTE:
+        raise PatientNotFound()
+    return patient
 
 
-def crear_paciente(db: Session, datos: dict) -> User:
+def create_patient(db: Session, datos: dict) -> User:
     """Da de alta un paciente manualmente, sin deduplicar (cédula única si se indica). Flush, no commit."""
     cedula = datos.get("cedula")
-    if cedula is not None and _cedula_en_uso(db, cedula):
-        raise CedulaDuplicada()
+    if cedula is not None and _national_id_in_use(db, cedula):
+        raise DuplicateNationalId()
 
-    paciente = User(rol=Role.PACIENTE, **datos)
-    db.add(paciente)
+    patient = User(rol=Role.PACIENTE, **datos)
+    db.add(patient)
     db.flush()
-    return paciente
+    return patient
 
 
-def actualizar_paciente(db: Session, paciente_id: uuid.UUID, cambios: dict) -> User:
+def update_patient(db: Session, paciente_id: uuid.UUID, cambios: dict) -> User:
     """Actualiza solo los campos presentes en `cambios` (cédula única si se cambia). Flush, no commit."""
-    paciente = obtener_paciente(db, paciente_id)
+    patient = get_patient(db, paciente_id)
 
     nueva_cedula = cambios.get("cedula")
-    if nueva_cedula is not None and _cedula_en_uso(db, nueva_cedula, excluir_id=paciente_id):
-        raise CedulaDuplicada()
+    if nueva_cedula is not None and _national_id_in_use(db, nueva_cedula, excluir_id=paciente_id):
+        raise DuplicateNationalId()
 
     for campo, valor in cambios.items():
-        setattr(paciente, campo, valor)
+        setattr(patient, campo, valor)
     db.flush()
-    return paciente
+    return patient
 
 
-def desactivar_paciente(db: Session, paciente_id: uuid.UUID) -> User:
+def deactivate_patient(db: Session, paciente_id: uuid.UUID) -> User:
     """Da de baja (lógica) a un paciente: `activo=False`. Hace flush (no commit)."""
-    paciente = obtener_paciente(db, paciente_id)
-    paciente.activo = False
+    patient = get_patient(db, paciente_id)
+    patient.activo = False
     db.flush()
-    return paciente
+    return patient

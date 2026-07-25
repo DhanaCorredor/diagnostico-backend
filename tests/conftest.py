@@ -9,7 +9,7 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
-from app.auth import crear_token
+from app.auth import create_token
 from app.db import SessionLocal, engine, get_db
 from app.main import app
 from app.enums import Role, ServiceCategory
@@ -54,14 +54,14 @@ def client(db):
 @pytest.fixture
 def token_for():
     """Devuelve una función que construye la cabecera Authorization de un usuario."""
-    def _header(usuario):
-        return {"Authorization": f"Bearer {crear_token(usuario.id)}"}
+    def _header(user):
+        return {"Authorization": f"Bearer {create_token(user.id)}"}
 
     return _header
 
 
 @pytest.fixture
-def medico(db):
+def doctor(db):
     """Un médico de prueba (email único para no chocar con otros)."""
     m = User(
         nombre_completo="Dr. Test",
@@ -100,7 +100,7 @@ def recepcion(db):
 
 
 @pytest.fixture
-def servicio(db):
+def service(db):
     """Un servicio de prueba del catálogo (nombre único)."""
     s = Service(
         nombre=f"Servicio {uuid.uuid4()}",

@@ -3,7 +3,7 @@
 import os
 from datetime import time
 
-from app.auth import hashear_password
+from app.auth import hash_password
 from app.db import SessionLocal
 from app.enums import Role, ServiceCategory
 from app.models import Availability, Specialty, Service, User
@@ -127,7 +127,7 @@ PACIENTES = [
 ]
 
 
-def sembrar_especialidades(db):
+def seed_specialties(db):
     """Inserta las especialidades que aún no existan. Devuelve cuántas añadió."""
     existentes = {e.nombre for e in db.query(Specialty.nombre).all()}
     nuevas = [Specialty(nombre=n) for n in ESPECIALIDADES if n not in existentes]
@@ -135,7 +135,7 @@ def sembrar_especialidades(db):
     return len(nuevas)
 
 
-def sembrar_servicios(db):
+def seed_services(db):
     """Inserta los servicios que falten, vinculando cada uno (N:M) a su especialidad. Devuelve cuántos añadió."""
     existentes = {s.nombre for s in db.query(Service.nombre).all()}
     catalogo = {e.nombre: e for e in db.query(Specialty).all()}
@@ -143,14 +143,14 @@ def sembrar_servicios(db):
     for nombre, categoria, especialidades in SERVICIOS:
         if nombre in existentes:
             continue
-        servicio = Service(nombre=nombre, categoria=categoria)
-        servicio.especialidades = [catalogo[e] for e in especialidades]
-        db.add(servicio)
+        service = Service(nombre=nombre, categoria=categoria)
+        service.especialidades = [catalogo[e] for e in especialidades]
+        db.add(service)
         creados += 1
     return creados
 
 
-def sembrar_medicos(db):
+def seed_doctors(db):
     """Crea los médicos que falten (rol MEDICO, sin login), con sus especialidades (N:M) y franjas. Devuelve cuántos creó."""
     existentes = {
         u.nombre_completo
@@ -158,17 +158,17 @@ def sembrar_medicos(db):
     }
     catalogo = {e.nombre: e for e in db.query(Specialty).all()}
     creados = 0
-    for nombre, especialidades, franjas in MEDICOS:
+    for nombre, especialidades, slots in MEDICOS:
         if nombre in existentes:
             continue
-        medico = User(nombre_completo=nombre, rol=Role.MEDICO)
-        medico.especialidades = [catalogo[e] for e in especialidades]
-        db.add(medico)
+        doctor = User(nombre_completo=nombre, rol=Role.MEDICO)
+        doctor.especialidades = [catalogo[e] for e in especialidades]
+        db.add(doctor)
         db.flush()
-        for dia, inicio, fin in franjas:
+        for dia, inicio, fin in slots:
             db.add(
                 Availability(
-                    usuario_id=medico.id,
+                    usuario_id=doctor.id,
                     dia_semana=dia,
                     hora_inicio=inicio,
                     hora_fin=fin,
@@ -178,7 +178,7 @@ def sembrar_medicos(db):
     return creados
 
 
-def sembrar_pacientes(db):
+def seed_patients(db):
     """Crea los pacientes ficticios de demo (rol PACIENTE) que falten; nunca datos reales. Devuelve cuántos creó."""
     existentes = {
         u.nombre_completo
@@ -201,7 +201,7 @@ def sembrar_pacientes(db):
     return creados
 
 
-def sembrar_staff(db):
+def seed_staff(db):
     """Crea el personal interno con login (admin, recepción, médico) que falte, usando ADMIN_PASSWORD del .env. Devuelve cuántos creó."""
     password = os.getenv("ADMIN_PASSWORD")
     if not password:
@@ -217,7 +217,7 @@ def sembrar_staff(db):
                 rol=Role(rol),
                 email=email,
                 matricula=matricula,
-                password_hash=hashear_password(password),
+                password_hash=hash_password(password),
             )
         )
         creados += 1
@@ -229,13 +229,13 @@ HORA_APERTURA = time(7, 30)
 HORA_CIERRE = time(17, 30)
 
 
-def sembrar_disponibilidad(db):
+def seed_availability(db):
     """Da a cada médico sin franjas la jornada del centro (L-S 07:30-17:30); no toca a los que ya tienen. Devuelve cuántas creó."""
     creadas = 0
-    for medico in db.query(User).filter(User.rol == Role.MEDICO).all():
+    for doctor in db.query(User).filter(User.rol == Role.MEDICO).all():
         ya_tiene = (
             db.query(Availability)
-            .filter(Availability.usuario_id == medico.id)
+            .filter(Availability.usuario_id == doctor.id)
             .first()
         )
         if ya_tiene:
@@ -243,7 +243,7 @@ def sembrar_disponibilidad(db):
         for dia in DIAS_LABORABLES:
             db.add(
                 Availability(
-                    usuario_id=medico.id,
+                    usuario_id=doctor.id,
                     dia_semana=dia,
                     hora_inicio=HORA_APERTURA,
                     hora_fin=HORA_CIERRE,
@@ -256,14 +256,14 @@ def sembrar_disponibilidad(db):
 def main():
     db = SessionLocal()
     try:
-        n_esp = sembrar_especialidades(db)
+        n_esp = seed_specialties(db)
         db.flush()
-        n_serv = sembrar_servicios(db)
-        n_med = sembrar_medicos(db)
-        n_staff = sembrar_staff(db)
+        n_serv = seed_services(db)
+        n_med = seed_doctors(db)
+        n_staff = seed_staff(db)
         db.flush()
-        n_disp = sembrar_disponibilidad(db)
-        n_pac = sembrar_pacientes(db)
+        n_disp = seed_availability(db)
+        n_pac = seed_patients(db)
         db.commit()
         print(
             f"Seed OK: +{n_esp} especialidades, +{n_serv} servicios, "

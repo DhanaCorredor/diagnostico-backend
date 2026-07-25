@@ -5,7 +5,7 @@ from datetime import time
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class DisponibilidadOut(BaseModel):
+class AvailabilityOut(BaseModel):
     """Una franja de disponibilidad semanal de un médico."""
 
     id: uuid.UUID
@@ -17,7 +17,7 @@ class DisponibilidadOut(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
-class DisponibilidadCreate(BaseModel):
+class AvailabilityCreate(BaseModel):
     """Cuerpo del POST /disponibilidad (definir una franja de un médico)."""
 
     medico_id: uuid.UUID

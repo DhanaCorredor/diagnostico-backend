@@ -1,40 +1,45 @@
 """Esquemas Pydantic (entrada/salida de la API), agrupados por dominio."""
-from app.schemas.auth import LoginRequest, TokenResponse
-from app.schemas.catalogo import (
-    EspecialidadCreate,
-    EspecialidadOut,
-    MedicoOut,
-    ServicioCreate,
-    ServicioDetalle,
-    ServicioOut,
-    ServicioUpdate,
+from app.schemas.appointment import (
+    AppointmentCreate,
+    AppointmentOut,
+    AppointmentUpdate,
+    AttendanceUpdate,
 )
-from app.schemas.cita import AsistenciaUpdate, CitaCreate, CitaOut, CitaUpdate
-from app.schemas.disponibilidad import DisponibilidadCreate, DisponibilidadOut
-from app.schemas.paciente import PacienteCreate, PacienteOut, PacienteUpdate
-from app.schemas.usuario import UsuarioCreate, UsuarioDetalle, UsuarioOut, UsuarioUpdate
+from app.schemas.auth import LoginRequest, TokenResponse
+from app.schemas.availability import AvailabilityCreate, AvailabilityOut
+from app.schemas.catalog import (
+    DoctorOut,
+    ServiceCreate,
+    ServiceDetail,
+    ServiceOut,
+    ServiceUpdate,
+    SpecialtyCreate,
+    SpecialtyOut,
+)
+from app.schemas.patient import PatientCreate, PatientOut, PatientUpdate
+from app.schemas.user import UserCreate, UserDetail, UserOut, UserUpdate
 
 __all__ = [
-    "AsistenciaUpdate",
-    "CitaCreate",
-    "CitaOut",
-    "CitaUpdate",
-    "DisponibilidadCreate",
-    "DisponibilidadOut",
-    "EspecialidadCreate",
-    "EspecialidadOut",
+    "AppointmentCreate",
+    "AppointmentOut",
+    "AppointmentUpdate",
+    "AttendanceUpdate",
+    "AvailabilityCreate",
+    "AvailabilityOut",
+    "DoctorOut",
     "LoginRequest",
-    "MedicoOut",
-    "PacienteCreate",
-    "PacienteOut",
-    "PacienteUpdate",
-    "ServicioCreate",
-    "ServicioDetalle",
-    "ServicioOut",
-    "ServicioUpdate",
+    "PatientCreate",
+    "PatientOut",
+    "PatientUpdate",
+    "ServiceCreate",
+    "ServiceDetail",
+    "ServiceOut",
+    "ServiceUpdate",
+    "SpecialtyCreate",
+    "SpecialtyOut",
     "TokenResponse",
-    "UsuarioCreate",
-    "UsuarioDetalle",
-    "UsuarioOut",
-    "UsuarioUpdate",
+    "UserCreate",
+    "UserDetail",
+    "UserOut",
+    "UserUpdate",
 ]

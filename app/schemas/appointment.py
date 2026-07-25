@@ -15,7 +15,7 @@ def _exigir_hora_local_naive(v: datetime | None) -> datetime | None:
     return v
 
 
-class CitaCreate(BaseModel):
+class AppointmentCreate(BaseModel):
     """Cuerpo del POST /citas: identifica al paciente por nombre + edad (upsert) o por `paciente_id`."""
 
     nombre_completo: str = Field(min_length=1)
@@ -34,7 +34,7 @@ class CitaCreate(BaseModel):
         return _exigir_hora_local_naive(v)
 
 
-class CitaUpdate(BaseModel):
+class AppointmentUpdate(BaseModel):
     """PUT /citas/{id}: editar o mover. Campos opcionales; None = sin cambio. No cambia el paciente."""
 
     medico_id: uuid.UUID | None = None
@@ -50,7 +50,7 @@ class CitaUpdate(BaseModel):
         return _exigir_hora_local_naive(v)
 
 
-class CitaOut(BaseModel):
+class AppointmentOut(BaseModel):
     """Datos de la cita creada."""
 
     id: uuid.UUID
@@ -65,7 +65,7 @@ class CitaOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class AsistenciaUpdate(BaseModel):
+class AttendanceUpdate(BaseModel):
     """POST /citas/{id}/asistencia: marcar atendida o no-show."""
 
     estado: Literal[AppointmentStatus.COMPLETED, AppointmentStatus.NO_SHOW]

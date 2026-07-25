@@ -9,15 +9,15 @@ from app.enums import Role
 from app.models import Availability, User
 
 
-class MedicoNoEncontrado(Exception):
+class DoctorNotFound(Exception):
     """El médico indicado no existe o no tiene rol MEDICO."""
 
 
-class FranjaInvalida(Exception):
+class InvalidSlot(Exception):
     """La franja no es válida: la hora de inicio no es anterior a la de fin."""
 
 
-def listar_disponibilidad(db: Session, medico_id: uuid.UUID) -> list[Availability]:
+def list_availability(db: Session, medico_id: uuid.UUID) -> list[Availability]:
     """Franjas de un médico, ordenadas por día de la semana y hora de inicio."""
     return (
         db.query(Availability)
@@ -27,7 +27,7 @@ def listar_disponibilidad(db: Session, medico_id: uuid.UUID) -> list[Availabilit
     )
 
 
-def crear_disponibilidad(
+def create_availability(
     db: Session,
     *,
     medico_id: uuid.UUID,
@@ -36,18 +36,18 @@ def crear_disponibilidad(
     hora_fin: time,
 ) -> Availability:
     """Crea una franja para un médico, validando el médico y que inicio < fin. Flush, no commit."""
-    medico = db.get(User, medico_id)
-    if medico is None or medico.rol != Role.MEDICO:
-        raise MedicoNoEncontrado()
+    doctor = db.get(User, medico_id)
+    if doctor is None or doctor.rol != Role.MEDICO:
+        raise DoctorNotFound()
     if hora_inicio >= hora_fin:
-        raise FranjaInvalida()
+        raise InvalidSlot()
 
-    franja = Availability(
+    slot = Availability(
         usuario_id=medico_id,
         dia_semana=dia_semana,
         hora_inicio=hora_inicio,
         hora_fin=hora_fin,
     )
-    db.add(franja)
+    db.add(slot)
     db.flush()
-    return franja
+    return slot

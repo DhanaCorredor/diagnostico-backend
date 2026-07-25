@@ -3,37 +3,37 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.auth import crear_token, hashear_password, usuario_actual, verificar_password
+from app.auth import create_token, hash_password, current_user, verify_password
 from app.db import get_db
 from app.models import User
-from app.schemas import LoginRequest, TokenResponse, UsuarioOut
+from app.schemas import LoginRequest, TokenResponse, UserOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-_HASH_SENUELO = hashear_password("timing-attack-decoy")
+_HASH_SENUELO = hash_password("timing-attack-decoy")
 
 
 @router.post("/login", response_model=TokenResponse)
 async def login(datos: LoginRequest, db: Session = Depends(get_db)):
     """Verifica email + contraseña y, si son correctos, devuelve un token JWT."""
-    usuario = db.query(User).filter_by(email=datos.email).first()
-    hash_a_verificar = usuario.password_hash if usuario and usuario.password_hash else _HASH_SENUELO
-    password_ok = verificar_password(datos.password, hash_a_verificar)
-    if usuario is None or not usuario.password_hash or not password_ok:
+    user = db.query(User).filter_by(email=datos.email).first()
+    hash_a_verificar = user.password_hash if user and user.password_hash else _HASH_SENUELO
+    password_ok = verify_password(datos.password, hash_a_verificar)
+    if user is None or not user.password_hash or not password_ok:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales inválidas",
         )
-    if not usuario.activo:
+    if not user.activo:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuario desactivado",
         )
-    token = crear_token(usuario.id)
+    token = create_token(user.id)
     return TokenResponse(access_token=token)
 
 
-@router.get("/me", response_model=UsuarioOut)
-async def me(usuario: User = Depends(usuario_actual)):
+@router.get("/me", response_model=UserOut)
+async def me(user: User = Depends(current_user)):
     """Devuelve los datos del usuario autenticado (según el token del header)."""
-    return usuario
+    return user

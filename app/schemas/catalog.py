@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.enums import ServiceCategory
 
 
-class EspecialidadOut(BaseModel):
+class SpecialtyOut(BaseModel):
     """Una especialidad médica."""
 
     id: uuid.UUID
@@ -15,37 +15,37 @@ class EspecialidadOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class EspecialidadCreate(BaseModel):
+class SpecialtyCreate(BaseModel):
     """Cuerpo del POST /especialidades."""
 
     nombre: str = Field(min_length=1)
 
 
-class ServicioOut(BaseModel):
+class ServiceOut(BaseModel):
     """Un servicio del catálogo con las especialidades que lo ofrecen (para el formulario de cita)."""
 
     id: uuid.UUID
     nombre: str
     categoria: ServiceCategory
-    especialidades: list[EspecialidadOut]
+    especialidades: list[SpecialtyOut]
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class ServicioDetalle(ServicioOut):
+class ServiceDetail(ServiceOut):
     """`ServicioOut` + `activo` (gestión del ADMIN)."""
 
     activo: bool
 
 
-class ServicioCreate(BaseModel):
+class ServiceCreate(BaseModel):
     """Cuerpo del POST /servicios."""
 
     nombre: str = Field(min_length=1)
     categoria: ServiceCategory
 
 
-class ServicioUpdate(BaseModel):
+class ServiceUpdate(BaseModel):
     """Cuerpo del PUT /servicios/{id}. Solo se cambian los campos enviados."""
 
     nombre: str | None = Field(default=None, min_length=1)
@@ -53,11 +53,11 @@ class ServicioUpdate(BaseModel):
     activo: bool | None = None
 
 
-class MedicoOut(BaseModel):
+class DoctorOut(BaseModel):
     """Un médico con sus especialidades (para elegir médico al agendar)."""
 
     id: uuid.UUID
     nombre_completo: str
-    especialidades: list[EspecialidadOut]
+    especialidades: list[SpecialtyOut]
 
     model_config = ConfigDict(from_attributes=True)

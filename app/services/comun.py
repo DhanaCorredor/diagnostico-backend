@@ -3,7 +3,7 @@
 from sqlalchemy.orm import Session
 
 
-def valor_en_uso(db: Session, modelo, columna, valor, excluir_id=None) -> bool:
+def value_in_use(db: Session, modelo, columna, valor, excluir_id=None) -> bool:
     """True si ya existe una fila de `modelo` con ese `valor` en `columna` (chequeo de unicidad).
 
     Con `excluir_id` ignora esa fila, para no chocar consigo misma al editar.

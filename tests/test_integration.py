@@ -8,7 +8,7 @@ del smoke test manual para que queden repetibles y en CI.
 import uuid
 from datetime import datetime, time, timedelta
 
-from app.auth import hashear_password
+from app.auth import hash_password
 from app.enums import Role
 from app.models import Availability, User
 
@@ -21,12 +21,12 @@ def _slot_futuro_alineado() -> datetime:
     return d.replace(hour=10, minute=0, second=0, microsecond=0)
 
 
-def _con_disponibilidad(db, medico, slot):
+def _con_disponibilidad(db, doctor, slot):
     """Da al médico una franja amplia (08:00-18:00) el día del slot."""
     dia = (slot.weekday() + 1) % 7
     db.add(
         Availability(
-            usuario_id=medico.id, dia_semana=dia, hora_inicio=time(8, 0), hora_fin=time(18, 0)
+            usuario_id=doctor.id, dia_semana=dia, hora_inicio=time(8, 0), hora_fin=time(18, 0)
         )
     )
     db.flush()
@@ -46,7 +46,7 @@ def test_login_ok_y_me(client, db):
         nombre_completo="Admin Login",
         rol=Role.ADMIN,
         email=f"login-{uuid.uuid4()}@test.local",
-        password_hash=hashear_password("secret123"),
+        password_hash=hash_password("secret123"),
     )
     db.add(u)
     db.flush()
@@ -62,7 +62,7 @@ def test_login_password_mala(client, db):
         nombre_completo="Admin Malo",
         rol=Role.ADMIN,
         email=f"malo-{uuid.uuid4()}@test.local",
-        password_hash=hashear_password("secret123"),
+        password_hash=hash_password("secret123"),
     )
     db.add(u)
     db.flush()
@@ -82,47 +82,47 @@ def test_admin_si_ve_usuarios(client, admin, token_for):
     assert client.get("/usuarios", headers=token_for(admin)).status_code == 200
 
 
-def test_medico_no_cancela(client, medico, token_for):
-    r = client.post(f"/citas/{uuid.uuid4()}/cancelar", headers=token_for(medico))
+def test_medico_no_cancela(client, doctor, token_for):
+    r = client.post(f"/citas/{uuid.uuid4()}/cancelar", headers=token_for(doctor))
     assert r.status_code == 403
 
 
-def test_medico_no_marca_asistencia(client, medico, token_for):
+def test_medico_no_marca_asistencia(client, doctor, token_for):
     r = client.post(
         f"/citas/{uuid.uuid4()}/asistencia",
-        headers=token_for(medico),
+        headers=token_for(doctor),
         json={"estado": "COMPLETED"},
     )
     assert r.status_code == 403
 
 
-def test_medico_no_crea_cita(client, medico, token_for):
-    assert client.post("/citas", headers=token_for(medico), json={}).status_code == 403
+def test_medico_no_crea_cita(client, doctor, token_for):
+    assert client.post("/citas", headers=token_for(doctor), json={}).status_code == 403
 
 
-def test_medico_ve_su_agenda(client, medico, token_for):
+def test_medico_ve_su_agenda(client, doctor, token_for):
     fecha = datetime.now().strftime("%Y-%m-%d")
-    r = client.get(f"/citas?fecha={fecha}", headers=token_for(medico))
+    r = client.get(f"/citas?fecha={fecha}", headers=token_for(doctor))
     assert r.status_code == 200
 
 
-def test_flujo_cita_completo(client, db, admin, medico, servicio, token_for):
+def test_flujo_cita_completo(client, db, admin, doctor, service, token_for):
     slot = _slot_futuro_alineado()
-    _con_disponibilidad(db, medico, slot)
+    _con_disponibilidad(db, doctor, slot)
     hdr = token_for(admin)
     body = {
         "nombre_completo": f"Integración {uuid.uuid4()}",
         "edad": 40,
-        "medico_id": str(medico.id),
-        "servicio_id": str(servicio.id),
+        "medico_id": str(doctor.id),
+        "servicio_id": str(service.id),
         "starts_at": slot.strftime("%Y-%m-%dT%H:%M:%S"),
         "duracion_min": 30,
     }
     r = client.post("/citas", headers=hdr, json=body)
     assert r.status_code == 201, r.text
-    cita = r.json()
-    assert cita["starts_at"].startswith(slot.strftime("%Y-%m-%dT%H:%M"))
-    cita_id = cita["id"]
+    appointment = r.json()
+    assert appointment["starts_at"].startswith(slot.strftime("%Y-%m-%dT%H:%M"))
+    cita_id = appointment["id"]
 
     fecha = slot.strftime("%Y-%m-%d")
     lista = client.get(f"/citas?fecha={fecha}", headers=hdr).json()
@@ -139,15 +139,15 @@ def test_flujo_cita_completo(client, db, admin, medico, servicio, token_for):
     assert canc.status_code == 200 and canc.json()["estado"] == "CANCELLED"
 
 
-def test_cita_fecha_con_zona_se_rechaza(client, db, admin, medico, servicio, token_for):
+def test_cita_fecha_con_zona_se_rechaza(client, db, admin, doctor, service, token_for):
     """Contrato: una fecha con zona (la 'Z' del navegador) se rechaza con 422."""
     slot = _slot_futuro_alineado()
-    _con_disponibilidad(db, medico, slot)
+    _con_disponibilidad(db, doctor, slot)
     body = {
         "nombre_completo": f"TZ {uuid.uuid4()}",
         "edad": 30,
-        "medico_id": str(medico.id),
-        "servicio_id": str(servicio.id),
+        "medico_id": str(doctor.id),
+        "servicio_id": str(service.id),
         "starts_at": slot.strftime("%Y-%m-%dT%H:%M:%S") + "Z",
         "duracion_min": 15,
     }
@@ -156,10 +156,10 @@ def test_cita_fecha_con_zona_se_rechaza(client, db, admin, medico, servicio, tok
 
 
 def test_cita_paciente_ambiguo_devuelve_candidatos(
-    client, db, admin, medico, servicio, token_for
+    client, db, admin, doctor, service, token_for
 ):
     slot = _slot_futuro_alineado()
-    _con_disponibilidad(db, medico, slot)
+    _con_disponibilidad(db, doctor, slot)
     nombre = f"Ambiguo {uuid.uuid4()}"
     db.add(User(nombre_completo=nombre, edad=50, rol=Role.PACIENTE))
     db.add(User(nombre_completo=nombre, edad=50, rol=Role.PACIENTE))
@@ -167,8 +167,8 @@ def test_cita_paciente_ambiguo_devuelve_candidatos(
     body = {
         "nombre_completo": nombre,
         "edad": 50,
-        "medico_id": str(medico.id),
-        "servicio_id": str(servicio.id),
+        "medico_id": str(doctor.id),
+        "servicio_id": str(service.id),
         "starts_at": slot.strftime("%Y-%m-%dT%H:%M:%S"),
         "duracion_min": 30,
     }

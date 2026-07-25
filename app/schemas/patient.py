@@ -5,7 +5,7 @@ from datetime import date
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class PacienteOut(BaseModel):
+class PatientOut(BaseModel):
     """Datos de un paciente (lista y ficha)."""
 
     id: uuid.UUID
@@ -18,7 +18,7 @@ class PacienteOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class PacienteCreate(BaseModel):
+class PatientCreate(BaseModel):
     """Cuerpo del POST /pacientes: alta manual (sin agendarle cita)."""
 
     nombre_completo: str = Field(min_length=1)
@@ -28,5 +28,5 @@ class PacienteCreate(BaseModel):
     fecha_nacimiento: date | None = None
 
 
-class PacienteUpdate(PacienteCreate):
+class PatientUpdate(PatientCreate):
     """Cuerpo del PUT /pacientes/{id}: mismos campos que el alta."""

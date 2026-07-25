@@ -5,48 +5,48 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.auth import requiere_rol, usuario_actual
+from app.auth import require_role, current_user
 from app.db import get_db
 from app.enums import Role
 from app.models import User
-from app.schemas import DisponibilidadCreate, DisponibilidadOut
+from app.schemas import AvailabilityCreate, AvailabilityOut
 from app.services import disponibilidad as disp_service
 
 router = APIRouter(prefix="/disponibilidad", tags=["disponibilidad"])
 
 
-@router.get("", response_model=list[DisponibilidadOut])
-async def listar_disponibilidad(
+@router.get("", response_model=list[AvailabilityOut])
+async def list_availability(
     medico_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _: object = Depends(usuario_actual),
+    _: object = Depends(current_user),
 ):
     """Devuelve las franjas de disponibilidad de un médico."""
-    return disp_service.listar_disponibilidad(db, medico_id)
+    return disp_service.list_availability(db, medico_id)
 
 
-@router.post("", response_model=DisponibilidadOut, status_code=status.HTTP_201_CREATED)
-async def crear_disponibilidad(
-    datos: DisponibilidadCreate,
+@router.post("", response_model=AvailabilityOut, status_code=status.HTTP_201_CREATED)
+async def create_availability(
+    datos: AvailabilityCreate,
     db: Session = Depends(get_db),
-    usuario: User = Depends(requiere_rol(Role.ADMIN)),
+    user: User = Depends(require_role(Role.ADMIN)),
 ):
     """Define una franja de disponibilidad para un médico (solo ADMIN)."""
     try:
-        franja = disp_service.crear_disponibilidad(
+        slot = disp_service.create_availability(
             db,
             medico_id=datos.medico_id,
             dia_semana=datos.dia_semana,
             hora_inicio=datos.hora_inicio,
             hora_fin=datos.hora_fin,
         )
-    except disp_service.MedicoNoEncontrado:
+    except disp_service.DoctorNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Médico no encontrado") from None
-    except disp_service.FranjaInvalida:
+    except disp_service.InvalidSlot:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "La hora de inicio debe ser anterior a la de fin",
         ) from None
 
     db.commit()
-    return franja
+    return slot

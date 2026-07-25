@@ -6,28 +6,28 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.auth import requiere_rol
+from app.auth import require_role
 from app.db import get_db
 from app.enums import Role
 from app.models import User
-from app.schemas import AsistenciaUpdate, CitaCreate, CitaOut, CitaUpdate
+from app.schemas import AttendanceUpdate, AppointmentCreate, AppointmentOut, AppointmentUpdate
 from app.services import citas as citas_service
-from app.services.pacientes import PacienteNoEncontrado, PacientesAmbiguos
+from app.services.pacientes import PatientNotFound, AmbiguousPatients
 
 router = APIRouter(prefix="/citas", tags=["citas"])
 
 MAX_RANGO_DIAS = 60
 
 
-@router.post("", response_model=CitaOut, status_code=status.HTTP_201_CREATED)
-async def agendar_cita(
-    datos: CitaCreate,
+@router.post("", response_model=AppointmentOut, status_code=status.HTTP_201_CREATED)
+async def book_appointment(
+    datos: AppointmentCreate,
     db: Session = Depends(get_db),
-    usuario: User = Depends(requiere_rol(Role.ADMIN, Role.RECEPCION)),
+    user: User = Depends(require_role(Role.ADMIN, Role.RECEPCION)),
 ):
     """Agenda una cita (recepción o admin) aplicando las reglas de negocio; cada fallo devuelve su código HTTP."""
     try:
-        cita = citas_service.crear_cita(
+        appointment = citas_service.create_appointment(
             db,
             nombre_completo=datos.nombre_completo,
             edad=datos.edad,
@@ -36,27 +36,27 @@ async def agendar_cita(
             servicio_id=datos.servicio_id,
             starts_at=datos.starts_at,
             duracion_min=datos.duracion_min,
-            creado_por_id=usuario.id,
+            creado_por_id=user.id,
             motivo=datos.motivo,
             permitir_sobrecupo=datos.permitir_sobrecupo,
         )
-    except citas_service.ServicioNoEncontrado:
+    except citas_service.ServiceNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado") from None
-    except citas_service.MedicoNoEncontrado:
+    except citas_service.DoctorNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Médico no encontrado") from None
-    except citas_service.HorarioNoAlineado:
+    except citas_service.TimeNotAligned:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "La cita debe empezar en :00, :15, :30 o :45",
         ) from None
-    except citas_service.CitaEnElPasado:
+    except citas_service.AppointmentInThePast:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "No se puede agendar una cita en el pasado",
         ) from None
-    except PacienteNoEncontrado:
+    except PatientNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado") from None
-    except PacientesAmbiguos as e:
+    except AmbiguousPatients as e:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             detail={
@@ -71,30 +71,30 @@ async def agendar_cita(
                 ],
             },
         ) from None
-    except citas_service.FueraDeDisponibilidad:
+    except citas_service.OutsideAvailability:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "La cita cae fuera de la disponibilidad del médico",
         ) from None
-    except citas_service.Solapamiento:
+    except citas_service.Overlap:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "El médico ya tiene una cita en ese horario",
         ) from None
 
     db.commit()
-    return cita
+    return appointment
 
 
-@router.get("", response_model=list[CitaOut])
-async def listar_citas(
+@router.get("", response_model=list[AppointmentOut])
+async def list_appointments(
     fecha: date | None = None,
     desde: date | None = None,
     hasta: date | None = None,
     medico_id: uuid.UUID | None = None,
     incluir_canceladas: bool = False,
     db: Session = Depends(get_db),
-    usuario: User = Depends(requiere_rol(Role.ADMIN, Role.RECEPCION, Role.MEDICO)),
+    user: User = Depends(require_role(Role.ADMIN, Role.RECEPCION, Role.MEDICO)),
 ):
     """Lista la agenda de un día (`fecha`) o de un rango (`desde`..`hasta`), ambos incluidos.
 
@@ -117,9 +117,9 @@ async def listar_citas(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
             f"El rango no puede superar los {MAX_RANGO_DIAS} días.",
         )
-    if usuario.rol == Role.MEDICO:
-        medico_id = usuario.id
-    return citas_service.listar_citas(
+    if user.rol == Role.MEDICO:
+        medico_id = user.id
+    return citas_service.list_appointments(
         db,
         desde=desde,
         hasta=hasta,
@@ -128,16 +128,16 @@ async def listar_citas(
     )
 
 
-@router.put("/{cita_id}", response_model=CitaOut)
-async def editar_cita(
+@router.put("/{cita_id}", response_model=AppointmentOut)
+async def edit_appointment(
     cita_id: uuid.UUID,
-    datos: CitaUpdate,
+    datos: AppointmentUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(requiere_rol(Role.ADMIN, Role.RECEPCION)),
+    _: User = Depends(require_role(Role.ADMIN, Role.RECEPCION)),
 ):
     """Edita o mueve una cita activa (parcial, solo los campos enviados), revalidando las reglas. ADMIN o RECEPCIÓN."""
     try:
-        cita = citas_service.editar_cita(
+        appointment = citas_service.edit_appointment(
             db,
             cita_id,
             medico_id=datos.medico_id,
@@ -147,78 +147,78 @@ async def editar_cita(
             motivo=datos.motivo,
             permitir_sobrecupo=datos.permitir_sobrecupo,
         )
-    except citas_service.CitaNoEncontrada:
+    except citas_service.AppointmentNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada") from None
-    except citas_service.CitaNoEditable:
+    except citas_service.AppointmentNotEditable:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "La cita no se puede editar (ya está cancelada o cerrada)",
         ) from None
-    except citas_service.ServicioNoEncontrado:
+    except citas_service.ServiceNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado") from None
-    except citas_service.MedicoNoEncontrado:
+    except citas_service.DoctorNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Médico no encontrado") from None
-    except citas_service.HorarioNoAlineado:
+    except citas_service.TimeNotAligned:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "La cita debe empezar en :00, :15, :30 o :45",
         ) from None
-    except citas_service.CitaEnElPasado:
+    except citas_service.AppointmentInThePast:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "No se puede mover una cita al pasado",
         ) from None
-    except citas_service.FueraDeDisponibilidad:
+    except citas_service.OutsideAvailability:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "La cita cae fuera de la disponibilidad del médico",
         ) from None
-    except citas_service.Solapamiento:
+    except citas_service.Overlap:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "El médico ya tiene una cita en ese horario",
         ) from None
 
     db.commit()
-    return cita
+    return appointment
 
 
-@router.post("/{cita_id}/cancelar", response_model=CitaOut)
-async def cancelar_cita(
+@router.post("/{cita_id}/cancelar", response_model=AppointmentOut)
+async def cancel_appointment(
     cita_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _: User = Depends(requiere_rol(Role.ADMIN, Role.RECEPCION)),
+    _: User = Depends(require_role(Role.ADMIN, Role.RECEPCION)),
 ):
     """Cancela una cita (libera el cupo). Solo ADMIN o RECEPCIÓN (el médico no cancela)."""
     try:
-        cita = citas_service.cancelar_cita(db, cita_id)
-    except citas_service.CitaNoEncontrada:
+        appointment = citas_service.cancel_appointment(db, cita_id)
+    except citas_service.AppointmentNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada") from None
-    except citas_service.CitaNoCancelable:
+    except citas_service.AppointmentNotCancellable:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "La cita no se puede cancelar (ya está cancelada o completada)",
         ) from None
     db.commit()
-    return cita
+    return appointment
 
 
-@router.post("/{cita_id}/asistencia", response_model=CitaOut)
-async def marcar_asistencia(
+@router.post("/{cita_id}/asistencia", response_model=AppointmentOut)
+async def mark_attendance(
     cita_id: uuid.UUID,
-    datos: AsistenciaUpdate,
+    datos: AttendanceUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(requiere_rol(Role.ADMIN, Role.RECEPCION)),
+    _: User = Depends(require_role(Role.ADMIN, Role.RECEPCION)),
 ):
     """Marca una cita como **atendida** (COMPLETED) o **no-show** (NO_SHOW). Solo ADMIN o RECEPCIÓN."""
     try:
-        cita = citas_service.marcar_asistencia(db, cita_id, datos.estado)
-    except citas_service.CitaNoEncontrada:
+        appointment = citas_service.mark_attendance(db, cita_id, datos.estado)
+    except citas_service.AppointmentNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada") from None
-    except citas_service.CitaNoActiva:
+    except citas_service.AppointmentNotActive:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "Solo se puede marcar asistencia de una cita activa",
         ) from None
     db.commit()
-    return cita
+    return appointment

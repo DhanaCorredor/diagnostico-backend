@@ -7,59 +7,59 @@ from sqlalchemy.orm import Session
 
 from app.enums import AppointmentStatus, Role
 from app.models import Appointment, Availability, Service, User
-from app.services.pacientes import buscar_o_crear_paciente, obtener_paciente
+from app.services.pacientes import find_or_create_patient, get_patient
 
 GRID_MINUTOS = 15
 
 ZONA_CENTRO = timezone(timedelta(hours=-4))
 
 
-def ahora_centro() -> datetime:
+def now_center() -> datetime:
     """Hora actual en la zona del centro (UTC-4), naive (sin tzinfo)."""
     return datetime.now(ZONA_CENTRO).replace(tzinfo=None)
 
 
-class ServicioNoEncontrado(Exception):
+class ServiceNotFound(Exception):
     """El servicio indicado no existe."""
 
 
-class MedicoNoEncontrado(Exception):
+class DoctorNotFound(Exception):
     """El médico indicado no existe o no tiene rol MEDICO."""
 
 
-class FueraDeDisponibilidad(Exception):
+class OutsideAvailability(Exception):
     """La cita cae fuera de la disponibilidad del médico (se puede forzar con sobrecupo)."""
 
 
-class Solapamiento(Exception):
+class Overlap(Exception):
     """El médico ya tiene una cita activa que se cruza con este horario."""
 
 
-class HorarioNoAlineado(Exception):
+class TimeNotAligned(Exception):
     """El inicio no cae en la rejilla de minutos permitida (:00, :15, :30, :45)."""
 
 
-class CitaEnElPasado(Exception):
+class AppointmentInThePast(Exception):
     """El inicio de la cita ya pasó; no se puede agendar en el pasado."""
 
 
-class CitaNoEncontrada(Exception):
+class AppointmentNotFound(Exception):
     """No existe ninguna cita con ese id."""
 
 
-class CitaNoCancelable(Exception):
+class AppointmentNotCancellable(Exception):
     """La cita no se puede cancelar (ya está cancelada o completada)."""
 
 
-class CitaNoActiva(Exception):
+class AppointmentNotActive(Exception):
     """La cita no está activa (SCHEDULED/CONFIRMED): no se puede marcar su asistencia."""
 
 
-class CitaNoEditable(Exception):
+class AppointmentNotEditable(Exception):
     """La cita no está activa (ya cancelada o cerrada): no se puede editar ni mover."""
 
 
-def esta_alineado(starts_at: datetime) -> bool:
+def is_aligned(starts_at: datetime) -> bool:
     """True si el inicio cae en la rejilla de GRID_MINUTOS, sin segundos ni microsegundos."""
     return (
         starts_at.minute % GRID_MINUTOS == 0
@@ -68,12 +68,12 @@ def esta_alineado(starts_at: datetime) -> bool:
     )
 
 
-def calcular_ends_at(starts_at: datetime, duracion_min: int) -> datetime:
+def calculate_ends_at(starts_at: datetime, duracion_min: int) -> datetime:
     """Fin de la cita: inicio + la duración elegida (en minutos)."""
     return starts_at + timedelta(minutes=duracion_min)
 
 
-def dentro_de_disponibilidad(
+def within_availability(
     db: Session, medico_id: uuid.UUID, starts_at: datetime, ends_at: datetime
 ) -> bool:
     """True si la cita cabe entera dentro de alguna franja del médico ese día."""
@@ -81,18 +81,18 @@ def dentro_de_disponibilidad(
     hora_inicio = starts_at.time()
     hora_fin = ends_at.time()
 
-    franjas = (
+    slots = (
         db.query(Availability)
         .filter(Availability.usuario_id == medico_id)
         .filter(Availability.dia_semana == dia_semana)
         .all()
     )
     return any(
-        f.hora_inicio <= hora_inicio and hora_fin <= f.hora_fin for f in franjas
+        f.hora_inicio <= hora_inicio and hora_fin <= f.hora_fin for f in slots
     )
 
 
-def hay_solapamiento(
+def has_overlap(
     db: Session,
     medico_id: uuid.UUID,
     starts_at: datetime,
@@ -116,7 +116,7 @@ def hay_solapamiento(
     return db.query(q.exists()).scalar()
 
 
-def _validar_servicio_medico_y_rejilla(
+def _validate_service_doctor_and_grid(
     db: Session,
     *,
     servicio_id: uuid.UUID,
@@ -124,17 +124,17 @@ def _validar_servicio_medico_y_rejilla(
     starts_at: datetime,
 ) -> None:
     """Valida servicio activo, médico activo con rol MEDICO y rejilla de minutos (crear/editar)."""
-    servicio = db.get(Service, servicio_id)
-    if servicio is None or not servicio.activo:
-        raise ServicioNoEncontrado()
-    medico = db.get(User, medico_id)
-    if medico is None or medico.rol != Role.MEDICO or not medico.activo:
-        raise MedicoNoEncontrado()
-    if not esta_alineado(starts_at):
-        raise HorarioNoAlineado()
+    service = db.get(Service, servicio_id)
+    if service is None or not service.activo:
+        raise ServiceNotFound()
+    doctor = db.get(User, medico_id)
+    if doctor is None or doctor.rol != Role.MEDICO or not doctor.activo:
+        raise DoctorNotFound()
+    if not is_aligned(starts_at):
+        raise TimeNotAligned()
 
 
-def _validar_hueco(
+def _validate_slot(
     db: Session,
     *,
     medico_id: uuid.UUID,
@@ -144,15 +144,15 @@ def _validar_hueco(
     excluir_cita_id: uuid.UUID | None = None,
 ) -> None:
     """Valida disponibilidad (salvo sobrecupo) y anti-solapamiento del hueco (crear/editar)."""
-    if not permitir_sobrecupo and not dentro_de_disponibilidad(
+    if not permitir_sobrecupo and not within_availability(
         db, medico_id, starts_at, ends_at
     ):
-        raise FueraDeDisponibilidad()
-    if hay_solapamiento(db, medico_id, starts_at, ends_at, excluir_cita_id=excluir_cita_id):
-        raise Solapamiento()
+        raise OutsideAvailability()
+    if has_overlap(db, medico_id, starts_at, ends_at, excluir_cita_id=excluir_cita_id):
+        raise Overlap()
 
 
-def crear_cita(
+def create_appointment(
     db: Session,
     *,
     nombre_completo: str,
@@ -171,23 +171,23 @@ def crear_cita(
 
     `ahora` se inyecta para poder probar en test la regla de "no en el pasado".
     """
-    _validar_servicio_medico_y_rejilla(
+    _validate_service_doctor_and_grid(
         db, servicio_id=servicio_id, medico_id=medico_id, starts_at=starts_at
     )
 
     if ahora is None:
-        ahora = ahora_centro()
+        ahora = now_center()
     if starts_at < ahora:
-        raise CitaEnElPasado()
+        raise AppointmentInThePast()
 
     if paciente_id is not None:
-        paciente = obtener_paciente(db, paciente_id)
+        patient = get_patient(db, paciente_id)
     else:
-        paciente = buscar_o_crear_paciente(db, nombre_completo, edad)
+        patient = find_or_create_patient(db, nombre_completo, edad)
 
-    ends_at = calcular_ends_at(starts_at, duracion_min)
+    ends_at = calculate_ends_at(starts_at, duracion_min)
 
-    _validar_hueco(
+    _validate_slot(
         db,
         medico_id=medico_id,
         starts_at=starts_at,
@@ -195,8 +195,8 @@ def crear_cita(
         permitir_sobrecupo=permitir_sobrecupo,
     )
 
-    cita = Appointment(
-        paciente_id=paciente.id,
+    appointment = Appointment(
+        paciente_id=patient.id,
         medico_id=medico_id,
         servicio_id=servicio_id,
         starts_at=starts_at,
@@ -205,12 +205,12 @@ def crear_cita(
         motivo=motivo,
         creado_por_id=creado_por_id,
     )
-    db.add(cita)
+    db.add(appointment)
     db.flush()
-    return cita
+    return appointment
 
 
-def listar_citas(
+def list_appointments(
     db: Session,
     *,
     desde: date,
@@ -232,7 +232,7 @@ def listar_citas(
     return q.order_by(Appointment.starts_at).all()
 
 
-def listar_citas_de_paciente(db: Session, paciente_id: uuid.UUID) -> list[Appointment]:
+def list_patient_appointments(db: Session, paciente_id: uuid.UUID) -> list[Appointment]:
     """Historial completo de un paciente (todas sus citas, de la más reciente a la más antigua)."""
     return (
         db.query(Appointment)
@@ -242,35 +242,35 @@ def listar_citas_de_paciente(db: Session, paciente_id: uuid.UUID) -> list[Appoin
     )
 
 
-def _obtener_cita_activa(
+def _get_active_appointment(
     db: Session, cita_id: uuid.UUID, exc_no_activa: type[Exception]
 ) -> Appointment:
     """Devuelve la cita activa (SCHEDULED/CONFIRMED); lanza si no existe o ya está cerrada."""
-    cita = db.get(Appointment, cita_id)
-    if cita is None:
-        raise CitaNoEncontrada()
-    if cita.estado not in (AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED):
+    appointment = db.get(Appointment, cita_id)
+    if appointment is None:
+        raise AppointmentNotFound()
+    if appointment.estado not in (AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED):
         raise exc_no_activa()
-    return cita
+    return appointment
 
 
-def cancelar_cita(db: Session, cita_id: uuid.UUID) -> Appointment:
+def cancel_appointment(db: Session, cita_id: uuid.UUID) -> Appointment:
     """Cancela una cita activa (estado CANCELLED, libera el cupo). Flush, no commit."""
-    cita = _obtener_cita_activa(db, cita_id, CitaNoCancelable)
-    cita.estado = AppointmentStatus.CANCELLED
+    appointment = _get_active_appointment(db, cita_id, AppointmentNotCancellable)
+    appointment.estado = AppointmentStatus.CANCELLED
     db.flush()
-    return cita
+    return appointment
 
 
-def marcar_asistencia(db: Session, cita_id: uuid.UUID, estado: AppointmentStatus) -> Appointment:
+def mark_attendance(db: Session, cita_id: uuid.UUID, estado: AppointmentStatus) -> Appointment:
     """Marca una cita activa como atendida (COMPLETED) o no-show (NO_SHOW). Flush, no commit."""
-    cita = _obtener_cita_activa(db, cita_id, CitaNoActiva)
-    cita.estado = estado
+    appointment = _get_active_appointment(db, cita_id, AppointmentNotActive)
+    appointment.estado = estado
     db.flush()
-    return cita
+    return appointment
 
 
-def editar_cita(
+def edit_appointment(
     db: Session,
     cita_id: uuid.UUID,
     *,
@@ -287,41 +287,41 @@ def editar_cita(
     Actualización parcial: los campos en None se dejan igual. No cambia el paciente.
     La regla de "no en el pasado" solo aplica si se mueve la hora. Flush, no commit.
     """
-    cita = _obtener_cita_activa(db, cita_id, CitaNoEditable)
+    appointment = _get_active_appointment(db, cita_id, AppointmentNotEditable)
 
-    nuevo_medico_id = medico_id if medico_id is not None else cita.medico_id
-    nuevo_servicio_id = servicio_id if servicio_id is not None else cita.servicio_id
-    nuevo_starts_at = starts_at if starts_at is not None else cita.starts_at
-    duracion_actual = int((cita.ends_at - cita.starts_at).total_seconds() // 60)
+    nuevo_medico_id = medico_id if medico_id is not None else appointment.medico_id
+    nuevo_servicio_id = servicio_id if servicio_id is not None else appointment.servicio_id
+    nuevo_starts_at = starts_at if starts_at is not None else appointment.starts_at
+    duracion_actual = int((appointment.ends_at - appointment.starts_at).total_seconds() // 60)
     nueva_duracion = duracion_min if duracion_min is not None else duracion_actual
 
-    _validar_servicio_medico_y_rejilla(
+    _validate_service_doctor_and_grid(
         db, servicio_id=nuevo_servicio_id, medico_id=nuevo_medico_id, starts_at=nuevo_starts_at
     )
 
     if starts_at is not None:
         if ahora is None:
-            ahora = ahora_centro()
+            ahora = now_center()
         if nuevo_starts_at < ahora:
-            raise CitaEnElPasado()
+            raise AppointmentInThePast()
 
-    nuevo_ends_at = calcular_ends_at(nuevo_starts_at, nueva_duracion)
+    nuevo_ends_at = calculate_ends_at(nuevo_starts_at, nueva_duracion)
 
     mismo_hueco = medico_id is None and starts_at is None and duracion_min is None
-    _validar_hueco(
+    _validate_slot(
         db,
         medico_id=nuevo_medico_id,
         starts_at=nuevo_starts_at,
         ends_at=nuevo_ends_at,
         permitir_sobrecupo=permitir_sobrecupo or mismo_hueco,
-        excluir_cita_id=cita.id,
+        excluir_cita_id=appointment.id,
     )
 
-    cita.medico_id = nuevo_medico_id
-    cita.servicio_id = nuevo_servicio_id
-    cita.starts_at = nuevo_starts_at
-    cita.ends_at = nuevo_ends_at
+    appointment.medico_id = nuevo_medico_id
+    appointment.servicio_id = nuevo_servicio_id
+    appointment.starts_at = nuevo_starts_at
+    appointment.ends_at = nuevo_ends_at
     if motivo is not None:
-        cita.motivo = motivo
+        appointment.motivo = motivo
     db.flush()
-    return cita
+    return appointment

@@ -5,107 +5,107 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.auth import requiere_rol, usuario_actual
+from app.auth import require_role, current_user
 from app.db import get_db
 from app.enums import Role
 from app.schemas import (
-    EspecialidadCreate,
-    EspecialidadOut,
-    MedicoOut,
-    ServicioCreate,
-    ServicioDetalle,
-    ServicioOut,
-    ServicioUpdate,
+    SpecialtyCreate,
+    SpecialtyOut,
+    DoctorOut,
+    ServiceCreate,
+    ServiceDetail,
+    ServiceOut,
+    ServiceUpdate,
 )
 from app.services import catalogo as catalogo_service
 
 router = APIRouter(tags=["catálogos"])
 
 
-@router.get("/servicios", response_model=list[ServicioOut])
-async def listar_servicios(
+@router.get("/servicios", response_model=list[ServiceOut])
+async def list_services(
     medico_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
-    _: object = Depends(usuario_actual),
+    _: object = Depends(current_user),
 ):
     """Devuelve el catálogo de servicios activos; con `?medico_id=` filtra por las especialidades del médico."""
-    return catalogo_service.listar_servicios(db, medico_id)
+    return catalogo_service.list_services(db, medico_id)
 
 
-@router.get("/medicos", response_model=list[MedicoOut])
-async def listar_medicos(
+@router.get("/medicos", response_model=list[DoctorOut])
+async def list_doctors(
     db: Session = Depends(get_db),
-    _: object = Depends(usuario_actual),
+    _: object = Depends(current_user),
 ):
     """Devuelve los médicos activos con sus especialidades (para elegir al agendar)."""
-    return catalogo_service.listar_medicos(db)
+    return catalogo_service.list_doctors(db)
 
 
-@router.get("/especialidades", response_model=list[EspecialidadOut])
-async def listar_especialidades(
+@router.get("/especialidades", response_model=list[SpecialtyOut])
+async def list_specialties(
     db: Session = Depends(get_db),
-    _: object = Depends(usuario_actual),
+    _: object = Depends(current_user),
 ):
     """Devuelve el catálogo de especialidades médicas."""
-    return catalogo_service.listar_especialidades(db)
+    return catalogo_service.list_specialties(db)
 
 
 @router.post(
     "/servicios",
-    response_model=ServicioDetalle,
+    response_model=ServiceDetail,
     status_code=status.HTTP_201_CREATED,
 )
-async def crear_servicio(
-    datos: ServicioCreate,
+async def create_service(
+    datos: ServiceCreate,
     db: Session = Depends(get_db),
-    _: object = Depends(requiere_rol(Role.ADMIN)),
+    _: object = Depends(require_role(Role.ADMIN)),
 ):
     """Da de alta un servicio en el catálogo (ADMIN)."""
     try:
-        servicio = catalogo_service.crear_servicio(
+        service = catalogo_service.create_service(
             db, nombre=datos.nombre, categoria=datos.categoria
         )
-    except catalogo_service.NombreDuplicado:
+    except catalogo_service.DuplicateName:
         raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe un servicio con ese nombre") from None
 
     db.commit()
-    return servicio
+    return service
 
 
-@router.put("/servicios/{servicio_id}", response_model=ServicioDetalle)
-async def actualizar_servicio(
+@router.put("/servicios/{servicio_id}", response_model=ServiceDetail)
+async def update_service(
     servicio_id: uuid.UUID,
-    datos: ServicioUpdate,
+    datos: ServiceUpdate,
     db: Session = Depends(get_db),
-    _: object = Depends(requiere_rol(Role.ADMIN)),
+    _: object = Depends(require_role(Role.ADMIN)),
 ):
     """Edita un servicio del catálogo (ADMIN). Permite desactivarlo sin borrarlo."""
     cambios = datos.model_dump(exclude_unset=True)
     try:
-        servicio = catalogo_service.actualizar_servicio(db, servicio_id, cambios)
-    except catalogo_service.ServicioNoEncontrado:
+        service = catalogo_service.update_service(db, servicio_id, cambios)
+    except catalogo_service.ServiceNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado") from None
-    except catalogo_service.NombreDuplicado:
+    except catalogo_service.DuplicateName:
         raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe un servicio con ese nombre") from None
 
     db.commit()
-    return servicio
+    return service
 
 
 @router.post(
     "/especialidades",
-    response_model=EspecialidadOut,
+    response_model=SpecialtyOut,
     status_code=status.HTTP_201_CREATED,
 )
-async def crear_especialidad(
-    datos: EspecialidadCreate,
+async def create_specialty(
+    datos: SpecialtyCreate,
     db: Session = Depends(get_db),
-    _: object = Depends(requiere_rol(Role.ADMIN)),
+    _: object = Depends(require_role(Role.ADMIN)),
 ):
     """Da de alta una especialidad médica (ADMIN)."""
     try:
-        especialidad = catalogo_service.crear_especialidad(db, nombre=datos.nombre)
-    except catalogo_service.NombreDuplicado:
+        especialidad = catalogo_service.create_specialty(db, nombre=datos.nombre)
+    except catalogo_service.DuplicateName:
         raise HTTPException(
             status.HTTP_409_CONFLICT, "Ya existe una especialidad con ese nombre"
         ) from None

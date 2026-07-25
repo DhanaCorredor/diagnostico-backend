@@ -4,10 +4,10 @@ import uuid
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.enums import Role
-from app.schemas.catalogo import EspecialidadOut
+from app.schemas.catalog import SpecialtyOut
 
 
-class UsuarioOut(BaseModel):
+class UserOut(BaseModel):
     """Datos públicos del usuario (nunca incluye el password_hash)."""
 
     id: uuid.UUID
@@ -18,7 +18,7 @@ class UsuarioOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class UsuarioDetalle(BaseModel):
+class UserDetail(BaseModel):
     """Datos de un usuario del personal (lista/ficha), con especialidades si es médico."""
 
     id: uuid.UUID
@@ -26,13 +26,13 @@ class UsuarioDetalle(BaseModel):
     email: str | None
     rol: Role
     matricula: str | None
-    especialidades: list[EspecialidadOut]
+    especialidades: list[SpecialtyOut]
     activo: bool
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class UsuarioCreate(BaseModel):
+class UserCreate(BaseModel):
     """Alta de personal/médico (ADMIN). El rol no puede ser PACIENTE (se valida en el servicio)."""
 
     nombre_completo: str = Field(min_length=1)
@@ -43,7 +43,7 @@ class UsuarioCreate(BaseModel):
     especialidades: list[uuid.UUID] = []
 
 
-class UsuarioUpdate(BaseModel):
+class UserUpdate(BaseModel):
     """Edición parcial de un usuario del personal. Solo se cambian los campos enviados."""
 
     nombre_completo: str | None = Field(default=None, min_length=1)

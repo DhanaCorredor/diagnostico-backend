@@ -32,7 +32,7 @@ app.include_router(pacientes.router)
 
 
 @app.exception_handler(IntegrityError)
-def conflicto_de_integridad(request: Request, exc: IntegrityError):
+def integrity_conflict(request: Request, exc: IntegrityError):
     """Traduce un fallo de restricción única de la BD a un 409 (conflicto) en vez de un 500."""
     return JSONResponse(status_code=409, content={"detail": "Conflicto de integridad de datos"})
 

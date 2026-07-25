@@ -4,49 +4,49 @@ import uuid
 
 from sqlalchemy.orm import Session, selectinload
 
-from app.auth import hashear_password
+from app.auth import hash_password
 from app.enums import Role
 from app.models import Specialty, User
-from app.services.comun import valor_en_uso
+from app.services.comun import value_in_use
 
 ROLES_STAFF = (Role.ADMIN, Role.RECEPCION, Role.MEDICO)
 
 
-class UsuarioNoEncontrado(Exception):
+class UserNotFound(Exception):
     """No existe un usuario de personal con ese id."""
 
 
-class EmailDuplicado(Exception):
+class DuplicateEmail(Exception):
     """El email ya lo usa otro usuario."""
 
 
-class RolNoPermitido(Exception):
+class RoleNotAllowed(Exception):
     """El rol indicado no se puede crear aquí (p. ej. PACIENTE)."""
 
 
-class EspecialidadNoEncontrada(Exception):
+class SpecialtyNotFound(Exception):
     """Alguna de las especialidades indicadas no existe."""
 
 
-class DatosSoloDeMedico(Exception):
+class DoctorOnlyData(Exception):
     """Se han indicado especialidades o matrícula para un usuario que no es médico."""
 
 
-def _email_en_uso(db: Session, email: str, excluir_id: uuid.UUID | None = None) -> bool:
-    return valor_en_uso(db, User, User.email, email, excluir_id)
+def _email_in_use(db: Session, email: str, excluir_id: uuid.UUID | None = None) -> bool:
+    return value_in_use(db, User, User.email, email, excluir_id)
 
 
-def _resolver_especialidades(db: Session, ids: list[uuid.UUID]) -> list[Specialty]:
+def _resolve_specialties(db: Session, ids: list[uuid.UUID]) -> list[Specialty]:
     """Convierte una lista de ids en objetos Especialidad; lanza si alguno no existe."""
     if not ids:
         return []
     encontradas = db.query(Specialty).filter(Specialty.id.in_(ids)).all()
     if len(encontradas) != len(set(ids)):
-        raise EspecialidadNoEncontrada()
+        raise SpecialtyNotFound()
     return encontradas
 
 
-def listar_personal(db: Session) -> list[User]:
+def list_staff(db: Session) -> list[User]:
     """Devuelve el personal (todo menos pacientes), ordenado por nombre."""
     return (
         db.query(User)
@@ -57,15 +57,15 @@ def listar_personal(db: Session) -> list[User]:
     )
 
 
-def obtener_usuario(db: Session, usuario_id: uuid.UUID) -> User:
+def get_user(db: Session, usuario_id: uuid.UUID) -> User:
     """Devuelve un usuario de personal por id, o lanza UsuarioNoEncontrado."""
-    usuario = db.get(User, usuario_id)
-    if usuario is None or usuario.rol == Role.PACIENTE:
-        raise UsuarioNoEncontrado()
-    return usuario
+    user = db.get(User, usuario_id)
+    if user is None or user.rol == Role.PACIENTE:
+        raise UserNotFound()
+    return user
 
 
-def crear_usuario(
+def create_user(
     db: Session,
     *,
     nombre_completo: str,
@@ -77,55 +77,55 @@ def crear_usuario(
 ) -> User:
     """Crea un usuario de personal. Valida rol y email, hashea la contraseña. Flush (no commit)."""
     if rol not in ROLES_STAFF:
-        raise RolNoPermitido()
+        raise RoleNotAllowed()
     if rol != Role.MEDICO and (especialidades or matricula is not None):
-        raise DatosSoloDeMedico()
-    if _email_en_uso(db, email):
-        raise EmailDuplicado()
-    esp = _resolver_especialidades(db, especialidades)
+        raise DoctorOnlyData()
+    if _email_in_use(db, email):
+        raise DuplicateEmail()
+    esp = _resolve_specialties(db, especialidades)
 
-    usuario = User(
+    user = User(
         nombre_completo=nombre_completo,
         rol=rol,
         email=email,
-        password_hash=hashear_password(password),
+        password_hash=hash_password(password),
         matricula=matricula,
         especialidades=esp,
     )
-    db.add(usuario)
+    db.add(user)
     db.flush()
-    return usuario
+    return user
 
 
-def actualizar_usuario(db: Session, usuario_id: uuid.UUID, cambios: dict) -> User:
+def update_user(db: Session, usuario_id: uuid.UUID, cambios: dict) -> User:
     """Actualiza SOLO los campos enviados. La contraseña se hashea; especialidades se resuelven."""
-    usuario = obtener_usuario(db, usuario_id)
+    user = get_user(db, usuario_id)
 
-    if usuario.rol != Role.MEDICO and (
+    if user.rol != Role.MEDICO and (
         cambios.get("especialidades") or cambios.get("matricula") is not None
     ):
-        raise DatosSoloDeMedico()
+        raise DoctorOnlyData()
 
-    if cambios.get("email") is not None and _email_en_uso(
+    if cambios.get("email") is not None and _email_in_use(
         db, cambios["email"], excluir_id=usuario_id
     ):
-        raise EmailDuplicado()
+        raise DuplicateEmail()
 
     if "especialidades" in cambios:
-        usuario.especialidades = _resolver_especialidades(db, cambios["especialidades"] or [])
+        user.especialidades = _resolve_specialties(db, cambios["especialidades"] or [])
     if cambios.get("password") is not None:
-        usuario.password_hash = hashear_password(cambios["password"])
+        user.password_hash = hash_password(cambios["password"])
     for campo in ("nombre_completo", "email", "matricula", "activo"):
         if campo in cambios:
-            setattr(usuario, campo, cambios[campo])
+            setattr(user, campo, cambios[campo])
 
     db.flush()
-    return usuario
+    return user
 
 
-def desactivar_usuario(db: Session, usuario_id: uuid.UUID) -> User:
+def deactivate_user(db: Session, usuario_id: uuid.UUID) -> User:
     """Baja lógica de un usuario de personal: `activo=False`. Flush (no commit)."""
-    usuario = obtener_usuario(db, usuario_id)
-    usuario.activo = False
+    user = get_user(db, usuario_id)
+    user.activo = False
     db.flush()
-    return usuario
+    return user

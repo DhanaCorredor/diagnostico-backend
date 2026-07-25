@@ -24,18 +24,18 @@ JWT_ALGORITHM = "HS256"
 JWT_EXPIRA_MINUTOS = 60 * 8
 
 
-def hashear_password(password: str) -> str:
+def hash_password(password: str) -> str:
     """Devuelve el hash bcrypt (con sal aleatoria) de una contraseña, listo para guardar en la BD."""
     hash_bytes = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
     return hash_bytes.decode("utf-8")
 
 
-def verificar_password(password: str, password_hash: str) -> bool:
+def verify_password(password: str, password_hash: str) -> bool:
     """Comprueba si una contraseña coincide con su hash guardado."""
     return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
 
 
-def crear_token(usuario_id: uuid.UUID) -> str:
+def create_token(usuario_id: uuid.UUID) -> str:
     """Crea un JWT firmado con el id del usuario (`sub`) y su caducidad (`exp`); el rol no se guarda."""
     ahora = datetime.now(timezone.utc)
     payload = {
@@ -45,7 +45,7 @@ def crear_token(usuario_id: uuid.UUID) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-def decodificar_token(token: str) -> dict:
+def decode_token(token: str) -> dict:
     """Verifica firma y caducidad del token y devuelve su payload; lanza jwt.InvalidTokenError si no es válido."""
     return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
 
@@ -53,7 +53,7 @@ def decodificar_token(token: str) -> dict:
 security = HTTPBearer()
 
 
-def usuario_actual(
+def current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
 ) -> User:
@@ -63,25 +63,25 @@ def usuario_actual(
         detail="Token inválido o expirado",
     )
     try:
-        datos = decodificar_token(credentials.credentials)
+        datos = decode_token(credentials.credentials)
         usuario_id = uuid.UUID(datos["sub"])
     except (jwt.InvalidTokenError, KeyError, ValueError):
         raise no_autorizado from None
-    usuario = db.get(User, usuario_id)
-    if usuario is None or not usuario.activo:
+    user = db.get(User, usuario_id)
+    if user is None or not user.activo:
         raise no_autorizado
-    return usuario
+    return user
 
 
-def requiere_rol(*roles_permitidos: Role):
+def require_role(*roles_permitidos: Role):
     """Fábrica de dependencias que exige que el usuario autenticado tenga uno de estos roles (403 si no)."""
 
-    def verificar(usuario: User = Depends(usuario_actual)) -> User:
-        if usuario.rol not in roles_permitidos:
+    def verificar(user: User = Depends(current_user)) -> User:
+        if user.rol not in roles_permitidos:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="No tienes permiso para esta acción",
             )
-        return usuario
+        return user
 
     return verificar

@@ -6,18 +6,18 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.enums import Role, ServiceCategory
 from app.models import Specialty, Service, User
-from app.services.comun import valor_en_uso
+from app.services.comun import value_in_use
 
 
-class ServicioNoEncontrado(Exception):
+class ServiceNotFound(Exception):
     """No existe un servicio con ese id."""
 
 
-class NombreDuplicado(Exception):
+class DuplicateName(Exception):
     """Ya existe un servicio o especialidad con ese nombre (el nombre es único)."""
 
 
-def listar_servicios(
+def list_services(
     db: Session, medico_id: uuid.UUID | None = None
 ) -> list[Service]:
     """Devuelve los servicios activos ordenados por nombre; con `medico_id`, solo los de sus especialidades."""
@@ -33,7 +33,7 @@ def listar_servicios(
     return consulta.order_by(Service.nombre).all()
 
 
-def listar_medicos(db: Session) -> list[User]:
+def list_doctors(db: Session) -> list[User]:
     """Devuelve los médicos activos, ordenados por nombre, con sus especialidades."""
     return (
         db.query(User)
@@ -45,50 +45,50 @@ def listar_medicos(db: Session) -> list[User]:
     )
 
 
-def listar_especialidades(db: Session) -> list[Specialty]:
+def list_specialties(db: Session) -> list[Specialty]:
     """Devuelve todas las especialidades del catálogo, ordenadas por nombre."""
     return db.query(Specialty).order_by(Specialty.nombre).all()
 
 
-def _servicio_nombre_en_uso(
+def _service_name_in_use(
     db: Session, nombre: str, excluir_id: uuid.UUID | None = None
 ) -> bool:
     """True si ya hay un servicio con ese nombre (excluyendo, si se indica, uno propio)."""
-    return valor_en_uso(db, Service, Service.nombre, nombre, excluir_id)
+    return value_in_use(db, Service, Service.nombre, nombre, excluir_id)
 
 
-def crear_servicio(
+def create_service(
     db: Session, *, nombre: str, categoria: ServiceCategory
 ) -> Service:
     """Da de alta un servicio en el catálogo. Nombre único. Flush (no commit)."""
-    if _servicio_nombre_en_uso(db, nombre):
-        raise NombreDuplicado()
-    servicio = Service(nombre=nombre, categoria=categoria)
-    db.add(servicio)
+    if _service_name_in_use(db, nombre):
+        raise DuplicateName()
+    service = Service(nombre=nombre, categoria=categoria)
+    db.add(service)
     db.flush()
-    return servicio
+    return service
 
 
-def actualizar_servicio(db: Session, servicio_id: uuid.UUID, cambios: dict) -> Service:
+def update_service(db: Session, servicio_id: uuid.UUID, cambios: dict) -> Service:
     """Edita solo los campos enviados de un servicio; permite desactivarlo (`activo=False`). Flush, no commit."""
-    servicio = db.get(Service, servicio_id)
-    if servicio is None:
-        raise ServicioNoEncontrado()
-    if cambios.get("nombre") is not None and _servicio_nombre_en_uso(
+    service = db.get(Service, servicio_id)
+    if service is None:
+        raise ServiceNotFound()
+    if cambios.get("nombre") is not None and _service_name_in_use(
         db, cambios["nombre"], excluir_id=servicio_id
     ):
-        raise NombreDuplicado()
+        raise DuplicateName()
     for campo in ("nombre", "categoria", "activo"):
         if campo in cambios:
-            setattr(servicio, campo, cambios[campo])
+            setattr(service, campo, cambios[campo])
     db.flush()
-    return servicio
+    return service
 
 
-def crear_especialidad(db: Session, *, nombre: str) -> Specialty:
+def create_specialty(db: Session, *, nombre: str) -> Specialty:
     """Da de alta una especialidad en el catálogo. Nombre único. Flush (no commit)."""
-    if valor_en_uso(db, Specialty, Specialty.nombre, nombre):
-        raise NombreDuplicado()
+    if value_in_use(db, Specialty, Specialty.nombre, nombre):
+        raise DuplicateName()
     especialidad = Specialty(nombre=nombre)
     db.add(especialidad)
     db.flush()
