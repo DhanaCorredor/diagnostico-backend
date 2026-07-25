@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, time, timedelta
 
 from app.auth import hashear_password
-from app.enums import Rol
+from app.enums import Role
 from app.models import Disponibilidad, Usuario
 
 
@@ -44,7 +44,7 @@ def test_openapi_accesible(client):
 def test_login_ok_y_me(client, db):
     u = Usuario(
         nombre_completo="Admin Login",
-        rol=Rol.ADMIN,
+        rol=Role.ADMIN,
         email=f"login-{uuid.uuid4()}@test.local",
         password_hash=hashear_password("secret123"),
     )
@@ -60,7 +60,7 @@ def test_login_ok_y_me(client, db):
 def test_login_password_mala(client, db):
     u = Usuario(
         nombre_completo="Admin Malo",
-        rol=Rol.ADMIN,
+        rol=Role.ADMIN,
         email=f"malo-{uuid.uuid4()}@test.local",
         password_hash=hashear_password("secret123"),
     )
@@ -161,8 +161,8 @@ def test_cita_paciente_ambiguo_devuelve_candidatos(
     slot = _slot_futuro_alineado()
     _con_disponibilidad(db, medico, slot)
     nombre = f"Ambiguo {uuid.uuid4()}"
-    db.add(Usuario(nombre_completo=nombre, edad=50, rol=Rol.PACIENTE))
-    db.add(Usuario(nombre_completo=nombre, edad=50, rol=Rol.PACIENTE))
+    db.add(Usuario(nombre_completo=nombre, edad=50, rol=Role.PACIENTE))
+    db.add(Usuario(nombre_completo=nombre, edad=50, rol=Role.PACIENTE))
     db.flush()
     body = {
         "nombre_completo": nombre,

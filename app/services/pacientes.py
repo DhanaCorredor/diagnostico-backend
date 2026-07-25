@@ -4,7 +4,7 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.enums import Rol
+from app.enums import Role
 from app.models import Usuario
 from app.services.comun import valor_en_uso
 
@@ -24,7 +24,7 @@ def buscar_o_crear_paciente(db: Session, nombre_completo: str, edad: int) -> Usu
     """
     coincidencias = (
         db.query(Usuario)
-        .filter(Usuario.rol == Rol.PACIENTE)
+        .filter(Usuario.rol == Role.PACIENTE)
         .filter(Usuario.activo.is_(True))
         .filter(Usuario.nombre_completo == nombre_completo)
         .filter(Usuario.edad == edad)
@@ -35,7 +35,7 @@ def buscar_o_crear_paciente(db: Session, nombre_completo: str, edad: int) -> Usu
     if len(coincidencias) > 1:
         raise PacientesAmbiguos(coincidencias)
 
-    paciente = Usuario(nombre_completo=nombre_completo, edad=edad, rol=Rol.PACIENTE)
+    paciente = Usuario(nombre_completo=nombre_completo, edad=edad, rol=Role.PACIENTE)
     db.add(paciente)
     db.flush()
     return paciente
@@ -58,7 +58,7 @@ def listar_pacientes(db: Session) -> list[Usuario]:
     """Devuelve los pacientes activos, ordenados por nombre."""
     return (
         db.query(Usuario)
-        .filter(Usuario.rol == Rol.PACIENTE)
+        .filter(Usuario.rol == Role.PACIENTE)
         .filter(Usuario.activo.is_(True))
         .order_by(Usuario.nombre_completo)
         .all()
@@ -68,7 +68,7 @@ def listar_pacientes(db: Session) -> list[Usuario]:
 def obtener_paciente(db: Session, paciente_id: uuid.UUID) -> Usuario:
     """Devuelve un paciente por id, o lanza PacienteNoEncontrado."""
     paciente = db.get(Usuario, paciente_id)
-    if paciente is None or paciente.rol != Rol.PACIENTE:
+    if paciente is None or paciente.rol != Role.PACIENTE:
         raise PacienteNoEncontrado()
     return paciente
 
@@ -79,7 +79,7 @@ def crear_paciente(db: Session, datos: dict) -> Usuario:
     if cedula is not None and _cedula_en_uso(db, cedula):
         raise CedulaDuplicada()
 
-    paciente = Usuario(rol=Rol.PACIENTE, **datos)
+    paciente = Usuario(rol=Role.PACIENTE, **datos)
     db.add(paciente)
     db.flush()
     return paciente

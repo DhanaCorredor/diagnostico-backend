@@ -4,7 +4,7 @@ import uuid
 
 from sqlalchemy.orm import Session, selectinload
 
-from app.enums import Rol, ServicioCategoria
+from app.enums import Role, ServiceCategory
 from app.models import Especialidad, Servicio, Usuario
 from app.services.comun import valor_en_uso
 
@@ -38,7 +38,7 @@ def listar_medicos(db: Session) -> list[Usuario]:
     return (
         db.query(Usuario)
         .options(selectinload(Usuario.especialidades))
-        .filter(Usuario.rol == Rol.MEDICO)
+        .filter(Usuario.rol == Role.MEDICO)
         .filter(Usuario.activo.is_(True))
         .order_by(Usuario.nombre_completo)
         .all()
@@ -58,7 +58,7 @@ def _servicio_nombre_en_uso(
 
 
 def crear_servicio(
-    db: Session, *, nombre: str, categoria: ServicioCategoria
+    db: Session, *, nombre: str, categoria: ServiceCategory
 ) -> Servicio:
     """Da de alta un servicio en el catálogo. Nombre único. Flush (no commit)."""
     if _servicio_nombre_en_uso(db, nombre):

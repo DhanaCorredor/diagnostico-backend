@@ -2,7 +2,7 @@
 import enum
 
 
-class Rol(str, enum.Enum):
+class Role(str, enum.Enum):
     ADMIN = "ADMIN"
     RECEPCION = "RECEPCION"
     MEDICO = "MEDICO"

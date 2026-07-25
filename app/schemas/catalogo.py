@@ -3,7 +3,7 @@ import uuid
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.enums import ServicioCategoria
+from app.enums import ServiceCategory
 
 
 class EspecialidadOut(BaseModel):
@@ -26,7 +26,7 @@ class ServicioOut(BaseModel):
 
     id: uuid.UUID
     nombre: str
-    categoria: ServicioCategoria
+    categoria: ServiceCategory
     especialidades: list[EspecialidadOut]
 
     model_config = ConfigDict(from_attributes=True)
@@ -42,14 +42,14 @@ class ServicioCreate(BaseModel):
     """Cuerpo del POST /servicios."""
 
     nombre: str = Field(min_length=1)
-    categoria: ServicioCategoria
+    categoria: ServiceCategory
 
 
 class ServicioUpdate(BaseModel):
     """Cuerpo del PUT /servicios/{id}. Solo se cambian los campos enviados."""
 
     nombre: str | None = Field(default=None, min_length=1)
-    categoria: ServicioCategoria | None = None
+    categoria: ServiceCategory | None = None
     activo: bool | None = None
 
 

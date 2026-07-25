@@ -3,7 +3,7 @@ from sqlalchemy import Boolean, Column, Enum, String
 from sqlalchemy.orm import relationship
 
 from app.db import Base
-from app.enums.servicio_categoria import ServicioCategoria
+from app.enums.service_category import ServiceCategory
 from app.models.comun import servicio_especialidad, uuid_pk
 
 
@@ -14,7 +14,7 @@ class Servicio(Base):
 
     id = uuid_pk()
     nombre = Column(String, unique=True, nullable=False)
-    categoria = Column(Enum(ServicioCategoria), nullable=False)
+    categoria = Column(Enum(ServiceCategory, name="serviciocategoria"), nullable=False)
     activo = Column(Boolean, nullable=False, default=True)
 
     especialidades = relationship(

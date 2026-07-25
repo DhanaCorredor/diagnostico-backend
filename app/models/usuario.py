@@ -3,7 +3,7 @@ from sqlalchemy import Boolean, Column, Date, DateTime, Enum, Integer, String, T
 from sqlalchemy.orm import relationship
 
 from app.db import Base
-from app.enums.rol import Rol
+from app.enums.role import Role
 from app.models.comun import usuario_especialidad, uuid_pk
 
 
@@ -14,7 +14,7 @@ class Usuario(Base):
 
     id = uuid_pk()
     nombre_completo = Column(String, nullable=False)
-    rol = Column(Enum(Rol), nullable=False)
+    rol = Column(Enum(Role, name="rol"), nullable=False)
 
     email = Column(String, unique=True)
     password_hash = Column(String)

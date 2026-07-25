@@ -5,7 +5,7 @@ from datetime import time
 
 from app.auth import hashear_password
 from app.db import SessionLocal
-from app.enums import Rol, ServicioCategoria
+from app.enums import Role, ServiceCategory
 from app.models import Disponibilidad, Especialidad, Servicio, Usuario
 
 STAFF = [
@@ -30,51 +30,51 @@ ESPECIALIDADES = [
 ]
 
 SERVICIOS = [
-    ("Consulta cardiología", ServicioCategoria.CONSULTA, ["Cardiología"]),
-    ("Consulta medicina interna", ServicioCategoria.CONSULTA, ["Medicina Interna"]),
-    ("Consulta cirugía general", ServicioCategoria.CONSULTA, ["Cirugía General"]),
-    ("Consulta ginecología", ServicioCategoria.CONSULTA, ["Ginecología"]),
-    ("Consulta gastroenterología", ServicioCategoria.CONSULTA, ["Gastroenterología"]),
-    ("Consulta otorrinolaringología", ServicioCategoria.CONSULTA, ["Otorrinolaringología"]),
-    ("Consulta traumatología", ServicioCategoria.CONSULTA, ["Traumatología"]),
-    ("Consulta dermatología", ServicioCategoria.CONSULTA, ["Dermatología"]),
-    ("Consulta venereología", ServicioCategoria.CONSULTA, ["Venereología"]),
-    ("Consulta neumonología", ServicioCategoria.CONSULTA, ["Neumonología"]),
-    ("Consulta psicología", ServicioCategoria.CONSULTA, ["Psicología"]),
-    ("Ecografía abdominal", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
-    ("Ecografía pélvica", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
-    ("Ecografía renal", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
-    ("Ecografía testicular", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
-    ("Ecografía de partes blandas", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
-    ("Ecografía mamaria", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
-    ("Ecografía prostática", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
-    ("Ecografía tiroidea", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
-    ("Ecografía transvaginal", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
-    ("Ecografía músculo-esquelética", ServicioCategoria.ECOGRAFIA, ["Ecografía"]),
-    ("Doppler carotídeo", ServicioCategoria.DOPPLER, ["Ecografía"]),
-    ("Doppler hepático", ServicioCategoria.DOPPLER, ["Ecografía"]),
-    ("Doppler renal", ServicioCategoria.DOPPLER, ["Ecografía"]),
-    ("Doppler testicular", ServicioCategoria.DOPPLER, ["Ecografía"]),
-    ("Doppler de partes blandas", ServicioCategoria.DOPPLER, ["Ecografía"]),
-    ("Doppler mamario", ServicioCategoria.DOPPLER, ["Ecografía"]),
-    ("Doppler prostático", ServicioCategoria.DOPPLER, ["Ecografía"]),
-    ("Doppler tiroideo", ServicioCategoria.DOPPLER, ["Ecografía"]),
-    ("Doppler pélvico", ServicioCategoria.DOPPLER, ["Ecografía"]),
-    ("Doppler transvaginal", ServicioCategoria.DOPPLER, ["Ecografía"]),
-    ("Doppler arterial y venoso (un miembro)", ServicioCategoria.DOPPLER, ["Ecografía"]),
-    ("Doppler arterial y venoso (ambos miembros)", ServicioCategoria.DOPPLER, ["Ecografía"]),
-    ("Ecocardiograma", ServicioCategoria.ESTUDIO_CARDIACO, ["Cardiología"]),
-    ("Electrocardiograma informado", ServicioCategoria.ESTUDIO_CARDIACO, ["Cardiología"]),
-    ("Electrocardiograma básico", ServicioCategoria.ESTUDIO_CARDIACO, ["Cardiología"]),
-    ("Holter de ritmo", ServicioCategoria.ESTUDIO_CARDIACO, ["Cardiología"]),
-    ("MAPA", ServicioCategoria.ESTUDIO_CARDIACO, ["Cardiología"]),
-    ("Espirometría", ServicioCategoria.OTRO, ["Neumonología"]),
-    ("Endoscopia nasal", ServicioCategoria.OTRO, ["Otorrinolaringología"]),
-    ("Plan Mujer (chequeo ginecológico completo)", ServicioCategoria.PROMOCION, ["Ginecología"]),
-    ("Cardiología (Holter + MAPA)", ServicioCategoria.PROMOCION, ["Cardiología"]),
-    ("2 ecografías convencionales", ServicioCategoria.PROMOCION, ["Ecografía"]),
-    ("Eco Doppler completo", ServicioCategoria.PROMOCION, ["Ecografía"]),
-    ("Neumonología + espirometría", ServicioCategoria.PROMOCION, ["Neumonología"]),
+    ("Consulta cardiología", ServiceCategory.CONSULTA, ["Cardiología"]),
+    ("Consulta medicina interna", ServiceCategory.CONSULTA, ["Medicina Interna"]),
+    ("Consulta cirugía general", ServiceCategory.CONSULTA, ["Cirugía General"]),
+    ("Consulta ginecología", ServiceCategory.CONSULTA, ["Ginecología"]),
+    ("Consulta gastroenterología", ServiceCategory.CONSULTA, ["Gastroenterología"]),
+    ("Consulta otorrinolaringología", ServiceCategory.CONSULTA, ["Otorrinolaringología"]),
+    ("Consulta traumatología", ServiceCategory.CONSULTA, ["Traumatología"]),
+    ("Consulta dermatología", ServiceCategory.CONSULTA, ["Dermatología"]),
+    ("Consulta venereología", ServiceCategory.CONSULTA, ["Venereología"]),
+    ("Consulta neumonología", ServiceCategory.CONSULTA, ["Neumonología"]),
+    ("Consulta psicología", ServiceCategory.CONSULTA, ["Psicología"]),
+    ("Ecografía abdominal", ServiceCategory.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía pélvica", ServiceCategory.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía renal", ServiceCategory.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía testicular", ServiceCategory.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía de partes blandas", ServiceCategory.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía mamaria", ServiceCategory.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía prostática", ServiceCategory.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía tiroidea", ServiceCategory.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía transvaginal", ServiceCategory.ECOGRAFIA, ["Ecografía"]),
+    ("Ecografía músculo-esquelética", ServiceCategory.ECOGRAFIA, ["Ecografía"]),
+    ("Doppler carotídeo", ServiceCategory.DOPPLER, ["Ecografía"]),
+    ("Doppler hepático", ServiceCategory.DOPPLER, ["Ecografía"]),
+    ("Doppler renal", ServiceCategory.DOPPLER, ["Ecografía"]),
+    ("Doppler testicular", ServiceCategory.DOPPLER, ["Ecografía"]),
+    ("Doppler de partes blandas", ServiceCategory.DOPPLER, ["Ecografía"]),
+    ("Doppler mamario", ServiceCategory.DOPPLER, ["Ecografía"]),
+    ("Doppler prostático", ServiceCategory.DOPPLER, ["Ecografía"]),
+    ("Doppler tiroideo", ServiceCategory.DOPPLER, ["Ecografía"]),
+    ("Doppler pélvico", ServiceCategory.DOPPLER, ["Ecografía"]),
+    ("Doppler transvaginal", ServiceCategory.DOPPLER, ["Ecografía"]),
+    ("Doppler arterial y venoso (un miembro)", ServiceCategory.DOPPLER, ["Ecografía"]),
+    ("Doppler arterial y venoso (ambos miembros)", ServiceCategory.DOPPLER, ["Ecografía"]),
+    ("Ecocardiograma", ServiceCategory.ESTUDIO_CARDIACO, ["Cardiología"]),
+    ("Electrocardiograma informado", ServiceCategory.ESTUDIO_CARDIACO, ["Cardiología"]),
+    ("Electrocardiograma básico", ServiceCategory.ESTUDIO_CARDIACO, ["Cardiología"]),
+    ("Holter de ritmo", ServiceCategory.ESTUDIO_CARDIACO, ["Cardiología"]),
+    ("MAPA", ServiceCategory.ESTUDIO_CARDIACO, ["Cardiología"]),
+    ("Espirometría", ServiceCategory.OTRO, ["Neumonología"]),
+    ("Endoscopia nasal", ServiceCategory.OTRO, ["Otorrinolaringología"]),
+    ("Plan Mujer (chequeo ginecológico completo)", ServiceCategory.PROMOCION, ["Ginecología"]),
+    ("Cardiología (Holter + MAPA)", ServiceCategory.PROMOCION, ["Cardiología"]),
+    ("2 ecografías convencionales", ServiceCategory.PROMOCION, ["Ecografía"]),
+    ("Eco Doppler completo", ServiceCategory.PROMOCION, ["Ecografía"]),
+    ("Neumonología + espirometría", ServiceCategory.PROMOCION, ["Neumonología"]),
 ]
 
 LUN, MAR, MIE, JUE, VIE, SAB = 1, 2, 3, 4, 5, 6
@@ -154,14 +154,14 @@ def sembrar_medicos(db):
     """Crea los médicos que falten (rol MEDICO, sin login), con sus especialidades (N:M) y franjas. Devuelve cuántos creó."""
     existentes = {
         u.nombre_completo
-        for u in db.query(Usuario.nombre_completo).filter(Usuario.rol == Rol.MEDICO).all()
+        for u in db.query(Usuario.nombre_completo).filter(Usuario.rol == Role.MEDICO).all()
     }
     catalogo = {e.nombre: e for e in db.query(Especialidad).all()}
     creados = 0
     for nombre, especialidades, franjas in MEDICOS:
         if nombre in existentes:
             continue
-        medico = Usuario(nombre_completo=nombre, rol=Rol.MEDICO)
+        medico = Usuario(nombre_completo=nombre, rol=Role.MEDICO)
         medico.especialidades = [catalogo[e] for e in especialidades]
         db.add(medico)
         db.flush()
@@ -182,7 +182,7 @@ def sembrar_pacientes(db):
     """Crea los pacientes ficticios de demo (rol PACIENTE) que falten; nunca datos reales. Devuelve cuántos creó."""
     existentes = {
         u.nombre_completo
-        for u in db.query(Usuario.nombre_completo).filter(Usuario.rol == Rol.PACIENTE).all()
+        for u in db.query(Usuario.nombre_completo).filter(Usuario.rol == Role.PACIENTE).all()
     }
     creados = 0
     for nombre, edad, cedula, telefono in PACIENTES:
@@ -191,7 +191,7 @@ def sembrar_pacientes(db):
         db.add(
             Usuario(
                 nombre_completo=nombre,
-                rol=Rol.PACIENTE,
+                rol=Role.PACIENTE,
                 edad=edad,
                 cedula=cedula,
                 telefono=telefono,
@@ -214,7 +214,7 @@ def sembrar_staff(db):
         db.add(
             Usuario(
                 nombre_completo=nombre,
-                rol=Rol(rol),
+                rol=Role(rol),
                 email=email,
                 matricula=matricula,
                 password_hash=hashear_password(password),
@@ -232,7 +232,7 @@ HORA_CIERRE = time(17, 30)
 def sembrar_disponibilidad(db):
     """Da a cada médico sin franjas la jornada del centro (L-S 07:30-17:30); no toca a los que ya tienen. Devuelve cuántas creó."""
     creadas = 0
-    for medico in db.query(Usuario).filter(Usuario.rol == Rol.MEDICO).all():
+    for medico in db.query(Usuario).filter(Usuario.rol == Role.MEDICO).all():
         ya_tiene = (
             db.query(Disponibilidad)
             .filter(Disponibilidad.usuario_id == medico.id)

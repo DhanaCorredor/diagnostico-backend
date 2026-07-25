@@ -5,11 +5,11 @@ import uuid
 from sqlalchemy.orm import Session, selectinload
 
 from app.auth import hashear_password
-from app.enums import Rol
+from app.enums import Role
 from app.models import Especialidad, Usuario
 from app.services.comun import valor_en_uso
 
-ROLES_STAFF = (Rol.ADMIN, Rol.RECEPCION, Rol.MEDICO)
+ROLES_STAFF = (Role.ADMIN, Role.RECEPCION, Role.MEDICO)
 
 
 class UsuarioNoEncontrado(Exception):
@@ -51,7 +51,7 @@ def listar_personal(db: Session) -> list[Usuario]:
     return (
         db.query(Usuario)
         .options(selectinload(Usuario.especialidades))
-        .filter(Usuario.rol != Rol.PACIENTE)
+        .filter(Usuario.rol != Role.PACIENTE)
         .order_by(Usuario.nombre_completo)
         .all()
     )
@@ -60,7 +60,7 @@ def listar_personal(db: Session) -> list[Usuario]:
 def obtener_usuario(db: Session, usuario_id: uuid.UUID) -> Usuario:
     """Devuelve un usuario de personal por id, o lanza UsuarioNoEncontrado."""
     usuario = db.get(Usuario, usuario_id)
-    if usuario is None or usuario.rol == Rol.PACIENTE:
+    if usuario is None or usuario.rol == Role.PACIENTE:
         raise UsuarioNoEncontrado()
     return usuario
 
@@ -69,7 +69,7 @@ def crear_usuario(
     db: Session,
     *,
     nombre_completo: str,
-    rol: Rol,
+    rol: Role,
     email: str,
     password: str,
     matricula: str | None,
@@ -78,7 +78,7 @@ def crear_usuario(
     """Crea un usuario de personal. Valida rol y email, hashea la contraseña. Flush (no commit)."""
     if rol not in ROLES_STAFF:
         raise RolNoPermitido()
-    if rol != Rol.MEDICO and (especialidades or matricula is not None):
+    if rol != Role.MEDICO and (especialidades or matricula is not None):
         raise DatosSoloDeMedico()
     if _email_en_uso(db, email):
         raise EmailDuplicado()
@@ -101,7 +101,7 @@ def actualizar_usuario(db: Session, usuario_id: uuid.UUID, cambios: dict) -> Usu
     """Actualiza SOLO los campos enviados. La contraseña se hashea; especialidades se resuelven."""
     usuario = obtener_usuario(db, usuario_id)
 
-    if usuario.rol != Rol.MEDICO and (
+    if usuario.rol != Role.MEDICO and (
         cambios.get("especialidades") or cambios.get("matricula") is not None
     ):
         raise DatosSoloDeMedico()

@@ -7,14 +7,14 @@ from sqlalchemy.orm import Session
 
 from app.auth import requiere_rol
 from app.db import get_db
-from app.enums import Rol
+from app.enums import Role
 from app.schemas import UsuarioCreate, UsuarioDetalle, UsuarioUpdate
 from app.services import usuarios as usr_service
 
 router = APIRouter(
     prefix="/usuarios",
     tags=["usuarios"],
-    dependencies=[Depends(requiere_rol(Rol.ADMIN))],
+    dependencies=[Depends(requiere_rol(Role.ADMIN))],
 )
 
 

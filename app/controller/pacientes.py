@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import requiere_rol
 from app.db import get_db
-from app.enums import Rol
+from app.enums import Role
 from app.schemas import CitaOut, PacienteCreate, PacienteOut, PacienteUpdate
 from app.services import citas as citas_service
 from app.services import pacientes as pac_service
@@ -15,7 +15,7 @@ from app.services import pacientes as pac_service
 router = APIRouter(
     prefix="/pacientes",
     tags=["pacientes"],
-    dependencies=[Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION))],
+    dependencies=[Depends(requiere_rol(Role.ADMIN, Role.RECEPCION))],
 )
 
 

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import requiere_rol
 from app.db import get_db
-from app.enums import Rol
+from app.enums import Role
 from app.models import Usuario
 from app.schemas import AsistenciaUpdate, CitaCreate, CitaOut, CitaUpdate
 from app.services import citas as citas_service
@@ -23,7 +23,7 @@ MAX_RANGO_DIAS = 60
 async def agendar_cita(
     datos: CitaCreate,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION)),
+    usuario: Usuario = Depends(requiere_rol(Role.ADMIN, Role.RECEPCION)),
 ):
     """Agenda una cita (recepción o admin) aplicando las reglas de negocio; cada fallo devuelve su código HTTP."""
     try:
@@ -94,7 +94,7 @@ async def listar_citas(
     medico_id: uuid.UUID | None = None,
     incluir_canceladas: bool = False,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION, Rol.MEDICO)),
+    usuario: Usuario = Depends(requiere_rol(Role.ADMIN, Role.RECEPCION, Role.MEDICO)),
 ):
     """Lista la agenda de un día (`fecha`) o de un rango (`desde`..`hasta`), ambos incluidos.
 
@@ -117,7 +117,7 @@ async def listar_citas(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
             f"El rango no puede superar los {MAX_RANGO_DIAS} días.",
         )
-    if usuario.rol == Rol.MEDICO:
+    if usuario.rol == Role.MEDICO:
         medico_id = usuario.id
     return citas_service.listar_citas(
         db,
@@ -133,7 +133,7 @@ async def editar_cita(
     cita_id: uuid.UUID,
     datos: CitaUpdate,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION)),
+    _: Usuario = Depends(requiere_rol(Role.ADMIN, Role.RECEPCION)),
 ):
     """Edita o mueve una cita activa (parcial, solo los campos enviados), revalidando las reglas. ADMIN o RECEPCIÓN."""
     try:
@@ -187,7 +187,7 @@ async def editar_cita(
 async def cancelar_cita(
     cita_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION)),
+    _: Usuario = Depends(requiere_rol(Role.ADMIN, Role.RECEPCION)),
 ):
     """Cancela una cita (libera el cupo). Solo ADMIN o RECEPCIÓN (el médico no cancela)."""
     try:
@@ -208,7 +208,7 @@ async def marcar_asistencia(
     cita_id: uuid.UUID,
     datos: AsistenciaUpdate,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(requiere_rol(Rol.ADMIN, Rol.RECEPCION)),
+    _: Usuario = Depends(requiere_rol(Role.ADMIN, Role.RECEPCION)),
 ):
     """Marca una cita como **atendida** (COMPLETED) o **no-show** (NO_SHOW). Solo ADMIN o RECEPCIÓN."""
     try:

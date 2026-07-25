@@ -4,7 +4,7 @@ import uuid
 
 import pytest
 
-from app.enums import Rol
+from app.enums import Role
 from app.models import Usuario
 from app.services.pacientes import (
     CedulaDuplicada,
@@ -23,7 +23,7 @@ def test_crea_si_no_existe(db):
     nombre = f"Paciente {uuid.uuid4()}"
     p = buscar_o_crear_paciente(db, nombre, 40)
     assert p.id is not None
-    assert p.rol == Rol.PACIENTE
+    assert p.rol == Role.PACIENTE
     assert p.nombre_completo == nombre
 
 
@@ -36,8 +36,8 @@ def test_reutiliza_si_existe(db):
 
 def test_varios_coinciden_lanza_ambiguo(db):
     nombre = f"Paciente {uuid.uuid4()}"
-    db.add(Usuario(nombre_completo=nombre, edad=50, rol=Rol.PACIENTE))
-    db.add(Usuario(nombre_completo=nombre, edad=50, rol=Rol.PACIENTE))
+    db.add(Usuario(nombre_completo=nombre, edad=50, rol=Role.PACIENTE))
+    db.add(Usuario(nombre_completo=nombre, edad=50, rol=Role.PACIENTE))
     db.flush()
     with pytest.raises(PacientesAmbiguos) as exc:
         buscar_o_crear_paciente(db, nombre, 50)
@@ -45,8 +45,8 @@ def test_varios_coinciden_lanza_ambiguo(db):
 
 
 def test_listar_pacientes_solo_pacientes(db):
-    pac = Usuario(nombre_completo=f"Pac {uuid.uuid4()}", edad=40, rol=Rol.PACIENTE)
-    medico = Usuario(nombre_completo=f"Dr {uuid.uuid4()}", rol=Rol.MEDICO)
+    pac = Usuario(nombre_completo=f"Pac {uuid.uuid4()}", edad=40, rol=Role.PACIENTE)
+    medico = Usuario(nombre_completo=f"Dr {uuid.uuid4()}", rol=Role.MEDICO)
     db.add_all([pac, medico])
     db.flush()
     ids = [p.id for p in listar_pacientes(db)]
@@ -55,7 +55,7 @@ def test_listar_pacientes_solo_pacientes(db):
 
 
 def test_obtener_paciente_ok_y_no_encontrado(db):
-    pac = Usuario(nombre_completo=f"Pac {uuid.uuid4()}", edad=40, rol=Rol.PACIENTE)
+    pac = Usuario(nombre_completo=f"Pac {uuid.uuid4()}", edad=40, rol=Role.PACIENTE)
     db.add(pac)
     db.flush()
     assert obtener_paciente(db, pac.id).id == pac.id
@@ -90,13 +90,13 @@ def test_crear_paciente_alta_manual(db):
     }
     p = crear_paciente(db, datos)
     assert p.id is not None
-    assert p.rol == Rol.PACIENTE
+    assert p.rol == Role.PACIENTE
     assert p.edad == 33
 
 
 def test_crear_paciente_cedula_duplicada(db):
     ced = f"CED-{uuid.uuid4()}"
-    db.add(Usuario(nombre_completo=f"Otro {uuid.uuid4()}", edad=30, rol=Rol.PACIENTE, cedula=ced))
+    db.add(Usuario(nombre_completo=f"Otro {uuid.uuid4()}", edad=30, rol=Role.PACIENTE, cedula=ced))
     db.flush()
     with pytest.raises(CedulaDuplicada):
         crear_paciente(
@@ -107,7 +107,7 @@ def test_crear_paciente_cedula_duplicada(db):
 
 def test_actualizar_paciente_cedula_duplicada(db):
     ced = f"CED-{uuid.uuid4()}"
-    otro = Usuario(nombre_completo=f"Otro {uuid.uuid4()}", edad=30, rol=Rol.PACIENTE, cedula=ced)
+    otro = Usuario(nombre_completo=f"Otro {uuid.uuid4()}", edad=30, rol=Role.PACIENTE, cedula=ced)
     db.add(otro)
     db.flush()
     pac = buscar_o_crear_paciente(db, f"Pac {uuid.uuid4()}", 40)

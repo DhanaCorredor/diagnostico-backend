@@ -6,7 +6,7 @@ from datetime import date, datetime, time, timezone
 import pytest
 from pydantic import ValidationError
 
-from app.enums import EstadoCita, Rol
+from app.enums import AppointmentStatus, Role
 from app.models import Cita, Disponibilidad, Usuario
 from app.schemas import CitaCreate, CitaUpdate
 from app.services import citas as C
@@ -111,7 +111,7 @@ def test_disponibilidad_dentro_y_fuera(db, medico):
 
 
 def test_solapamiento_y_citas_pegadas(db, medico, servicio, admin):
-    pac = Usuario(nombre_completo=f"P {uuid.uuid4()}", edad=1, rol=Rol.PACIENTE)
+    pac = Usuario(nombre_completo=f"P {uuid.uuid4()}", edad=1, rol=Role.PACIENTE)
     db.add(pac)
     db.flush()
     db.add(
@@ -121,7 +121,7 @@ def test_solapamiento_y_citas_pegadas(db, medico, servicio, admin):
             servicio_id=servicio.id,
             starts_at=datetime(2026, 7, 20, 10, 0),
             ends_at=datetime(2026, 7, 20, 10, 45),
-            estado=EstadoCita.SCHEDULED,
+            estado=AppointmentStatus.SCHEDULED,
             creado_por_id=admin.id,
         )
     )
@@ -148,13 +148,13 @@ def test_crear_cita_feliz(db, medico, servicio, admin):
         ahora=ANTES,
     )
     assert cita.ends_at == datetime(2026, 7, 20, 10, 45)
-    assert cita.estado == EstadoCita.SCHEDULED
+    assert cita.estado == AppointmentStatus.SCHEDULED
 
 
 def test_crear_cita_con_paciente_id_resuelve_ambiguedad(db, medico, servicio, admin):
     _franja(db, medico)
-    p1 = Usuario(nombre_completo="Ambiguo", edad=40, rol=Rol.PACIENTE)
-    p2 = Usuario(nombre_completo="Ambiguo", edad=40, rol=Rol.PACIENTE)
+    p1 = Usuario(nombre_completo="Ambiguo", edad=40, rol=Role.PACIENTE)
+    p2 = Usuario(nombre_completo="Ambiguo", edad=40, rol=Role.PACIENTE)
     db.add_all([p1, p2])
     db.flush()
     cita = C.crear_cita(
@@ -310,7 +310,7 @@ def test_crear_cita_en_el_pasado(db, medico, servicio, admin):
 def test_crear_cita_medico_inactivo(db, servicio, admin):
     inactivo = Usuario(
         nombre_completo=f"Dr. Baja {uuid.uuid4()}",
-        rol=Rol.MEDICO,
+        rol=Role.MEDICO,
         email=f"baja-{uuid.uuid4()}@test.local",
         activo=False,
     )
@@ -382,7 +382,7 @@ def test_listar_excluye_canceladas_por_defecto(db, medico, servicio, admin):
 def test_cancelar_cita_libera_cupo(db, medico, servicio, admin):
     cita = _cita(db, medico, servicio, admin, LUNES_10)
     C.cancelar_cita(db, cita.id)
-    assert cita.estado == EstadoCita.CANCELLED
+    assert cita.estado == AppointmentStatus.CANCELLED
     otra = C.crear_cita(
         db,
         nombre_completo=f"Q {uuid.uuid4()}",
@@ -394,7 +394,7 @@ def test_cancelar_cita_libera_cupo(db, medico, servicio, admin):
         creado_por_id=admin.id,
         ahora=ANTES,
     )
-    assert otra.estado == EstadoCita.SCHEDULED
+    assert otra.estado == AppointmentStatus.SCHEDULED
 
 
 def test_cancelar_cita_inexistente(db):
@@ -411,26 +411,26 @@ def test_cancelar_cita_ya_cancelada(db, medico, servicio, admin):
 
 def test_marcar_asistencia_atendida(db, medico, servicio, admin):
     cita = _cita(db, medico, servicio, admin, LUNES_10)
-    C.marcar_asistencia(db, cita.id, EstadoCita.COMPLETED)
-    assert cita.estado == EstadoCita.COMPLETED
+    C.marcar_asistencia(db, cita.id, AppointmentStatus.COMPLETED)
+    assert cita.estado == AppointmentStatus.COMPLETED
 
 
 def test_marcar_asistencia_no_show(db, medico, servicio, admin):
     cita = _cita(db, medico, servicio, admin, LUNES_10)
-    C.marcar_asistencia(db, cita.id, EstadoCita.NO_SHOW)
-    assert cita.estado == EstadoCita.NO_SHOW
+    C.marcar_asistencia(db, cita.id, AppointmentStatus.NO_SHOW)
+    assert cita.estado == AppointmentStatus.NO_SHOW
 
 
 def test_marcar_asistencia_inexistente(db):
     with pytest.raises(C.CitaNoEncontrada):
-        C.marcar_asistencia(db, uuid.uuid4(), EstadoCita.COMPLETED)
+        C.marcar_asistencia(db, uuid.uuid4(), AppointmentStatus.COMPLETED)
 
 
 def test_marcar_asistencia_cita_no_activa(db, medico, servicio, admin):
     cita = _cita(db, medico, servicio, admin, LUNES_10)
     C.cancelar_cita(db, cita.id)
     with pytest.raises(C.CitaNoActiva):
-        C.marcar_asistencia(db, cita.id, EstadoCita.COMPLETED)
+        C.marcar_asistencia(db, cita.id, AppointmentStatus.COMPLETED)
 
 
 def test_editar_mueve_la_hora(db, medico, servicio, admin):

@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.enums import EstadoCita
+from app.enums import AppointmentStatus
 
 
 def _exigir_hora_local_naive(v: datetime | None) -> datetime | None:
@@ -59,7 +59,7 @@ class CitaOut(BaseModel):
     servicio_id: uuid.UUID
     starts_at: datetime
     ends_at: datetime
-    estado: EstadoCita
+    estado: AppointmentStatus
     motivo: str | None
 
     model_config = ConfigDict(from_attributes=True)
@@ -68,4 +68,4 @@ class CitaOut(BaseModel):
 class AsistenciaUpdate(BaseModel):
     """POST /citas/{id}/asistencia: marcar atendida o no-show."""
 
-    estado: Literal[EstadoCita.COMPLETED, EstadoCita.NO_SHOW]
+    estado: Literal[AppointmentStatus.COMPLETED, AppointmentStatus.NO_SHOW]

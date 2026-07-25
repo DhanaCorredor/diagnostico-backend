@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from app.auth import crear_token
 from app.db import SessionLocal, engine, get_db
 from app.main import app
-from app.enums import Rol, ServicioCategoria
+from app.enums import Role, ServiceCategory
 from app.models import Servicio, Usuario
 
 
@@ -65,7 +65,7 @@ def medico(db):
     """Un médico de prueba (email único para no chocar con otros)."""
     m = Usuario(
         nombre_completo="Dr. Test",
-        rol=Rol.MEDICO,
+        rol=Role.MEDICO,
         email=f"med-{uuid.uuid4()}@test.local",
     )
     db.add(m)
@@ -78,7 +78,7 @@ def admin(db):
     """Un admin de prueba (hace de 'creado_por' de las citas)."""
     a = Usuario(
         nombre_completo="Admin Test",
-        rol=Rol.ADMIN,
+        rol=Role.ADMIN,
         email=f"adm-{uuid.uuid4()}@test.local",
     )
     db.add(a)
@@ -91,7 +91,7 @@ def recepcion(db):
     """Un usuario de recepción de prueba (para los guardas por rol)."""
     r = Usuario(
         nombre_completo="Recep Test",
-        rol=Rol.RECEPCION,
+        rol=Role.RECEPCION,
         email=f"rec-{uuid.uuid4()}@test.local",
     )
     db.add(r)
@@ -104,7 +104,7 @@ def servicio(db):
     """Un servicio de prueba del catálogo (nombre único)."""
     s = Servicio(
         nombre=f"Servicio {uuid.uuid4()}",
-        categoria=ServicioCategoria.CONSULTA,
+        categoria=ServiceCategory.CONSULTA,
     )
     db.add(s)
     db.flush()

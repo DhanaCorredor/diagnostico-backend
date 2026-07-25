@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import requiere_rol, usuario_actual
 from app.db import get_db
-from app.enums import Rol
+from app.enums import Role
 from app.schemas import (
     EspecialidadCreate,
     EspecialidadOut,
@@ -58,7 +58,7 @@ async def listar_especialidades(
 async def crear_servicio(
     datos: ServicioCreate,
     db: Session = Depends(get_db),
-    _: object = Depends(requiere_rol(Rol.ADMIN)),
+    _: object = Depends(requiere_rol(Role.ADMIN)),
 ):
     """Da de alta un servicio en el catálogo (ADMIN)."""
     try:
@@ -77,7 +77,7 @@ async def actualizar_servicio(
     servicio_id: uuid.UUID,
     datos: ServicioUpdate,
     db: Session = Depends(get_db),
-    _: object = Depends(requiere_rol(Rol.ADMIN)),
+    _: object = Depends(requiere_rol(Role.ADMIN)),
 ):
     """Edita un servicio del catálogo (ADMIN). Permite desactivarlo sin borrarlo."""
     cambios = datos.model_dump(exclude_unset=True)
@@ -100,7 +100,7 @@ async def actualizar_servicio(
 async def crear_especialidad(
     datos: EspecialidadCreate,
     db: Session = Depends(get_db),
-    _: object = Depends(requiere_rol(Rol.ADMIN)),
+    _: object = Depends(requiere_rol(Role.ADMIN)),
 ):
     """Da de alta una especialidad médica (ADMIN)."""
     try:

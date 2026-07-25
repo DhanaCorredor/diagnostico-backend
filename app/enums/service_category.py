@@ -2,7 +2,7 @@
 import enum
 
 
-class ServicioCategoria(str, enum.Enum):
+class ServiceCategory(str, enum.Enum):
     CONSULTA = "CONSULTA"
     ECOGRAFIA = "ECOGRAFIA"
     DOPPLER = "DOPPLER"

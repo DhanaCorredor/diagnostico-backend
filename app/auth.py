@@ -12,7 +12,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.enums import Rol
+from app.enums import Role
 from app.models import Usuario
 
 load_dotenv()
@@ -73,7 +73,7 @@ def usuario_actual(
     return usuario
 
 
-def requiere_rol(*roles_permitidos: Rol):
+def requiere_rol(*roles_permitidos: Role):
     """Fábrica de dependencias que exige que el usuario autenticado tenga uno de estos roles (403 si no)."""
 
     def verificar(usuario: Usuario = Depends(usuario_actual)) -> Usuario:

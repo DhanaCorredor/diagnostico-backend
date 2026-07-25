@@ -1,6 +1,6 @@
 """Enums del dominio (listas cerradas de valores)."""
-from app.enums.estado_cita import EstadoCita
-from app.enums.rol import Rol
-from app.enums.servicio_categoria import ServicioCategoria
+from app.enums.appointment_status import AppointmentStatus
+from app.enums.role import Role
+from app.enums.service_category import ServiceCategory
 
-__all__ = ["EstadoCita", "Rol", "ServicioCategoria"]
+__all__ = ["AppointmentStatus", "Role", "ServiceCategory"]

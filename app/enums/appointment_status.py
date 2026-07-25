@@ -2,7 +2,7 @@
 import enum
 
 
-class EstadoCita(str, enum.Enum):
+class AppointmentStatus(str, enum.Enum):
     SCHEDULED = "SCHEDULED"
     CONFIRMED = "CONFIRMED"
     CANCELLED = "CANCELLED"

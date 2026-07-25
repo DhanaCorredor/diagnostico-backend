@@ -3,7 +3,7 @@ import uuid
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.enums import Rol
+from app.enums import Role
 from app.schemas.catalogo import EspecialidadOut
 
 
@@ -13,7 +13,7 @@ class UsuarioOut(BaseModel):
     id: uuid.UUID
     nombre_completo: str
     email: str | None
-    rol: Rol
+    rol: Role
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -24,7 +24,7 @@ class UsuarioDetalle(BaseModel):
     id: uuid.UUID
     nombre_completo: str
     email: str | None
-    rol: Rol
+    rol: Role
     matricula: str | None
     especialidades: list[EspecialidadOut]
     activo: bool
@@ -36,7 +36,7 @@ class UsuarioCreate(BaseModel):
     """Alta de personal/médico (ADMIN). El rol no puede ser PACIENTE (se valida en el servicio)."""
 
     nombre_completo: str = Field(min_length=1)
-    rol: Rol
+    rol: Role
     email: str = Field(min_length=3)
     password: str = Field(min_length=8)
     matricula: str | None = None

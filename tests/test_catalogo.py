@@ -4,16 +4,16 @@ import uuid
 
 import pytest
 
-from app.enums import Rol, ServicioCategoria
+from app.enums import Role, ServiceCategory
 from app.models import Especialidad, Servicio, Usuario
 from app.services import catalogo as C
 
 
 def test_listar_servicios_solo_activos_y_ordenados(db):
-    activo_b = Servicio(nombre=f"B {uuid.uuid4()}", categoria=ServicioCategoria.CONSULTA)
-    activo_a = Servicio(nombre=f"A {uuid.uuid4()}", categoria=ServicioCategoria.ECOGRAFIA)
+    activo_b = Servicio(nombre=f"B {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA)
+    activo_a = Servicio(nombre=f"A {uuid.uuid4()}", categoria=ServiceCategory.ECOGRAFIA)
     inactivo = Servicio(
-        nombre=f"Z {uuid.uuid4()}", categoria=ServicioCategoria.OTRO, activo=False
+        nombre=f"Z {uuid.uuid4()}", categoria=ServiceCategory.OTRO, activo=False
     )
     db.add_all([activo_b, activo_a, inactivo])
     db.flush()
@@ -28,11 +28,11 @@ def test_listar_servicios_filtra_por_medico(db):
     cardio = Especialidad(nombre=f"Cardio {uuid.uuid4()}")
     derma = Especialidad(nombre=f"Derma {uuid.uuid4()}")
     medico = Usuario(
-        nombre_completo=f"Dr. Cardio {uuid.uuid4()}", rol=Rol.MEDICO, especialidades=[cardio]
+        nombre_completo=f"Dr. Cardio {uuid.uuid4()}", rol=Role.MEDICO, especialidades=[cardio]
     )
-    serv_cardio = Servicio(nombre=f"Eco cardíaca {uuid.uuid4()}", categoria=ServicioCategoria.ESTUDIO_CARDIACO)
+    serv_cardio = Servicio(nombre=f"Eco cardíaca {uuid.uuid4()}", categoria=ServiceCategory.ESTUDIO_CARDIACO)
     serv_cardio.especialidades = [cardio]
-    serv_derma = Servicio(nombre=f"Consulta piel {uuid.uuid4()}", categoria=ServicioCategoria.CONSULTA)
+    serv_derma = Servicio(nombre=f"Consulta piel {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA)
     serv_derma.especialidades = [derma]
     db.add_all([cardio, derma, medico, serv_cardio, serv_derma])
     db.flush()
@@ -45,10 +45,10 @@ def test_listar_servicios_filtra_por_medico(db):
 def test_listar_medicos_activos_con_especialidades(db):
     esp = Especialidad(nombre=f"Cardio {uuid.uuid4()}")
     activo = Usuario(
-        nombre_completo=f"Dr. Activo {uuid.uuid4()}", rol=Rol.MEDICO, especialidades=[esp]
+        nombre_completo=f"Dr. Activo {uuid.uuid4()}", rol=Role.MEDICO, especialidades=[esp]
     )
-    inactivo = Usuario(nombre_completo=f"Dr. Baja {uuid.uuid4()}", rol=Rol.MEDICO, activo=False)
-    paciente = Usuario(nombre_completo=f"Paciente {uuid.uuid4()}", rol=Rol.PACIENTE)
+    inactivo = Usuario(nombre_completo=f"Dr. Baja {uuid.uuid4()}", rol=Role.MEDICO, activo=False)
+    paciente = Usuario(nombre_completo=f"Paciente {uuid.uuid4()}", rol=Role.PACIENTE)
     db.add_all([esp, activo, inactivo, paciente])
     db.flush()
 
@@ -73,7 +73,7 @@ def test_listar_especialidades_ordenadas(db):
 
 def test_crear_servicio(db):
     servicio = C.crear_servicio(
-        db, nombre=f"Ecografía {uuid.uuid4()}", categoria=ServicioCategoria.ECOGRAFIA
+        db, nombre=f"Ecografía {uuid.uuid4()}", categoria=ServiceCategory.ECOGRAFIA
     )
     assert servicio.id is not None
     assert servicio.activo is True
@@ -81,26 +81,26 @@ def test_crear_servicio(db):
 
 def test_crear_servicio_nombre_duplicado(db):
     nombre = f"Repetido {uuid.uuid4()}"
-    C.crear_servicio(db, nombre=nombre, categoria=ServicioCategoria.CONSULTA)
+    C.crear_servicio(db, nombre=nombre, categoria=ServiceCategory.CONSULTA)
     with pytest.raises(C.NombreDuplicado):
-        C.crear_servicio(db, nombre=nombre, categoria=ServicioCategoria.OTRO)
+        C.crear_servicio(db, nombre=nombre, categoria=ServiceCategory.OTRO)
 
 
 def test_actualizar_servicio_cambia_campos(db):
     servicio = C.crear_servicio(
-        db, nombre=f"Viejo {uuid.uuid4()}", categoria=ServicioCategoria.CONSULTA
+        db, nombre=f"Viejo {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
     )
     nuevo_nombre = f"Nuevo {uuid.uuid4()}"
     C.actualizar_servicio(
-        db, servicio.id, {"nombre": nuevo_nombre, "categoria": ServicioCategoria.OTRO}
+        db, servicio.id, {"nombre": nuevo_nombre, "categoria": ServiceCategory.OTRO}
     )
     assert servicio.nombre == nuevo_nombre
-    assert servicio.categoria == ServicioCategoria.OTRO
+    assert servicio.categoria == ServiceCategory.OTRO
 
 
 def test_actualizar_servicio_desactiva(db):
     servicio = C.crear_servicio(
-        db, nombre=f"Baja {uuid.uuid4()}", categoria=ServicioCategoria.CONSULTA
+        db, nombre=f"Baja {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
     )
     C.actualizar_servicio(db, servicio.id, {"activo": False})
     assert servicio.activo is False
@@ -113,15 +113,15 @@ def test_actualizar_servicio_inexistente(db):
 
 
 def test_actualizar_servicio_nombre_duplicado(db):
-    a = C.crear_servicio(db, nombre=f"A {uuid.uuid4()}", categoria=ServicioCategoria.CONSULTA)
-    b = C.crear_servicio(db, nombre=f"B {uuid.uuid4()}", categoria=ServicioCategoria.CONSULTA)
+    a = C.crear_servicio(db, nombre=f"A {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA)
+    b = C.crear_servicio(db, nombre=f"B {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA)
     with pytest.raises(C.NombreDuplicado):
         C.actualizar_servicio(db, b.id, {"nombre": a.nombre})
 
 
 def test_actualizar_servicio_mismo_nombre_no_choca(db):
     servicio = C.crear_servicio(
-        db, nombre=f"Igual {uuid.uuid4()}", categoria=ServicioCategoria.CONSULTA
+        db, nombre=f"Igual {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
     )
     C.actualizar_servicio(db, servicio.id, {"nombre": servicio.nombre})
     assert servicio.activo is True

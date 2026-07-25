@@ -5,7 +5,7 @@ from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
-from app.enums import EstadoCita, Rol
+from app.enums import AppointmentStatus, Role
 from app.models import Cita, Disponibilidad, Servicio, Usuario
 from app.services.pacientes import buscar_o_crear_paciente, obtener_paciente
 
@@ -107,7 +107,7 @@ def hay_solapamiento(
     q = (
         db.query(Cita)
         .filter(Cita.medico_id == medico_id)
-        .filter(Cita.estado.in_([EstadoCita.SCHEDULED, EstadoCita.CONFIRMED]))
+        .filter(Cita.estado.in_([AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED]))
         .filter(Cita.starts_at < ends_at)
         .filter(Cita.ends_at > starts_at)
     )
@@ -128,7 +128,7 @@ def _validar_servicio_medico_y_rejilla(
     if servicio is None or not servicio.activo:
         raise ServicioNoEncontrado()
     medico = db.get(Usuario, medico_id)
-    if medico is None or medico.rol != Rol.MEDICO or not medico.activo:
+    if medico is None or medico.rol != Role.MEDICO or not medico.activo:
         raise MedicoNoEncontrado()
     if not esta_alineado(starts_at):
         raise HorarioNoAlineado()
@@ -201,7 +201,7 @@ def crear_cita(
         servicio_id=servicio_id,
         starts_at=starts_at,
         ends_at=ends_at,
-        estado=EstadoCita.SCHEDULED,
+        estado=AppointmentStatus.SCHEDULED,
         motivo=motivo,
         creado_por_id=creado_por_id,
     )
@@ -228,7 +228,7 @@ def listar_citas(
     if medico_id is not None:
         q = q.filter(Cita.medico_id == medico_id)
     if not incluir_canceladas:
-        q = q.filter(Cita.estado != EstadoCita.CANCELLED)
+        q = q.filter(Cita.estado != AppointmentStatus.CANCELLED)
     return q.order_by(Cita.starts_at).all()
 
 
@@ -249,7 +249,7 @@ def _obtener_cita_activa(
     cita = db.get(Cita, cita_id)
     if cita is None:
         raise CitaNoEncontrada()
-    if cita.estado not in (EstadoCita.SCHEDULED, EstadoCita.CONFIRMED):
+    if cita.estado not in (AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED):
         raise exc_no_activa()
     return cita
 
@@ -257,12 +257,12 @@ def _obtener_cita_activa(
 def cancelar_cita(db: Session, cita_id: uuid.UUID) -> Cita:
     """Cancela una cita activa (estado CANCELLED, libera el cupo). Flush, no commit."""
     cita = _obtener_cita_activa(db, cita_id, CitaNoCancelable)
-    cita.estado = EstadoCita.CANCELLED
+    cita.estado = AppointmentStatus.CANCELLED
     db.flush()
     return cita
 
 
-def marcar_asistencia(db: Session, cita_id: uuid.UUID, estado: EstadoCita) -> Cita:
+def marcar_asistencia(db: Session, cita_id: uuid.UUID, estado: AppointmentStatus) -> Cita:
     """Marca una cita activa como atendida (COMPLETED) o no-show (NO_SHOW). Flush, no commit."""
     cita = _obtener_cita_activa(db, cita_id, CitaNoActiva)
     cita.estado = estado

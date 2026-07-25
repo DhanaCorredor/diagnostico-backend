@@ -5,7 +5,7 @@ from datetime import time
 
 from sqlalchemy.orm import Session
 
-from app.enums import Rol
+from app.enums import Role
 from app.models import Disponibilidad, Usuario
 
 
@@ -37,7 +37,7 @@ def crear_disponibilidad(
 ) -> Disponibilidad:
     """Crea una franja para un médico, validando el médico y que inicio < fin. Flush, no commit."""
     medico = db.get(Usuario, medico_id)
-    if medico is None or medico.rol != Rol.MEDICO:
+    if medico is None or medico.rol != Role.MEDICO:
         raise MedicoNoEncontrado()
     if hora_inicio >= hora_fin:
         raise FranjaInvalida()
