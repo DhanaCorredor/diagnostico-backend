@@ -5,17 +5,17 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.auth import require_role, current_user
+from app.auth import current_user, require_role
 from app.db import get_db
 from app.enums import Role
 from app.schemas import (
-    SpecialtyCreate,
-    SpecialtyOut,
     DoctorOut,
     ServiceCreate,
     ServiceDetail,
     ServiceOut,
     ServiceUpdate,
+    SpecialtyCreate,
+    SpecialtyOut,
 )
 from app.services import catalog as catalog_service
 

@@ -5,7 +5,7 @@ import uuid
 import pytest
 
 from app.enums import Role, ServiceCategory
-from app.models import Specialty, Service, User
+from app.models import Service, Specialty, User
 from app.services import catalog as C
 
 

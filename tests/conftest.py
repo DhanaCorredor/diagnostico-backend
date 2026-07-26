@@ -11,8 +11,8 @@ from fastapi.testclient import TestClient
 
 from app.auth import create_token
 from app.db import SessionLocal, engine, get_db
-from app.main import app
 from app.enums import Role, ServiceCategory
+from app.main import app
 from app.models import Service, User
 
 

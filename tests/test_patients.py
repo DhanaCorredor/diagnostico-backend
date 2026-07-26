@@ -7,15 +7,15 @@ import pytest
 from app.enums import Role
 from app.models import User
 from app.services.patients import (
+    AmbiguousPatients,
     DuplicateNationalId,
     PatientNotFound,
-    AmbiguousPatients,
-    update_patient,
-    find_or_create_patient,
     create_patient,
     deactivate_patient,
-    list_patients,
+    find_or_create_patient,
     get_patient,
+    list_patients,
+    update_patient,
 )
 
 

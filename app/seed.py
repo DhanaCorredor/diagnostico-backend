@@ -6,7 +6,7 @@ from datetime import time
 from app.auth import hash_password
 from app.db import SessionLocal
 from app.enums import Role, ServiceCategory
-from app.models import Availability, Specialty, Service, User
+from app.models import Availability, Service, Specialty, User
 
 STAFF = [
     ("Administrador", "ADMIN", "admin@diagnostico.com", None),

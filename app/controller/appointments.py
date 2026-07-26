@@ -10,9 +10,14 @@ from app.auth import require_role
 from app.db import get_db
 from app.enums import Role
 from app.models import User
-from app.schemas import AttendanceUpdate, AppointmentCreate, AppointmentOut, AppointmentUpdate
+from app.schemas import (
+    AppointmentCreate,
+    AppointmentOut,
+    AppointmentUpdate,
+    AttendanceUpdate,
+)
 from app.services import appointments as appointment_service
-from app.services.patients import PatientNotFound, AmbiguousPatients
+from app.services.patients import AmbiguousPatients, PatientNotFound
 
 router = APIRouter(prefix="/citas", tags=["citas"])
 

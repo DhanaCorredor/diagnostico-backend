@@ -1,5 +1,15 @@
 """Modelo Usuario: persona única (personal, médicos y pacientes) diferenciada por `rol`."""
-from sqlalchemy import Boolean, Column, Date, DateTime, Enum, Integer, String, Text, func
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Enum,
+    Integer,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.orm import relationship
 
 from app.db import Base
