@@ -1,8 +1,4 @@
-"""Piezas de seguridad: hash de contraseñas (bcrypt) y tokens JWT (PyJWT).
-
-Son funciones reutilizables, sin endpoints. Los routers de la Fase 2 las usan
-para el login y para verificar el token en cada petición.
-"""
+"""Piezas de seguridad reutilizables: hash de contraseñas (bcrypt) y tokens JWT (PyJWT)."""
 
 import os
 import uuid
@@ -16,7 +12,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Rol, Usuario
+from app.enums import Role
+from app.models import User
 
 load_dotenv()
 
@@ -24,88 +21,67 @@ JWT_SECRET = os.getenv("JWT_SECRET")
 if not JWT_SECRET:
     raise RuntimeError("Falta JWT_SECRET en el .env (secreto para firmar los tokens JWT).")
 JWT_ALGORITHM = "HS256"
-JWT_EXPIRA_MINUTOS = 60 * 8
+JWT_EXPIRE_MINUTES = 60 * 8
 
 
-def hashear_password(password: str) -> str:
-    """Convierte una contraseña en un hash seguro, listo para guardar en la BD.
-
-    bcrypt añade una 'sal' aleatoria: por eso dos hashes de la misma contraseña
-    salen distintos, pero ambos verifican correctamente.
-    """
+def hash_password(password: str) -> str:
+    """Devuelve el hash bcrypt (con sal aleatoria) de una contraseña, listo para guardar en la BD."""
     hash_bytes = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
     return hash_bytes.decode("utf-8")
 
 
-def verificar_password(password: str, password_hash: str) -> bool:
+def verify_password(password: str, password_hash: str) -> bool:
     """Comprueba si una contraseña coincide con su hash guardado."""
     return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
 
 
-def crear_token(usuario_id: uuid.UUID) -> str:
-    """Crea un JWT firmado que identifica al usuario.
-
-    El token lleva 'sub' (subject = quién es) y 'exp' (cuándo caduca). El rol NO
-    se guarda: se consulta siempre en la BD (fresco), igual que el estado activo.
-    """
-    ahora = datetime.now(timezone.utc)
+def create_token(usuario_id: uuid.UUID) -> str:
+    """Crea un JWT firmado con el id del usuario (`sub`) y su caducidad (`exp`); el rol no se guarda."""
+    now = datetime.now(timezone.utc)
     payload = {
         "sub": str(usuario_id),
-        "exp": ahora + timedelta(minutes=JWT_EXPIRA_MINUTOS),
+        "exp": now + timedelta(minutes=JWT_EXPIRE_MINUTES),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-def decodificar_token(token: str) -> dict:
-    """Verifica la firma y la caducidad del token y devuelve su contenido.
-
-    Lanza jwt.InvalidTokenError (o una subclase, p.ej. ExpiredSignatureError)
-    si el token es inválido, fue manipulado o ya expiró.
-    """
+def decode_token(token: str) -> dict:
+    """Verifica firma y caducidad del token y devuelve su payload; lanza jwt.InvalidTokenError si no es válido."""
     return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
 
 
 security = HTTPBearer()
 
 
-def usuario_actual(
+def current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
-) -> Usuario:
-    """Valida el token del header y devuelve el usuario actual.
-
-    Se usa como dependencia en los endpoints que requieren estar autenticado.
-    Lanza 401 si el token es inválido/expiró o el usuario ya no existe.
-    """
-    no_autorizado = HTTPException(
+) -> User:
+    """Dependencia: valida el token del header y devuelve el usuario autenticado (401 si falla o está inactivo)."""
+    unauthorized = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Token inválido o expirado",
     )
     try:
-        datos = decodificar_token(credentials.credentials)
-        usuario_id = uuid.UUID(datos["sub"])
+        data = decode_token(credentials.credentials)
+        usuario_id = uuid.UUID(data["sub"])
     except (jwt.InvalidTokenError, KeyError, ValueError):
-        raise no_autorizado from None
-    usuario = db.get(Usuario, usuario_id)
-    if usuario is None or not usuario.activo:
-        raise no_autorizado
-    return usuario
+        raise unauthorized from None
+    user = db.get(User, usuario_id)
+    if user is None or not user.activo:
+        raise unauthorized
+    return user
 
 
-def requiere_rol(*roles_permitidos: Rol):
-    """Fábrica de dependencias: exige que el usuario actual tenga uno de estos roles.
+def require_role(*allowed_roles: Role):
+    """Fábrica de dependencias que exige que el usuario autenticado tenga uno de estos roles (403 si no)."""
 
-    Uso en un endpoint:  dependencies=[Depends(requiere_rol(Rol.ADMIN))]
-    Devuelve una dependencia que primero autentica (usuario_actual) y luego
-    comprueba el rol; lanza 403 si no está permitido.
-    """
-
-    def verificar(usuario: Usuario = Depends(usuario_actual)) -> Usuario:
-        if usuario.rol not in roles_permitidos:
+    def verificar(user: User = Depends(current_user)) -> User:
+        if user.rol not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="No tienes permiso para esta acción",
             )
-        return usuario
+        return user
 
     return verificar

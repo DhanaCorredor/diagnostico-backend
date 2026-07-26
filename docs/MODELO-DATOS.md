@@ -14,11 +14,11 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 
 ## Alcance del MVP
 
-**7 tablas** (una, `notas_clinicas`, **reservada para fase 2**). Se prioriza lo demostrable y las validaciones que pidió la profe.
+**8 tablas** (una, `notas_clinicas`, **reservada para fase 2**). Se prioriza lo demostrable y las validaciones que pidió la profe.
 
 | Núcleo (MVP) | Fuera del MVP (→ fase 2) |
 |--------------|--------------------------|
-| `usuarios`, `especialidades`, `usuario_especialidad`, `servicios`, `disponibilidad`, `citas` | historia clínica / notas (`notas_clinicas`, tabla creada como andamiaje) · Reportes · recordatorios WhatsApp · auditoría · visitas (agrupar estudios) · duración por médico · recursos/salas + anti-solapamiento por recurso · holter colocación+retiro · constraint `gist` en BD · PWA offline |
+| `usuarios`, `especialidades`, `usuario_especialidad`, `servicios`, `servicio_especialidad`, `disponibilidad`, `citas` | `notas_clinicas` (tabla creada como andamiaje) · resto de funcionalidades → ver [`MEJORAS-Y-PROXIMOS-PASOS.md`](MEJORAS-Y-PROXIMOS-PASOS.md) |
 
 ## Decisiones cerradas (con datos reales del centro)
 
@@ -41,7 +41,7 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 |-------|------|------|
 | id | uuid (PK) | |
 | nombre_completo | string | |
-| rol | `Rol` | ADMIN · RECEPCION · MEDICO · PACIENTE |
+| rol | `Role` | ADMIN · RECEPCION · MEDICO · PACIENTE |
 | email | string?, único | login (solo staff) |
 | password_hash | string? | bcrypt (solo staff) |
 | cedula | string?, **única si se indica** | documento; **opcional**, la añaden los especialistas después |
@@ -70,8 +70,13 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 |-------|------|------|
 | id | uuid (PK) | |
 | nombre | string, único | ej. Consulta cardiología, Ecocardiograma, Holter de ritmo, Ecografía abdominal, Doppler carotídeo… |
-| categoria | `ServicioCategoria` | CONSULTA · ECOGRAFIA · DOPPLER · ESTUDIO_CARDIACO · PROMOCION · OTRO |
+| categoria | `ServiceCategory` | CONSULTA · ECOGRAFIA · DOPPLER · ESTUDIO_CARDIACO · PROMOCION · OTRO |
 | activo | bool (def. true) | |
+
+### `servicio_especialidad` — N:M servicio ↔ especialidad
+`servicio_id` (FK → servicios) · `especialidad_id` (FK → especialidades) · PK compuesta.
+
+> Permite que al elegir un médico el formulario muestre **solo** los servicios de sus especialidades (`GET /servicios?medico_id=…`).
 
 ### `disponibilidad` — franjas semanales del médico
 `id` · `usuario_id` (FK → usuarios, médico) · `dia_semana` (0–6, 0=domingo) · `hora_inicio` (time) · `hora_fin` (time).
@@ -87,7 +92,7 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 | servicio_id | uuid (FK → servicios) | |
 | starts_at | datetime | |
 | ends_at | datetime | = starts_at + la duración elegida al agendar |
-| estado | `EstadoCita` | SCHEDULED · CONFIRMED · CANCELLED · COMPLETED · NO_SHOW |
+| estado | `AppointmentStatus` | SCHEDULED · CONFIRMED · CANCELLED · COMPLETED · NO_SHOW |
 | motivo | string? | |
 | creado_por_id | uuid (FK → usuarios) | recepción que la agendó |
 | created_at / updated_at | datetime | |
@@ -106,9 +111,9 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 
 ## Enums
 
-- `Rol`: `ADMIN`, `RECEPCION`, `MEDICO`, `PACIENTE`
-- `EstadoCita`: `SCHEDULED`, `CONFIRMED`, `CANCELLED`, `COMPLETED`, `NO_SHOW`
-- `ServicioCategoria`: `CONSULTA`, `ECOGRAFIA`, `DOPPLER`, `ESTUDIO_CARDIACO`, `PROMOCION`, `OTRO`
+- `Role`: `ADMIN`, `RECEPCION`, `MEDICO`, `PACIENTE`
+- `AppointmentStatus`: `SCHEDULED`, `CONFIRMED`, `CANCELLED`, `COMPLETED`, `NO_SHOW`
+- `ServiceCategory`: `CONSULTA`, `ECOGRAFIA`, `DOPPLER`, `ESTUDIO_CARDIACO`, `PROMOCION`, `OTRO`
 
 ## Reglas de validación (en el backend FastAPI)
 
@@ -117,14 +122,14 @@ Para **ahorrar código y simplificar**, personal, médicos y pacientes **compart
 
 Toda la validación vive en la **capa de servicio** del backend (Python), antes de guardar:
 
-1. **Upsert de paciente** — `buscar_o_crear_paciente(db, nombre_completo, edad)`: reutiliza si existe, crea con `rol = PACIENTE` si no; si hay varias coincidencias, recepción elige. La cédula se añade después.
+1. **Upsert de paciente** — `find_or_create_patient(db, nombre_completo, edad)`: reutiliza si existe, crea con `rol = PACIENTE` si no; si hay varias coincidencias, recepción elige. La cédula se añade después.
 2. **Disponibilidad (con sobrecupo)** — la cita debe caer en la `disponibilidad` del médico; si está fuera, se avisa y recepción puede **forzar un cupo extra** (override). El solapamiento exacto por médico (regla 3) se bloquea siempre.
 3. **Cero solapamientos (por médico)** — una cita nueva/modificada **no puede intersectar** con otra cita **activa** (`SCHEDULED`/`CONFIRMED`) del **mismo médico**. Intersección = `nueva.starts_at < existente.ends_at` **y** `nueva.ends_at > existente.starts_at`.
 4. **Cancelar libera** — al pasar a `CANCELLED` la cita sale de los estados activos y su hueco se reutiliza.
 
 ```python
 # Anti-solapamiento por médico (pseudocódigo del servicio de citas)
-def hay_solapamiento(db, medico_id, starts_at, ends_at):
+def has_overlap(db, medico_id, starts_at, ends_at):
     q = (
         db.query(Cita)
         .filter(Cita.medico_id == medico_id)
@@ -141,6 +146,8 @@ def hay_solapamiento(db, medico_id, starts_at, ends_at):
 erDiagram
     usuarios ||--o{ usuario_especialidad : tiene
     especialidades ||--o{ usuario_especialidad : agrupa
+    servicios ||--o{ servicio_especialidad : pertenece
+    especialidades ||--o{ servicio_especialidad : agrupa
     usuarios ||--o{ disponibilidad : define
     usuarios ||--o{ citas : "paciente / médico"
     servicios ||--o{ citas : tipifica
@@ -150,7 +157,7 @@ erDiagram
     usuarios {
         uuid id PK
         string nombre_completo
-        Rol rol
+        Role rol
         string email UK "opc"
         string password_hash "opc"
         string cedula UK "opc"
@@ -164,7 +171,10 @@ erDiagram
         uuid especialidad_id FK }
     servicios { uuid id PK
         string nombre UK
-        ServicioCategoria categoria }
+        ServiceCategory categoria
+        boolean activo }
+    servicio_especialidad { uuid servicio_id FK
+        uuid especialidad_id FK }
     disponibilidad { uuid id PK
         uuid usuario_id FK
         int dia_semana
@@ -176,7 +186,7 @@ erDiagram
         uuid servicio_id FK
         datetime starts_at
         datetime ends_at
-        EstadoCita estado
+        AppointmentStatus estado
         uuid creado_por_id FK }
     notas_clinicas { uuid id PK
         uuid paciente_id FK
@@ -191,10 +201,11 @@ erDiagram
 | Relación | Cardinalidad | Nota |
 |----------|--------------|------|
 | `usuarios` (médico) – `especialidades` | N : M | Vía `usuario_especialidad`. |
+| `servicios` – `especialidades` | N : M | Vía `servicio_especialidad`. Filtra los servicios por médico al agendar. |
 | `usuarios` (médico) – `disponibilidad` | 1 : N | Franjas horarias semanales. |
 | `usuarios` (paciente) – `citas` | 1 : N | Citas del paciente. |
 | `usuarios` (médico) – `citas` | 1 : N | Citas que atiende (anti-solapamiento por médico). |
 | `servicios` – `citas` | 1 : N | Servicio de la cita. |
 | `usuarios` – `notas_clinicas` | 1 : N | Historia clínica (paciente y médico). **Reservada para fase 2, fuera del MVP.** |
 
-> **Fase 2** (si sobra tiempo): historia clínica / notas del médico (`notas_clinicas`, ya creada como andamiaje), recursos/salas + anti-solapamiento por recurso, duración por médico (`medico_servicio`), visitas para agrupar estudios, recordatorios WhatsApp, auditoría, reportes y PWA. El diseño actual permite añadirlas sin romper lo existente.
+> **Fase 2:** el diseño actual (p. ej. `notas_clinicas` como andamiaje) permite añadir nuevas funcionalidades sin romper lo existente. Lista completa en [`MEJORAS-Y-PROXIMOS-PASOS.md`](MEJORAS-Y-PROXIMOS-PASOS.md).

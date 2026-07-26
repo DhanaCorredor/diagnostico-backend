@@ -9,10 +9,11 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
-from app.auth import crear_token
+from app.auth import create_token
 from app.db import SessionLocal, engine, get_db
+from app.enums import Role, ServiceCategory
 from app.main import app
-from app.models import Rol, Servicio, ServicioCategoria, Usuario
+from app.models import Service, User
 
 
 @pytest.fixture
@@ -53,18 +54,18 @@ def client(db):
 @pytest.fixture
 def token_for():
     """Devuelve una función que construye la cabecera Authorization de un usuario."""
-    def _header(usuario):
-        return {"Authorization": f"Bearer {crear_token(usuario.id)}"}
+    def _header(user):
+        return {"Authorization": f"Bearer {create_token(user.id)}"}
 
     return _header
 
 
 @pytest.fixture
-def medico(db):
+def doctor(db):
     """Un médico de prueba (email único para no chocar con otros)."""
-    m = Usuario(
+    m = User(
         nombre_completo="Dr. Test",
-        rol=Rol.MEDICO,
+        rol=Role.MEDICO,
         email=f"med-{uuid.uuid4()}@test.local",
     )
     db.add(m)
@@ -75,9 +76,9 @@ def medico(db):
 @pytest.fixture
 def admin(db):
     """Un admin de prueba (hace de 'creado_por' de las citas)."""
-    a = Usuario(
+    a = User(
         nombre_completo="Admin Test",
-        rol=Rol.ADMIN,
+        rol=Role.ADMIN,
         email=f"adm-{uuid.uuid4()}@test.local",
     )
     db.add(a)
@@ -88,9 +89,9 @@ def admin(db):
 @pytest.fixture
 def recepcion(db):
     """Un usuario de recepción de prueba (para los guardas por rol)."""
-    r = Usuario(
+    r = User(
         nombre_completo="Recep Test",
-        rol=Rol.RECEPCION,
+        rol=Role.RECEPCION,
         email=f"rec-{uuid.uuid4()}@test.local",
     )
     db.add(r)
@@ -99,11 +100,11 @@ def recepcion(db):
 
 
 @pytest.fixture
-def servicio(db):
+def service(db):
     """Un servicio de prueba del catálogo (nombre único)."""
-    s = Servicio(
+    s = Service(
         nombre=f"Servicio {uuid.uuid4()}",
-        categoria=ServicioCategoria.CONSULTA,
+        categoria=ServiceCategory.CONSULTA,
     )
     db.add(s)
     db.flush()

@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
-from app.routers import auth, catalogo, citas, disponibilidad, pacientes, usuarios
+from app.controller import appointments, auth, availability, catalog, patients, users
 
 load_dotenv()
 
@@ -24,18 +24,16 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
-app.include_router(usuarios.router)
-app.include_router(citas.router)
-app.include_router(catalogo.router)
-app.include_router(disponibilidad.router)
-app.include_router(pacientes.router)
+app.include_router(users.router)
+app.include_router(appointments.router)
+app.include_router(catalog.router)
+app.include_router(availability.router)
+app.include_router(patients.router)
 
 
 @app.exception_handler(IntegrityError)
-def conflicto_de_integridad(request: Request, exc: IntegrityError):
-    """Red de seguridad para las reglas de unicidad: si dos peticiones concurrentes
-    intentan crear el mismo valor único, la restricción de la BD hace fallar a la
-    segunda. Se responde 409 (conflicto) en vez de un 500 confuso."""
+def integrity_conflict(request: Request, exc: IntegrityError):
+    """Traduce un fallo de restricción única de la BD a un 409 (conflicto) en vez de un 500."""
     return JSONResponse(status_code=409, content={"detail": "Conflicto de integridad de datos"})
 
 

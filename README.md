@@ -4,7 +4,7 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 
 > Bootcamp final project — MVP scoped to a 2-week deadline. Documentation in `docs/` (in Spanish).
 >
-> **Status:** the backend MVP is **complete and deployed** — [live API](https://diagnostico-api-jtbw.onrender.com/docs) (release **v0.5.0** on Render, auto-deploy on push to `main`). 98 passing tests (unit + integration). The React frontend (`diagnostico-frontend`) is the remaining phase.
+> **Status:** the backend MVP is **complete and deployed** — [live API](https://diagnostico-api-jtbw.onrender.com/docs) (release **v0.6.0** on Render, auto-deploy on push to `main`). 100 passing tests (unit + integration). The React frontend (`diagnostico-frontend`) is the remaining phase.
 
 ---
 
@@ -36,7 +36,7 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 - 🩺 **Doctors** — specialties (**N:M**) and **weekly availability**.
 - 📅 **Appointments & calendar** — book with **overlap validation per doctor** and **availability-based blocking** (days/hours the doctor is off are not selectable).
 
-> **Out of MVP (phase 2):** clinical history / doctor's notes, reports, WhatsApp reminders, audit log, visits (grouped studies), per-doctor duration, rooms/resources + resource overlap, Holter placement/removal, PWA offline. · **Billing** is handled separately (SENIAT); **direct payment only**.
+> **Out of MVP (phase 2):** clinical history, reports, reminders, audit log, rooms/resources and more — full list in [`docs/MEJORAS-Y-PROXIMOS-PASOS.md`](docs/MEJORAS-Y-PROXIMOS-PASOS.md). **Billing** is handled separately (SENIAT); direct payment only.
 
 ## 👥 Roles and permissions
 
@@ -71,7 +71,7 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 
 ## 🗃️ Data model
 
-Core entities (7 tables): `usuarios` (unified), `especialidades` + `usuario_especialidad` (N:M), `servicios`, `disponibilidad`, `citas` (zero overlaps per doctor), `notas_clinicas` (reserved for phase 2, out of MVP).
+Core entities (8 tables): `usuarios` (unified), `especialidades` + `usuario_especialidad` (N:M), `servicios` + `servicio_especialidad` (N:M), `disponibilidad`, `citas` (zero overlaps per doctor), `notas_clinicas` (reserved for phase 2, out of MVP).
 
 📄 Full detail and ER diagram in [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md).
 
@@ -94,7 +94,7 @@ cp .env.example .env         # set DATABASE_URL, JWT_SECRET and ADMIN_PASSWORD
 alembic upgrade head         # apply migrations
 python -m app.seed           # seed catalogs + staff login users (needs ADMIN_PASSWORD)
 uvicorn app.main:app --reload   # http://localhost:8000  (Swagger at /docs)
-pytest                       # run the test suite (98 tests)
+pytest                       # run the test suite (100 tests)
 
 # Frontend (separate repo, in another terminal)
 git clone <frontend-repo-url> && cd diagnostico-frontend
@@ -111,11 +111,12 @@ pnpm dev                     # http://localhost:5173
 ```
 ├── app/
 │   ├── main.py          # FastAPI app + routers
-│   ├── models.py        # SQLAlchemy models
-│   ├── schemas.py       # Pydantic schemas
 │   ├── auth.py          # JWT, hashing, role guard
-│   ├── routers/         # auth, usuarios, citas, catalogo, disponibilidad, pacientes
-│   └── services/        # appointment & patient logic
+│   ├── enums/           # Role, AppointmentStatus, ServiceCategory
+│   ├── models/          # SQLAlchemy models (one file per table)
+│   ├── schemas/         # Pydantic schemas
+│   ├── controller/      # routers: auth, users, appointments, catalog, availability, patients
+│   └── services/        # business logic (appointments, patients, catalog…)
 ├── alembic/             # migrations
 ├── tests/               # pytest
 ├── requirements.txt
@@ -155,7 +156,10 @@ Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 | [`docs/FLUJO-USUARIO.md`](docs/FLUJO-USUARIO.md) | User-flow flowchart (Mermaid) |
 | [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md) | Entities, fields, relations, ER diagram and rules |
 | [`docs/REGLAS-DE-NEGOCIO.md`](docs/REGLAS-DE-NEGOCIO.md) | Canonical business rules and how they are implemented |
-| [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Architecture, layers, data flow and technical decisions |
+| [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Architecture, layers, data flow, design principles/patterns and technical decisions |
+| [`docs/SERVICIOS-BACKEND.md`](docs/SERVICIOS-BACKEND.md) | Backend service layer: what each service does and the exceptions it raises |
+| [`docs/TESTING.md`](docs/TESTING.md) | Testing strategy and what the 100 tests cover |
+| [`docs/MEJORAS-Y-PROXIMOS-PASOS.md`](docs/MEJORAS-Y-PROXIMOS-PASOS.md) | Improvements and next steps: immediate, phase-2 features and technical debt |
 | [`docs/MANUAL-USUARIO.md`](docs/MANUAL-USUARIO.md) | Step-by-step usage guide for the staff |
 | [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) | Deployment guide (Render + PostgreSQL) |
 
