@@ -20,7 +20,7 @@ class AmbiguousPatients(Exception):
 def find_or_create_patient(db: Session, nombre_completo: str, edad: int) -> User:
     """Busca un paciente por nombre_completo + edad y lo devuelve; si no existe, lo crea.
 
-    Lanza PacientesAmbiguos si coinciden varios (recepción debe elegir). Flush, no commit.
+    Lanza AmbiguousPatients si coinciden varios (recepción debe elegir). Flush, no commit.
     """
     coincidencias = (
         db.query(User)
@@ -66,7 +66,7 @@ def list_patients(db: Session) -> list[User]:
 
 
 def get_patient(db: Session, paciente_id: uuid.UUID) -> User:
-    """Devuelve un paciente por id, o lanza PacienteNoEncontrado."""
+    """Devuelve un paciente por id, o lanza PatientNotFound."""
     patient = db.get(User, paciente_id)
     if patient is None or patient.rol != Role.PACIENTE:
         raise PatientNotFound()

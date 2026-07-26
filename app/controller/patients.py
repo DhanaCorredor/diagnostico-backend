@@ -80,7 +80,7 @@ async def update_patient(
 
 @router.delete("/{paciente_id}", response_model=PatientOut)
 async def deactivate_patient(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
-    """Da de baja (lógica) a un paciente: `activo=False`. Reactivar con PUT."""
+    """Da de baja (lógica) a un paciente: `activo=False`. Sale del listado (que solo muestra activos)."""
     try:
         patient = patient_service.deactivate_patient(db, paciente_id)
     except patient_service.PatientNotFound:

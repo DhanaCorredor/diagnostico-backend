@@ -37,7 +37,7 @@ def _email_in_use(db: Session, email: str, excluir_id: uuid.UUID | None = None) 
 
 
 def _resolve_specialties(db: Session, ids: list[uuid.UUID]) -> list[Specialty]:
-    """Convierte una lista de ids en objetos Especialidad; lanza si alguno no existe."""
+    """Convierte una lista de ids en objetos de especialidad; lanza SpecialtyNotFound si alguno no existe."""
     if not ids:
         return []
     encontradas = db.query(Specialty).filter(Specialty.id.in_(ids)).all()
@@ -58,7 +58,7 @@ def list_staff(db: Session) -> list[User]:
 
 
 def get_user(db: Session, usuario_id: uuid.UUID) -> User:
-    """Devuelve un usuario de personal por id, o lanza UsuarioNoEncontrado."""
+    """Devuelve un usuario de personal por id, o lanza UserNotFound."""
     user = db.get(User, usuario_id)
     if user is None or user.rol == Role.PACIENTE:
         raise UserNotFound()
