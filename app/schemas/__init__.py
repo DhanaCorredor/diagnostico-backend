@@ -1,0 +1,45 @@
+"""Esquemas Pydantic (entrada/salida de la API), agrupados por dominio."""
+from app.schemas.appointment import (
+    AppointmentCreate,
+    AppointmentOut,
+    AppointmentUpdate,
+    AttendanceUpdate,
+)
+from app.schemas.auth import LoginRequest, TokenResponse
+from app.schemas.availability import AvailabilityCreate, AvailabilityOut
+from app.schemas.catalog import (
+    DoctorOut,
+    ServiceCreate,
+    ServiceDetail,
+    ServiceOut,
+    ServiceUpdate,
+    SpecialtyCreate,
+    SpecialtyOut,
+)
+from app.schemas.patient import PatientCreate, PatientOut, PatientUpdate
+from app.schemas.user import UserCreate, UserDetail, UserOut, UserUpdate
+
+__all__ = [
+    "AppointmentCreate",
+    "AppointmentOut",
+    "AppointmentUpdate",
+    "AttendanceUpdate",
+    "AvailabilityCreate",
+    "AvailabilityOut",
+    "DoctorOut",
+    "LoginRequest",
+    "PatientCreate",
+    "PatientOut",
+    "PatientUpdate",
+    "ServiceCreate",
+    "ServiceDetail",
+    "ServiceOut",
+    "ServiceUpdate",
+    "SpecialtyCreate",
+    "SpecialtyOut",
+    "TokenResponse",
+    "UserCreate",
+    "UserDetail",
+    "UserOut",
+    "UserUpdate",
+]

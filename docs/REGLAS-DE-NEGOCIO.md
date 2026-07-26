@@ -9,16 +9,16 @@
 
 | # | Regla | Implementación | Estado |
 |---|-------|----------------|:------:|
-| R0 | El inicio cae en la rejilla de 15 min (:00/:15/:30/:45) | `esta_alineado()` · `app/services/citas.py` | ✅ |
-| R0.b | No se puede agendar en el pasado | check en `crear_cita()` (`CitaEnElPasado`) | ✅ |
-| R0.c | El médico debe existir, tener rol MEDICO y estar activo | check en `crear_cita()` (`MedicoNoEncontrado`) | ✅ |
-| R1 | Upsert de paciente al agendar | `buscar_o_crear_paciente()` · `app/services/pacientes.py` | ✅ |
-| R2 | La duración la elige recepción al agendar | `calcular_ends_at()` · `app/services/citas.py` | ✅ |
-| R3 | La cita cae dentro de la disponibilidad del médico | `dentro_de_disponibilidad()` · `app/services/citas.py` | ✅ |
-| R4 | Cero solapamientos por médico | `hay_solapamiento()` · `app/services/citas.py` | ✅ |
+| R0 | El inicio cae en la rejilla de 15 min (:00/:15/:30/:45) | `is_aligned()` · `app/services/appointments.py` | ✅ |
+| R0.b | No se puede agendar en el pasado | check en `create_appointment()` (`AppointmentInThePast`) | ✅ |
+| R0.c | El médico debe existir, tener rol MEDICO y estar activo | check en `create_appointment()` (`MedicoNoEncontrado`) | ✅ |
+| R1 | Upsert de paciente al agendar | `find_or_create_patient()` · `app/services/patients.py` | ✅ |
+| R2 | La duración la elige recepción al agendar | `calculate_ends_at()` · `app/services/appointments.py` | ✅ |
+| R3 | La cita cae dentro de la disponibilidad del médico | `within_availability()` · `app/services/appointments.py` | ✅ |
+| R4 | Cero solapamientos por médico | `has_overlap()` · `app/services/appointments.py` | ✅ |
 | R5 | Cancelar libera el hueco | filtro de estados en R4 | ✅ (regla) |
-| R6 | Marcar asistencia (atendida/no-show) solo sobre citas activas | `marcar_asistencia()` · `app/services/citas.py` | ✅ |
-| — | Orquestación de todas al crear la cita | `crear_cita()` + `POST /citas` | ✅ |
+| R6 | Marcar asistencia (atendida/no-show) solo sobre citas activas | `mark_attendance()` · `app/services/appointments.py` | ✅ |
+| — | Orquestación de todas al crear la cita | `create_appointment()` + `POST /citas` | ✅ |
 
 ---
 
@@ -26,7 +26,7 @@
 
 **Regla.** Una cita solo puede empezar en un minuto de rejilla: **:00, :15, :30 o :45** (múltiplos de 15, sin segundos sueltos). Evita horas irregulares (10:07) y mantiene la agenda ordenada.
 
-**Implementación.** `esta_alineado(starts_at)` en `app/services/citas.py`; si falla, `crear_cita` lanza `HorarioNoAlineado` → **400**.
+**Implementación.** `is_aligned(starts_at)` en `app/services/appointments.py`; si falla, `create_appointment` lanza `TimeNotAligned` → **400**.
 
 ---
 
@@ -34,7 +34,7 @@
 
 **Regla.** El inicio de la cita debe ser **futuro**; no se agenda una cita cuya hora de inicio ya pasó.
 
-**Implementación.** Comparación con la hora actual en `crear_cita` (reloj inyectable para poder testear); si el inicio ya pasó, lanza `CitaEnElPasado` → **400**.
+**Implementación.** Comparación con la hora actual en `create_appointment` (reloj inyectable para poder testear); si el inicio ya pasó, lanza `AppointmentInThePast` → **400**.
 
 ---
 
@@ -42,7 +42,7 @@
 
 **Regla.** Solo se agenda con un usuario que exista, tenga **rol MEDICO** y esté **activo** (un médico dado de baja no es agendable).
 
-**Implementación.** Validación en `crear_cita`; si no cumple, lanza `MedicoNoEncontrado` → **404**.
+**Implementación.** Validación en `create_appointment`; si no cumple, lanza `MedicoNoEncontrado` → **404**.
 
 ---
 
@@ -54,7 +54,7 @@ sistema **detecta** si ya existe o lo **crea**, para no duplicar.
 - Se identifica por **`nombre_completo` + `edad`** (lo que pide recepción; la cédula es opcional y se añade después).
 - **1 coincidencia** → se reutiliza. **0 coincidencias** → se crea con `rol = PACIENTE`. **Varias** → recepción **elige** (se señala con la excepción `PacientesAmbiguos`).
 
-**Implementación.** `buscar_o_crear_paciente(db, nombre_completo, edad)` en `app/services/pacientes.py`.
+**Implementación.** `find_or_create_patient(db, nombre_completo, edad)` en `app/services/patients.py`.
 Hace `flush` (no `commit`): el paciente nuevo obtiene su `id` pero se guarda dentro de la transacción de la cita.
 
 ---
@@ -67,7 +67,7 @@ $$ \text{ends\_at} = \text{starts\_at} + \text{duracion\_min} $$
 
 Ej.: cita a las 10:00 con **45 min** elegidos → termina a las 10:45.
 
-**Implementación.** `calcular_ends_at(starts_at, duracion_min)` en `app/services/citas.py`. El valor se valida en el schema `CitaCreate` (`Literal[15,30,45,60,90]` → 422 si no es válido).
+**Implementación.** `calculate_ends_at(starts_at, duracion_min)` en `app/services/appointments.py`. El valor se valida en el schema `AppointmentCreate` (`Literal[15,30,45,60,90]` → 422 si no es válido).
 
 ---
 
@@ -78,9 +78,9 @@ Ej.: cita a las 10:00 con **45 min** elegidos → termina a las 10:45.
 
 - El día se convierte a la convención del modelo (**0 = domingo**) con `(fecha.weekday() + 1) % 7`.
 - Condición: `franja.hora_inicio ≤ cita.inicio` **y** `cita.fin ≤ franja.hora_fin`.
-- **Sobrecupo:** si la cita cae fuera, recepción puede **forzar un cupo extra** (override) de mutuo acuerdo. *(Lo aplica `crear_cita` con `permitir_sobrecupo`.)*
+- **Sobrecupo:** si la cita cae fuera, recepción puede **forzar un cupo extra** (override) de mutuo acuerdo. *(Lo aplica `create_appointment` con `permitir_sobrecupo`.)*
 
-**Implementación.** `dentro_de_disponibilidad(db, medico_id, starts_at, ends_at)` en `app/services/citas.py`.
+**Implementación.** `within_availability(db, medico_id, starts_at, ends_at)` en `app/services/appointments.py`.
 
 ---
 
@@ -92,8 +92,8 @@ Ej.: cita a las 10:00 con **45 min** elegidos → termina a las 10:45.
 - Solo cuentan las **activas** (`SCHEDULED` / `CONFIRMED`).
 - Citas **pegadas** (una acaba justo cuando empieza la otra) **no** se solapan → se permiten.
 - Es **por médico** (dos médicos pueden atender a la misma hora).
-**Implementación.** `hay_solapamiento(db, medico_id, starts_at, ends_at)`
-en `app/services/citas.py` (consulta `EXISTS` sobre las citas activas del médico).
+**Implementación.** `has_overlap(db, medico_id, starts_at, ends_at)`
+en `app/services/appointments.py` (consulta `EXISTS` sobre las citas activas del médico).
 
 ---
 
@@ -102,7 +102,7 @@ en `app/services/citas.py` (consulta `EXISTS` sobre las citas activas del médic
 **Regla.** Al pasar una cita a `CANCELLED`, sale de los estados activos y su hueco **se reutiliza**.
 
 **Implementación.** No necesita código propio: R4 solo mira las citas `SCHEDULED`/`CONFIRMED`, así que
-una cancelada deja de contar automáticamente. *(El cambio de estado lo hace `cancelar_cita` / `POST /citas/{id}/cancelar`.)*
+una cancelada deja de contar automáticamente. *(El cambio de estado lo hace `cancel_appointment` / `POST /citas/{id}/cancelar`.)*
 
 ---
 
@@ -110,13 +110,13 @@ una cancelada deja de contar automáticamente. *(El cambio de estado lo hace `ca
 
 **Regla.** Una cita **activa** (`SCHEDULED`/`CONFIRMED`) se cierra como **atendida** (`COMPLETED`) o **no-show** (`NO_SHOW`); no se puede marcar sobre una cita ya cerrada o cancelada. Lo hacen **recepción y admin** (el médico solo consulta su agenda, no marca asistencia).
 
-**Implementación.** `marcar_asistencia(db, cita_id, estado)` en `app/services/citas.py` (reutiliza `_obtener_cita_activa`); si la cita no está activa lanza `CitaNoActiva` → **409**. Endpoint `POST /citas/{id}/asistencia` con `estado ∈ {COMPLETED, NO_SHOW}`.
+**Implementación.** `mark_attendance(db, cita_id, estado)` en `app/services/appointments.py` (reutiliza `_get_active_appointment`); si la cita no está activa lanza `AppointmentNotActive` → **409**. Endpoint `POST /citas/{id}/asistencia` con `estado ∈ {COMPLETED, NO_SHOW}`.
 
 ---
 
 ## Orden al crear una cita (orquestación)
 
-El servicio `crear_cita` llama a las reglas **en este orden** y guarda todo con **un solo `commit`** (o nada, si algo falla):
+El servicio `create_appointment` llama a las reglas **en este orden** y guarda todo con **un solo `commit`** (o nada, si algo falla):
 
 1. **Validaciones de entrada:** el servicio existe; el médico existe, tiene rol MEDICO y está activo (**R0.c**); el inicio cae en la rejilla (**R0**) y **no** está en el pasado (**R0.b**).
 2. **R1** — upsert del paciente.
@@ -129,7 +129,4 @@ El servicio `crear_cita` llama a las reglas **en este orden** y guarda todo con 
 
 ## Fuera del MVP (fase 2)
 
-- **Anti-solapamiento por recurso/sala** (equipos únicos: ecógrafo, etc.) — hoy solo por médico.
-- **Constraint `gist` en la base de datos** como segunda barrera al solapamiento.
-- **Duración por médico** (`medico_servicio`) automática — hoy la duración la elige recepción a mano.
-- **Holter/MAPA con retiro** enlazado a la colocación.
+Reglas que evolucionarán en fase 2 (anti-solapamiento por recurso/sala, constraint `gist` en BD, duración por médico, Holter con retiro): ver **[`MEJORAS-Y-PROXIMOS-PASOS.md`](MEJORAS-Y-PROXIMOS-PASOS.md)**.

@@ -20,7 +20,7 @@ flowchart TD
     end
 
     subgraph Backend["API FastAPI (Python)"]
-        ROUTERS["Routers REST<br/>(auth, usuarios, citas, catalogo,<br/>disponibilidad, pacientes)"]
+        ROUTERS["Routers REST<br/>(auth, users, appointments, catalog,<br/>availability, patients)"]
         AUTHDEP["Dependencia de auth<br/>(verifica JWT + rol)"]
         SERV["Capa de servicio<br/>(citas: solapamiento + disponibilidad,<br/>pacientes: upsert)"]
         ORM["SQLAlchemy (models)"]
@@ -40,7 +40,7 @@ flowchart TD
 | Capa | Responsabilidad | Ubicación |
 |------|-----------------|-----------|
 | **Presentación** | UI, formularios, calendario, navegación. Llamadas a la API. | frontend · `src/` |
-| **API / routers** | Endpoints REST, validación de entrada (Pydantic), verificación de rol. | backend · `app/routers` |
+| **API / controller** | Endpoints REST, validación de entrada (Pydantic), verificación de rol. | backend · `app/controller` |
 | **Dominio / servicios** | Reglas de negocio (citas, disponibilidad, upsert de paciente, auth). Aislada y testeable. | backend · `app/services` |
 | **Acceso a datos** | Modelos y consultas vía SQLAlchemy. | backend · `app/models`, `app/db.py` |
 | **Base de datos** | Almacenamiento e integridad. | PostgreSQL |
@@ -51,16 +51,18 @@ flowchart TD
 
 ```
 app/
-  main.py           # arranque FastAPI + montaje de routers
-  db.py             # engine + sesión SQLAlchemy
-  models.py         # modelos (usuarios, citas, servicios, ...)
-  schemas.py        # esquemas Pydantic (entrada/salida)
-  auth.py           # JWT, hash de contraseñas, dependencia requiere_rol
-  routers/          # endpoints: auth, usuarios, citas, catalogo, disponibilidad, pacientes
+  main.py           # arranque FastAPI: solo monta el enrutador (controller)
+  db.py             # engine + sesión SQLAlchemy (Base)
+  auth.py           # JWT, hash de contraseñas, dependencias de rol
+  enums/            # enums del dominio: Role, AppointmentStatus, ServiceCategory
+  models/           # una tabla por archivo (usuario, cita, servicio, ...)
+  schemas/          # esquemas Pydantic por dominio (auth, cita, catalogo, ...)
+  controller/       # endpoints: auth, usuarios, citas, catalogo, disponibilidad, pacientes
   services/         # lógica: citas (solapamiento/disponibilidad), pacientes (upsert)
+  seed.py           # datos base (catálogo, personal, cuadro médico)
 alembic/            # migraciones
 tests/              # pytest
-requirements.txt
+requirements.txt · ruff.toml
 docs/  mockup/       # documentación del proyecto
 ```
 
@@ -97,11 +99,33 @@ package.json        # pnpm
 | **Upsert de paciente al agendar** | Evita duplicados y agiliza el flujo real de recepción. |
 | **IDs `uuid`** | Evitan colisiones al migrar entre entornos. |
 
+## 5.b Principios y patrones de diseño
+
+**Principios**
+- **KISS / Simplicidad primero** — menos abstracciones, funciones cortas, sin patrones innecesarios.
+- **Separación de responsabilidades (SRP)** — cada capa y cada módulo hacen una sola cosa.
+- **DRY** — la lógica repetida se centraliza (ej. `value_in_use` para unicidad; helpers `_validate_*`).
+
+**Patrones**
+| Patrón | Dónde / cómo |
+|--------|--------------|
+| **Arquitectura en capas** | `controller/` (HTTP) → `services/` (negocio) → SQLAlchemy (datos). |
+| **Service Layer** | Toda la lógica de negocio en `app/services/`, testeable sin levantar la API. |
+| **Inyección de dependencias** | `Depends()` de FastAPI: `get_db`, `current_user`, `require_role`. |
+| **Factory de dependencias** | `require_role(*roles)` devuelve una dependencia que valida el rol del usuario. |
+| **DTO / esquemas de frontera** | Pydantic (`app/schemas/`) valida la entrada y serializa la salida; el modelo ORM no se expone directo. |
+| **Excepciones de dominio → HTTP** | Los servicios lanzan excepciones propias; el router las traduce a 400/404/409. |
+| **Unit of Work** | Una transacción por petición: los servicios hacen `flush`, el endpoint hace `commit`. |
+| **Tabla de asociación N:M** | `usuario_especialidad`, `servicio_especialidad`. |
+| **Soft delete (baja lógica)** | `activo = False` en vez de borrar (conserva histórico; HIPAA/GDPR). |
+| **Upsert** | `find_or_create_patient` evita duplicados al agendar. |
+| **Enums de dominio** | Listas cerradas (`Role`, `AppointmentStatus`, `ServiceCategory`) validadas por Pydantic y la BD. |
+
 ## 6. Seguridad y privacidad
 
 - Contraseñas con **hash** (bcrypt); nunca en texto plano.
 - **JWT** firmado con secreto en variable de entorno; expiración razonable.
-- **Control de acceso por rol** en cada endpoint (dependencia `requiere_rol`): RECEPCIÓN no accede a usuarios, configuración ni reportes.
+- **Control de acceso por rol** en cada endpoint (dependencia `require_role`): RECEPCIÓN no accede a usuarios, configuración ni reportes.
 - **Secretos** solo en variables de entorno (`.env`), nunca en el repositorio.
 - **Datos médicos** (HIPAA/GDPR): bajas lógicas (`activo`), sin borrado físico. *(Auditoría completa → fase 2.)*
 
