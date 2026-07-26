@@ -43,13 +43,13 @@ def test_list_services_filters_by_doctor(db):
 
 
 def test_list_active_doctors_with_specialties(db):
-    esp = Specialty(nombre=f"Cardio {uuid.uuid4()}")
+    spec = Specialty(nombre=f"Cardio {uuid.uuid4()}")
     activo = User(
-        nombre_completo=f"Dr. Activo {uuid.uuid4()}", rol=Role.MEDICO, especialidades=[esp]
+        nombre_completo=f"Dr. Activo {uuid.uuid4()}", rol=Role.MEDICO, especialidades=[spec]
     )
     inactivo = User(nombre_completo=f"Dr. Baja {uuid.uuid4()}", rol=Role.MEDICO, activo=False)
     patient = User(nombre_completo=f"Paciente {uuid.uuid4()}", rol=Role.PACIENTE)
-    db.add_all([esp, activo, inactivo, patient])
+    db.add_all([spec, activo, inactivo, patient])
     db.flush()
 
     medicos = C.list_doctors(db)
@@ -58,7 +58,7 @@ def test_list_active_doctors_with_specialties(db):
     assert inactivo.id not in ids
     assert patient.id not in ids
     m = next(x for x in medicos if x.id == activo.id)
-    assert esp.nombre in [e.nombre for e in m.especialidades]
+    assert spec.nombre in [e.nombre for e in m.especialidades]
 
 
 def test_list_specialties_ordered(db):
@@ -128,8 +128,8 @@ def test_update_service_same_name_ok(db):
 
 
 def test_create_specialty(db):
-    esp = C.create_specialty(db, nombre=f"Neurología {uuid.uuid4()}")
-    assert esp.id is not None
+    spec = C.create_specialty(db, nombre=f"Neurología {uuid.uuid4()}")
+    assert spec.id is not None
 
 
 def test_create_specialty_duplicate_name(db):

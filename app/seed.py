@@ -129,64 +129,64 @@ PATIENTS = [
 
 def seed_specialties(db):
     """Inserta las especialidades que aún no existan. Devuelve cuántas añadió."""
-    existentes = {e.nombre for e in db.query(Specialty.nombre).all()}
-    nuevas = [Specialty(nombre=n) for n in SPECIALTIES if n not in existentes]
-    db.add_all(nuevas)
-    return len(nuevas)
+    existing = {e.nombre for e in db.query(Specialty.nombre).all()}
+    new_ones = [Specialty(nombre=n) for n in SPECIALTIES if n not in existing]
+    db.add_all(new_ones)
+    return len(new_ones)
 
 
 def seed_services(db):
     """Inserta los servicios que falten, vinculando cada uno (N:M) a su especialidad. Devuelve cuántos añadió."""
-    existentes = {s.nombre for s in db.query(Service.nombre).all()}
+    existing = {s.nombre for s in db.query(Service.nombre).all()}
     catalog = {e.nombre: e for e in db.query(Specialty).all()}
-    creados = 0
+    created = 0
     for nombre, categoria, especialidades in SERVICES:
-        if nombre in existentes:
+        if nombre in existing:
             continue
         service = Service(nombre=nombre, categoria=categoria)
         service.especialidades = [catalog[e] for e in especialidades]
         db.add(service)
-        creados += 1
-    return creados
+        created += 1
+    return created
 
 
 def seed_doctors(db):
     """Crea los médicos que falten (rol MEDICO, sin login), con sus especialidades (N:M) y franjas. Devuelve cuántos creó."""
-    existentes = {
+    existing = {
         u.nombre_completo
         for u in db.query(User.nombre_completo).filter(User.rol == Role.MEDICO).all()
     }
     catalog = {e.nombre: e for e in db.query(Specialty).all()}
-    creados = 0
+    created = 0
     for nombre, especialidades, slots in DOCTORS:
-        if nombre in existentes:
+        if nombre in existing:
             continue
         doctor = User(nombre_completo=nombre, rol=Role.MEDICO)
         doctor.especialidades = [catalog[e] for e in especialidades]
         db.add(doctor)
         db.flush()
-        for dia, inicio, fin in slots:
+        for dia, start, end in slots:
             db.add(
                 Availability(
                     usuario_id=doctor.id,
                     dia_semana=dia,
-                    hora_inicio=inicio,
-                    hora_fin=fin,
+                    hora_inicio=start,
+                    hora_fin=end,
                 )
             )
-        creados += 1
-    return creados
+        created += 1
+    return created
 
 
 def seed_patients(db):
     """Crea los pacientes ficticios de demo (rol PACIENTE) que falten; nunca datos reales. Devuelve cuántos creó."""
-    existentes = {
+    existing = {
         u.nombre_completo
         for u in db.query(User.nombre_completo).filter(User.rol == Role.PACIENTE).all()
     }
-    creados = 0
+    created = 0
     for nombre, edad, cedula, telefono in PATIENTS:
-        if nombre in existentes:
+        if nombre in existing:
             continue
         db.add(
             User(
@@ -197,8 +197,8 @@ def seed_patients(db):
                 telefono=telefono,
             )
         )
-        creados += 1
-    return creados
+        created += 1
+    return created
 
 
 def seed_staff(db):
@@ -207,7 +207,7 @@ def seed_staff(db):
     if not password:
         print("  (aviso) ADMIN_PASSWORD no está en el .env: me salto el personal.")
         return 0
-    creados = 0
+    created = 0
     for nombre, rol, email, matricula in STAFF:
         if db.query(User).filter_by(email=email).first():
             continue
@@ -220,8 +220,8 @@ def seed_staff(db):
                 password_hash=hash_password(password),
             )
         )
-        creados += 1
-    return creados
+        created += 1
+    return created
 
 
 WORKDAYS = (1, 2, 3, 4, 5, 6)
@@ -231,7 +231,7 @@ CLOSE_TIME = time(17, 30)
 
 def seed_availability(db):
     """Da a cada médico sin franjas la jornada del centro (L-S 07:30-17:30); no toca a los que ya tienen. Devuelve cuántas creó."""
-    creadas = 0
+    created = 0
     for doctor in db.query(User).filter(User.rol == Role.MEDICO).all():
         ya_tiene = (
             db.query(Availability)
@@ -249,8 +249,8 @@ def seed_availability(db):
                     hora_fin=CLOSE_TIME,
                 )
             )
-            creadas += 1
-    return creadas
+            created += 1
+    return created
 
 
 def main():

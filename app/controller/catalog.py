@@ -56,14 +56,14 @@ async def list_specialties(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_service(
-    datos: ServiceCreate,
+    data: ServiceCreate,
     db: Session = Depends(get_db),
     _: object = Depends(require_role(Role.ADMIN)),
 ):
     """Da de alta un servicio en el catálogo (ADMIN)."""
     try:
         service = catalog_service.create_service(
-            db, nombre=datos.nombre, categoria=datos.categoria
+            db, nombre=data.nombre, categoria=data.categoria
         )
     except catalog_service.DuplicateName:
         raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe un servicio con ese nombre") from None
@@ -75,14 +75,14 @@ async def create_service(
 @router.put("/servicios/{servicio_id}", response_model=ServiceDetail)
 async def update_service(
     servicio_id: uuid.UUID,
-    datos: ServiceUpdate,
+    data: ServiceUpdate,
     db: Session = Depends(get_db),
     _: object = Depends(require_role(Role.ADMIN)),
 ):
     """Edita un servicio del catálogo (ADMIN). Permite desactivarlo sin borrarlo."""
-    cambios = datos.model_dump(exclude_unset=True)
+    changes = data.model_dump(exclude_unset=True)
     try:
-        service = catalog_service.update_service(db, servicio_id, cambios)
+        service = catalog_service.update_service(db, servicio_id, changes)
     except catalog_service.ServiceNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado") from None
     except catalog_service.DuplicateName:
@@ -98,17 +98,17 @@ async def update_service(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_specialty(
-    datos: SpecialtyCreate,
+    data: SpecialtyCreate,
     db: Session = Depends(get_db),
     _: object = Depends(require_role(Role.ADMIN)),
 ):
     """Da de alta una especialidad médica (ADMIN)."""
     try:
-        especialidad = catalog_service.create_specialty(db, nombre=datos.nombre)
+        specialty = catalog_service.create_specialty(db, nombre=data.nombre)
     except catalog_service.DuplicateName:
         raise HTTPException(
             status.HTTP_409_CONFLICT, "Ya existe una especialidad con ese nombre"
         ) from None
 
     db.commit()
-    return especialidad
+    return specialty

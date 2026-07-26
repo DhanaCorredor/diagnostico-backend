@@ -37,10 +37,10 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 def create_token(usuario_id: uuid.UUID) -> str:
     """Crea un JWT firmado con el id del usuario (`sub`) y su caducidad (`exp`); el rol no se guarda."""
-    ahora = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc)
     payload = {
         "sub": str(usuario_id),
-        "exp": ahora + timedelta(minutes=JWT_EXPIRE_MINUTES),
+        "exp": now + timedelta(minutes=JWT_EXPIRE_MINUTES),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
@@ -58,26 +58,26 @@ def current_user(
     db: Session = Depends(get_db),
 ) -> User:
     """Dependencia: valida el token del header y devuelve el usuario autenticado (401 si falla o está inactivo)."""
-    no_autorizado = HTTPException(
+    unauthorized = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Token inválido o expirado",
     )
     try:
-        datos = decode_token(credentials.credentials)
-        usuario_id = uuid.UUID(datos["sub"])
+        data = decode_token(credentials.credentials)
+        usuario_id = uuid.UUID(data["sub"])
     except (jwt.InvalidTokenError, KeyError, ValueError):
-        raise no_autorizado from None
+        raise unauthorized from None
     user = db.get(User, usuario_id)
     if user is None or not user.activo:
-        raise no_autorizado
+        raise unauthorized
     return user
 
 
-def require_role(*roles_permitidos: Role):
+def require_role(*allowed_roles: Role):
     """Fábrica de dependencias que exige que el usuario autenticado tenga uno de estos roles (403 si no)."""
 
     def verificar(user: User = Depends(current_user)) -> User:
-        if user.rol not in roles_permitidos:
+        if user.rol not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="No tienes permiso para esta acción",

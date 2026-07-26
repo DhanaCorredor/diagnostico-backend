@@ -27,7 +27,7 @@ async def list_availability(
 
 @router.post("", response_model=AvailabilityOut, status_code=status.HTTP_201_CREATED)
 async def create_availability(
-    datos: AvailabilityCreate,
+    data: AvailabilityCreate,
     db: Session = Depends(get_db),
     user: User = Depends(require_role(Role.ADMIN)),
 ):
@@ -35,10 +35,10 @@ async def create_availability(
     try:
         slot = availability_service.create_availability(
             db,
-            medico_id=datos.medico_id,
-            dia_semana=datos.dia_semana,
-            hora_inicio=datos.hora_inicio,
-            hora_fin=datos.hora_fin,
+            medico_id=data.medico_id,
+            dia_semana=data.dia_semana,
+            hora_inicio=data.hora_inicio,
+            hora_fin=data.hora_fin,
         )
     except availability_service.DoctorNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Médico no encontrado") from None

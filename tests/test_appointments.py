@@ -41,7 +41,7 @@ def test_appointmentcreate_rejects_tzaware_date():
 
 
 def test_appointmentcreate_accepts_naive_date():
-    datos = AppointmentCreate(
+    data = AppointmentCreate(
         nombre_completo="Ana",
         edad=30,
         medico_id=uuid.uuid4(),
@@ -49,7 +49,7 @@ def test_appointmentcreate_accepts_naive_date():
         starts_at="2026-07-20T10:00:00",
         duracion_min=45,
     )
-    assert datos.starts_at == datetime(2026, 7, 20, 10, 0)
+    assert data.starts_at == datetime(2026, 7, 20, 10, 0)
 
 
 def test_appointmentupdate_rejects_tzaware_date():
@@ -58,8 +58,8 @@ def test_appointmentupdate_rejects_tzaware_date():
 
 
 def test_appointmentupdate_without_starts_at_ok():
-    datos = AppointmentUpdate(motivo="control")
-    assert datos.starts_at is None
+    data = AppointmentUpdate(motivo="control")
+    assert data.starts_at is None
 
 
 def test_now_center_is_naive_and_utc_minus_4():
@@ -71,8 +71,8 @@ def test_now_center_is_naive_and_utc_minus_4():
 
 
 def test_calculate_ends_at():
-    fin = C.calculate_ends_at(datetime(2026, 7, 20, 10, 0), 45)
-    assert fin == datetime(2026, 7, 20, 10, 45)
+    end = C.calculate_ends_at(datetime(2026, 7, 20, 10, 0), 45)
+    assert end == datetime(2026, 7, 20, 10, 45)
 
 
 def test_is_aligned():
@@ -145,7 +145,7 @@ def test_create_appointment_happy_path(db, doctor, service, admin):
         starts_at=LUNES_10,
         duracion_min=45,
         creado_por_id=admin.id,
-        ahora=ANTES,
+        now=ANTES,
     )
     assert appointment.ends_at == datetime(2026, 7, 20, 10, 45)
     assert appointment.estado == AppointmentStatus.SCHEDULED
@@ -167,7 +167,7 @@ def test_create_appointment_with_patient_id_resolves_ambiguity(db, doctor, servi
         starts_at=LUNES_10,
         duracion_min=45,
         creado_por_id=admin.id,
-        ahora=ANTES,
+        now=ANTES,
     )
     assert appointment.paciente_id == p1.id
 
@@ -183,7 +183,7 @@ def test_create_appointment_uses_chosen_duration(db, doctor, service, admin):
         starts_at=LUNES_10,
         duracion_min=90,
         creado_por_id=admin.id,
-        ahora=ANTES,
+        now=ANTES,
     )
     assert appointment.ends_at == datetime(2026, 7, 20, 11, 30)
 
@@ -199,7 +199,7 @@ def test_create_appointment_outside_availability(db, doctor, service, admin):
             starts_at=LUNES_10,
             duracion_min=45,
             creado_por_id=admin.id,
-            ahora=ANTES,
+            now=ANTES,
         )
 
 
@@ -214,7 +214,7 @@ def test_create_appointment_blocks_overlap(db, doctor, service, admin):
         starts_at=LUNES_10,
         duracion_min=45,
         creado_por_id=admin.id,
-        ahora=ANTES,
+        now=ANTES,
     )
     with pytest.raises(C.Overlap):
         C.create_appointment(
@@ -226,7 +226,7 @@ def test_create_appointment_blocks_overlap(db, doctor, service, admin):
             starts_at=datetime(2026, 7, 20, 10, 30),
             duracion_min=45,
             creado_por_id=admin.id,
-            ahora=ANTES,
+            now=ANTES,
         )
 
 
@@ -285,7 +285,7 @@ def test_edit_appointment_overbook_only_reason(db, doctor, service, admin):
         duracion_min=45,
         creado_por_id=admin.id,
         permitir_sobrecupo=True,
-        ahora=ANTES,
+        now=ANTES,
     )
     actualizada = C.edit_appointment(db, appointment.id, motivo="control")
     assert actualizada.motivo == "control"
@@ -303,7 +303,7 @@ def test_create_appointment_in_the_past(db, doctor, service, admin):
             starts_at=LUNES_10,
             duracion_min=45,
             creado_por_id=admin.id,
-            ahora=datetime(2026, 7, 20, 11, 0),
+            now=datetime(2026, 7, 20, 11, 0),
         )
 
 
@@ -326,7 +326,7 @@ def test_create_appointment_inactive_doctor(db, service, admin):
             starts_at=LUNES_10,
             duracion_min=45,
             creado_por_id=admin.id,
-            ahora=ANTES,
+            now=ANTES,
         )
 
 
@@ -342,7 +342,7 @@ def _appointment(db, doctor, service, admin, starts_at):
         starts_at=starts_at,
         duracion_min=45,
         creado_por_id=admin.id,
-        ahora=ANTES,
+        now=ANTES,
     )
 
 
@@ -392,7 +392,7 @@ def test_cancel_appointment_frees_slot(db, doctor, service, admin):
         starts_at=LUNES_10,
         duracion_min=45,
         creado_por_id=admin.id,
-        ahora=ANTES,
+        now=ANTES,
     )
     assert otra.estado == AppointmentStatus.SCHEDULED
 
@@ -435,20 +435,20 @@ def test_mark_attendance_appointment_not_active(db, doctor, service, admin):
 
 def test_edit_moves_time(db, doctor, service, admin):
     appointment = _appointment(db, doctor, service, admin, LUNES_10)
-    C.edit_appointment(db, appointment.id, starts_at=datetime(2026, 7, 20, 11, 0), ahora=ANTES)
+    C.edit_appointment(db, appointment.id, starts_at=datetime(2026, 7, 20, 11, 0), now=ANTES)
     assert appointment.starts_at == datetime(2026, 7, 20, 11, 0)
     assert appointment.ends_at == datetime(2026, 7, 20, 11, 45)
 
 
 def test_edit_changes_duration(db, doctor, service, admin):
     appointment = _appointment(db, doctor, service, admin, LUNES_10)
-    C.edit_appointment(db, appointment.id, duracion_min=90, ahora=ANTES)
+    C.edit_appointment(db, appointment.id, duracion_min=90, now=ANTES)
     assert appointment.ends_at == datetime(2026, 7, 20, 11, 30)
 
 
 def test_edit_does_not_overlap_itself(db, doctor, service, admin):
     appointment = _appointment(db, doctor, service, admin, LUNES_10)
-    C.edit_appointment(db, appointment.id, starts_at=datetime(2026, 7, 20, 10, 15), ahora=ANTES)
+    C.edit_appointment(db, appointment.id, starts_at=datetime(2026, 7, 20, 10, 15), now=ANTES)
     assert appointment.starts_at == datetime(2026, 7, 20, 10, 15)
 
 
@@ -463,11 +463,11 @@ def test_edit_blocks_overlap_with_another(db, doctor, service, admin):
         starts_at=datetime(2026, 7, 20, 9, 0),
         duracion_min=45,
         creado_por_id=admin.id,
-        ahora=ANTES,
+        now=ANTES,
     )
     appointment = _appointment(db, doctor, service, admin, LUNES_10)
     with pytest.raises(C.Overlap):
-        C.edit_appointment(db, appointment.id, starts_at=datetime(2026, 7, 20, 9, 30), ahora=ANTES)
+        C.edit_appointment(db, appointment.id, starts_at=datetime(2026, 7, 20, 9, 30), now=ANTES)
     assert otra.id != appointment.id
 
 
@@ -486,13 +486,13 @@ def test_edit_appointment_not_active(db, doctor, service, admin):
 def test_edit_outside_availability(db, doctor, service, admin):
     appointment = _appointment(db, doctor, service, admin, LUNES_10)
     with pytest.raises(C.OutsideAvailability):
-        C.edit_appointment(db, appointment.id, starts_at=datetime(2026, 7, 20, 7, 0), ahora=ANTES)
+        C.edit_appointment(db, appointment.id, starts_at=datetime(2026, 7, 20, 7, 0), now=ANTES)
 
 
 def test_edit_unaligned_time(db, doctor, service, admin):
     appointment = _appointment(db, doctor, service, admin, LUNES_10)
     with pytest.raises(C.TimeNotAligned):
-        C.edit_appointment(db, appointment.id, starts_at=datetime(2026, 7, 20, 11, 7), ahora=ANTES)
+        C.edit_appointment(db, appointment.id, starts_at=datetime(2026, 7, 20, 11, 7), now=ANTES)
 
 
 def test_edit_to_the_past(db, doctor, service, admin):
@@ -502,13 +502,13 @@ def test_edit_to_the_past(db, doctor, service, admin):
             db,
             appointment.id,
             starts_at=datetime(2026, 7, 20, 11, 0),
-            ahora=datetime(2026, 7, 20, 12, 0),
+            now=datetime(2026, 7, 20, 12, 0),
         )
 
 
 def test_edit_without_moving_time_skips_past_check(db, doctor, service, admin):
     appointment = _appointment(db, doctor, service, admin, LUNES_10)
-    C.edit_appointment(db, appointment.id, motivo="control", ahora=datetime(2026, 7, 20, 23, 0))
+    C.edit_appointment(db, appointment.id, motivo="control", now=datetime(2026, 7, 20, 23, 0))
     assert appointment.motivo == "control"
 
 
@@ -516,7 +516,7 @@ def test_edit_reason_none_keeps_current(db, doctor, service, admin):
     appointment = _appointment(db, doctor, service, admin, LUNES_10)
     appointment.motivo = "revisión"
     db.flush()
-    C.edit_appointment(db, appointment.id, starts_at=datetime(2026, 7, 20, 11, 0), ahora=ANTES)
+    C.edit_appointment(db, appointment.id, starts_at=datetime(2026, 7, 20, 11, 0), now=ANTES)
     assert appointment.motivo == "revisión"
 
 

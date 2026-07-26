@@ -21,16 +21,16 @@ def list_services(
     db: Session, medico_id: uuid.UUID | None = None
 ) -> list[Service]:
     """Devuelve los servicios activos ordenados por nombre; con `medico_id`, solo los de sus especialidades."""
-    consulta = (
+    query = (
         db.query(Service)
         .options(selectinload(Service.especialidades))
         .filter(Service.activo.is_(True))
     )
     if medico_id is not None:
-        consulta = consulta.filter(
+        query = query.filter(
             Service.especialidades.any(Specialty.medicos.any(User.id == medico_id))
         )
-    return consulta.order_by(Service.nombre).all()
+    return query.order_by(Service.nombre).all()
 
 
 def list_doctors(db: Session) -> list[User]:
@@ -51,10 +51,10 @@ def list_specialties(db: Session) -> list[Specialty]:
 
 
 def _service_name_in_use(
-    db: Session, nombre: str, excluir_id: uuid.UUID | None = None
+    db: Session, nombre: str, exclude_id: uuid.UUID | None = None
 ) -> bool:
     """True si ya hay un servicio con ese nombre (excluyendo, si se indica, uno propio)."""
-    return value_in_use(db, Service, Service.nombre, nombre, excluir_id)
+    return value_in_use(db, Service, Service.nombre, nombre, exclude_id)
 
 
 def create_service(
@@ -69,18 +69,18 @@ def create_service(
     return service
 
 
-def update_service(db: Session, servicio_id: uuid.UUID, cambios: dict) -> Service:
+def update_service(db: Session, servicio_id: uuid.UUID, changes: dict) -> Service:
     """Edita solo los campos enviados de un servicio; permite desactivarlo (`activo=False`). Flush, no commit."""
     service = db.get(Service, servicio_id)
     if service is None:
         raise ServiceNotFound()
-    if cambios.get("nombre") is not None and _service_name_in_use(
-        db, cambios["nombre"], excluir_id=servicio_id
+    if changes.get("nombre") is not None and _service_name_in_use(
+        db, changes["nombre"], exclude_id=servicio_id
     ):
         raise DuplicateName()
-    for campo in ("nombre", "categoria", "activo"):
-        if campo in cambios:
-            setattr(service, campo, cambios[campo])
+    for field in ("nombre", "categoria", "activo"):
+        if field in changes:
+            setattr(service, field, changes[field])
     db.flush()
     return service
 
@@ -89,7 +89,7 @@ def create_specialty(db: Session, *, nombre: str) -> Specialty:
     """Da de alta una especialidad en el catálogo. Nombre único. Flush (no commit)."""
     if value_in_use(db, Specialty, Specialty.nombre, nombre):
         raise DuplicateName()
-    especialidad = Specialty(nombre=nombre)
-    db.add(especialidad)
+    specialty = Specialty(nombre=nombre)
+    db.add(specialty)
     db.flush()
-    return especialidad
+    return specialty

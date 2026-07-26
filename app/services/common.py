@@ -3,12 +3,12 @@
 from sqlalchemy.orm import Session
 
 
-def value_in_use(db: Session, modelo, columna, valor, excluir_id=None) -> bool:
-    """True si ya existe una fila de `modelo` con ese `valor` en `columna` (chequeo de unicidad).
+def value_in_use(db: Session, model, column, value, exclude_id=None) -> bool:
+    """True si ya existe una fila de `model` con ese `value` en `column` (chequeo de unicidad).
 
-    Con `excluir_id` ignora esa fila, para no chocar consigo misma al editar.
+    Con `exclude_id` ignora esa fila, para no chocar consigo misma al editar.
     """
-    q = db.query(modelo).filter(columna == valor)
-    if excluir_id is not None:
-        q = q.filter(modelo.id != excluir_id)
+    q = db.query(model).filter(column == value)
+    if exclude_id is not None:
+        q = q.filter(model.id != exclude_id)
     return db.query(q.exists()).scalar()

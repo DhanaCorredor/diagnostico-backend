@@ -26,10 +26,10 @@ async def list_patients(db: Session = Depends(get_db)):
 
 
 @router.post("", response_model=PatientOut, status_code=status.HTTP_201_CREATED)
-async def create_patient(datos: PatientCreate, db: Session = Depends(get_db)):
+async def create_patient(data: PatientCreate, db: Session = Depends(get_db)):
     """Da de alta un paciente manualmente (sin agendarle una cita)."""
     try:
-        patient = patient_service.create_patient(db, datos.model_dump())
+        patient = patient_service.create_patient(db, data.model_dump())
     except patient_service.DuplicateNationalId:
         raise HTTPException(
             status.HTTP_409_CONFLICT, "La cédula ya pertenece a otra persona"
@@ -60,13 +60,13 @@ async def appointment_history(paciente_id: uuid.UUID, db: Session = Depends(get_
 @router.put("/{paciente_id}", response_model=PatientOut)
 async def update_patient(
     paciente_id: uuid.UUID,
-    datos: PatientUpdate,
+    data: PatientUpdate,
     db: Session = Depends(get_db),
 ):
     """Edita un paciente: solo se actualizan los campos enviados (no borra los omitidos)."""
-    cambios = datos.model_dump(exclude_unset=True)
+    changes = data.model_dump(exclude_unset=True)
     try:
-        patient = patient_service.update_patient(db, paciente_id, cambios)
+        patient = patient_service.update_patient(db, paciente_id, changes)
     except patient_service.PatientNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado") from None
     except patient_service.DuplicateNationalId:

@@ -174,6 +174,6 @@ def test_appointment_ambiguous_patient_returns_candidates(
     }
     r = client.post("/citas", headers=token_for(admin), json=body)
     assert r.status_code == 409
-    candidatos = r.json()["detail"]["candidatos"]
-    assert len(candidatos) == 2
-    assert {"id", "nombre_completo", "edad"} <= set(candidatos[0].keys())
+    candidates = r.json()["detail"]["candidatos"]
+    assert len(candidates) == 2
+    assert {"id", "nombre_completo", "edad"} <= set(candidates[0].keys())

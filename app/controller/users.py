@@ -34,17 +34,17 @@ async def get_user(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
 
 
 @router.post("", response_model=UserDetail, status_code=status.HTTP_201_CREATED)
-async def create_user(datos: UserCreate, db: Session = Depends(get_db)):
+async def create_user(data: UserCreate, db: Session = Depends(get_db)):
     """Crea un usuario de personal (médico o staff), con su contraseña y especialidades."""
     try:
         user = user_service.create_user(
             db,
-            nombre_completo=datos.nombre_completo,
-            rol=datos.rol,
-            email=datos.email,
-            password=datos.password,
-            matricula=datos.matricula,
-            especialidades=datos.especialidades,
+            nombre_completo=data.nombre_completo,
+            rol=data.rol,
+            email=data.email,
+            password=data.password,
+            matricula=data.matricula,
+            especialidades=data.especialidades,
         )
     except user_service.RoleNotAllowed:
         raise HTTPException(
@@ -78,13 +78,13 @@ async def deactivate_user(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
 @router.put("/{usuario_id}", response_model=UserDetail)
 async def update_user(
     usuario_id: uuid.UUID,
-    datos: UserUpdate,
+    data: UserUpdate,
     db: Session = Depends(get_db),
 ):
     """Edita un usuario del personal (solo los campos enviados)."""
-    cambios = datos.model_dump(exclude_unset=True)
+    changes = data.model_dump(exclude_unset=True)
     try:
-        user = user_service.update_user(db, usuario_id, cambios)
+        user = user_service.update_user(db, usuario_id, changes)
     except user_service.UserNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado") from None
     except user_service.DuplicateEmail:

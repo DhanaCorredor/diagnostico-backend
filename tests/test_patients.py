@@ -41,7 +41,7 @@ def test_multiple_matches_raises_ambiguous(db):
     db.flush()
     with pytest.raises(AmbiguousPatients) as exc:
         find_or_create_patient(db, nombre, 50)
-    assert len(exc.value.candidatos) == 2
+    assert len(exc.value.candidates) == 2
 
 
 def test_list_patients_only_patients(db):
@@ -81,14 +81,14 @@ def test_update_patient_partial_keeps_national_id(db):
 
 
 def test_create_patient_manual(db):
-    datos = {
+    data = {
         "nombre_completo": f"Pac {uuid.uuid4()}",
         "edad": 33,
         "cedula": None,
         "telefono": None,
         "fecha_nacimiento": None,
     }
-    p = create_patient(db, datos)
+    p = create_patient(db, data)
     assert p.id is not None
     assert p.rol == Role.PACIENTE
     assert p.edad == 33

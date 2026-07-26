@@ -32,18 +32,18 @@ class DoctorOnlyData(Exception):
     """Se han indicado especialidades o matrícula para un usuario que no es médico."""
 
 
-def _email_in_use(db: Session, email: str, excluir_id: uuid.UUID | None = None) -> bool:
-    return value_in_use(db, User, User.email, email, excluir_id)
+def _email_in_use(db: Session, email: str, exclude_id: uuid.UUID | None = None) -> bool:
+    return value_in_use(db, User, User.email, email, exclude_id)
 
 
 def _resolve_specialties(db: Session, ids: list[uuid.UUID]) -> list[Specialty]:
     """Convierte una lista de ids en objetos de especialidad; lanza SpecialtyNotFound si alguno no existe."""
     if not ids:
         return []
-    encontradas = db.query(Specialty).filter(Specialty.id.in_(ids)).all()
-    if len(encontradas) != len(set(ids)):
+    found = db.query(Specialty).filter(Specialty.id.in_(ids)).all()
+    if len(found) != len(set(ids)):
         raise SpecialtyNotFound()
-    return encontradas
+    return found
 
 
 def list_staff(db: Session) -> list[User]:
@@ -82,7 +82,7 @@ def create_user(
         raise DoctorOnlyData()
     if _email_in_use(db, email):
         raise DuplicateEmail()
-    esp = _resolve_specialties(db, especialidades)
+    spec = _resolve_specialties(db, especialidades)
 
     user = User(
         nombre_completo=nombre_completo,
@@ -90,34 +90,34 @@ def create_user(
         email=email,
         password_hash=hash_password(password),
         matricula=matricula,
-        especialidades=esp,
+        especialidades=spec,
     )
     db.add(user)
     db.flush()
     return user
 
 
-def update_user(db: Session, usuario_id: uuid.UUID, cambios: dict) -> User:
+def update_user(db: Session, usuario_id: uuid.UUID, changes: dict) -> User:
     """Actualiza SOLO los campos enviados. La contraseña se hashea; especialidades se resuelven."""
     user = get_user(db, usuario_id)
 
     if user.rol != Role.MEDICO and (
-        cambios.get("especialidades") or cambios.get("matricula") is not None
+        changes.get("especialidades") or changes.get("matricula") is not None
     ):
         raise DoctorOnlyData()
 
-    if cambios.get("email") is not None and _email_in_use(
-        db, cambios["email"], excluir_id=usuario_id
+    if changes.get("email") is not None and _email_in_use(
+        db, changes["email"], exclude_id=usuario_id
     ):
         raise DuplicateEmail()
 
-    if "especialidades" in cambios:
-        user.especialidades = _resolve_specialties(db, cambios["especialidades"] or [])
-    if cambios.get("password") is not None:
-        user.password_hash = hash_password(cambios["password"])
-    for campo in ("nombre_completo", "email", "matricula", "activo"):
-        if campo in cambios:
-            setattr(user, campo, cambios[campo])
+    if "especialidades" in changes:
+        user.especialidades = _resolve_specialties(db, changes["especialidades"] or [])
+    if changes.get("password") is not None:
+        user.password_hash = hash_password(changes["password"])
+    for field in ("nombre_completo", "email", "matricula", "activo"):
+        if field in changes:
+            setattr(user, field, changes[field])
 
     db.flush()
     return user

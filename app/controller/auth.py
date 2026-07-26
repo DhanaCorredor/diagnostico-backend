@@ -14,11 +14,11 @@ _HASH_SENUELO = hash_password("timing-attack-decoy")
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(datos: LoginRequest, db: Session = Depends(get_db)):
+async def login(data: LoginRequest, db: Session = Depends(get_db)):
     """Verifica email + contraseña y, si son correctos, devuelve un token JWT."""
-    user = db.query(User).filter_by(email=datos.email).first()
+    user = db.query(User).filter_by(email=data.email).first()
     hash_a_verificar = user.password_hash if user and user.password_hash else _HASH_SENUELO
-    password_ok = verify_password(datos.password, hash_a_verificar)
+    password_ok = verify_password(data.password, hash_a_verificar)
     if user is None or not user.password_hash or not password_ok:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

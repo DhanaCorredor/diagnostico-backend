@@ -30,11 +30,11 @@ def test_create_user_hashes_password(db):
 
 
 def test_create_doctor_with_specialties(db):
-    esp = Specialty(nombre=f"Cardio {uuid.uuid4()}")
-    db.add(esp)
+    spec = Specialty(nombre=f"Cardio {uuid.uuid4()}")
+    db.add(spec)
     db.flush()
-    u = _create(db, rol=Role.MEDICO, especialidades=[esp.id])
-    assert esp.id in [e.id for e in u.especialidades]
+    u = _create(db, rol=Role.MEDICO, especialidades=[spec.id])
+    assert spec.id in [e.id for e in u.especialidades]
 
 
 def test_create_user_patient_role_not_allowed(db):
@@ -55,11 +55,11 @@ def test_create_user_specialty_not_found(db):
 
 
 def test_non_doctor_with_specialties_fails(db):
-    esp = Specialty(nombre=f"E {uuid.uuid4()}")
-    db.add(esp)
+    spec = Specialty(nombre=f"E {uuid.uuid4()}")
+    db.add(spec)
     db.flush()
     with pytest.raises(U.DoctorOnlyData):
-        _create(db, rol=Role.RECEPCION, especialidades=[esp.id])
+        _create(db, rol=Role.RECEPCION, especialidades=[spec.id])
 
 
 def test_non_doctor_with_license_fails(db):
@@ -105,12 +105,12 @@ def test_update_user_duplicate_email(db):
 
 
 def test_update_user_specialties(db):
-    esp = Specialty(nombre=f"Neuro {uuid.uuid4()}")
-    db.add(esp)
+    spec = Specialty(nombre=f"Neuro {uuid.uuid4()}")
+    db.add(spec)
     db.flush()
     u = _create(db, rol=Role.MEDICO)
-    U.update_user(db, u.id, {"especialidades": [esp.id]})
-    assert esp.id in [e.id for e in u.especialidades]
+    U.update_user(db, u.id, {"especialidades": [spec.id]})
+    assert spec.id in [e.id for e in u.especialidades]
 
 
 def test_update_user_not_found(db):

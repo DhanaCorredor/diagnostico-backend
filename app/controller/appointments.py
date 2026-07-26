@@ -26,7 +26,7 @@ MAX_RANGE_DAYS = 60
 
 @router.post("", response_model=AppointmentOut, status_code=status.HTTP_201_CREATED)
 async def book_appointment(
-    datos: AppointmentCreate,
+    data: AppointmentCreate,
     db: Session = Depends(get_db),
     user: User = Depends(require_role(Role.ADMIN, Role.RECEPCION)),
 ):
@@ -34,16 +34,16 @@ async def book_appointment(
     try:
         appointment = appointment_service.create_appointment(
             db,
-            nombre_completo=datos.nombre_completo,
-            edad=datos.edad,
-            paciente_id=datos.paciente_id,
-            medico_id=datos.medico_id,
-            servicio_id=datos.servicio_id,
-            starts_at=datos.starts_at,
-            duracion_min=datos.duracion_min,
+            nombre_completo=data.nombre_completo,
+            edad=data.edad,
+            paciente_id=data.paciente_id,
+            medico_id=data.medico_id,
+            servicio_id=data.servicio_id,
+            starts_at=data.starts_at,
+            duracion_min=data.duracion_min,
             creado_por_id=user.id,
-            motivo=datos.motivo,
-            permitir_sobrecupo=datos.permitir_sobrecupo,
+            motivo=data.motivo,
+            permitir_sobrecupo=data.permitir_sobrecupo,
         )
     except appointment_service.ServiceNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado") from None
@@ -72,7 +72,7 @@ async def book_appointment(
                         "nombre_completo": c.nombre_completo,
                         "edad": c.edad,
                     }
-                    for c in e.candidatos
+                    for c in e.candidates
                 ],
             },
         ) from None
@@ -136,7 +136,7 @@ async def list_appointments(
 @router.put("/{cita_id}", response_model=AppointmentOut)
 async def edit_appointment(
     cita_id: uuid.UUID,
-    datos: AppointmentUpdate,
+    data: AppointmentUpdate,
     db: Session = Depends(get_db),
     _: User = Depends(require_role(Role.ADMIN, Role.RECEPCION)),
 ):
@@ -145,12 +145,12 @@ async def edit_appointment(
         appointment = appointment_service.edit_appointment(
             db,
             cita_id,
-            medico_id=datos.medico_id,
-            servicio_id=datos.servicio_id,
-            starts_at=datos.starts_at,
-            duracion_min=datos.duracion_min,
-            motivo=datos.motivo,
-            permitir_sobrecupo=datos.permitir_sobrecupo,
+            medico_id=data.medico_id,
+            servicio_id=data.servicio_id,
+            starts_at=data.starts_at,
+            duracion_min=data.duracion_min,
+            motivo=data.motivo,
+            permitir_sobrecupo=data.permitir_sobrecupo,
         )
     except appointment_service.AppointmentNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada") from None
@@ -211,13 +211,13 @@ async def cancel_appointment(
 @router.post("/{cita_id}/asistencia", response_model=AppointmentOut)
 async def mark_attendance(
     cita_id: uuid.UUID,
-    datos: AttendanceUpdate,
+    data: AttendanceUpdate,
     db: Session = Depends(get_db),
     _: User = Depends(require_role(Role.ADMIN, Role.RECEPCION)),
 ):
     """Marca una cita como **atendida** (COMPLETED) o **no-show** (NO_SHOW). Solo ADMIN o RECEPCIÓN."""
     try:
-        appointment = appointment_service.mark_attendance(db, cita_id, datos.estado)
+        appointment = appointment_service.mark_attendance(db, cita_id, data.estado)
     except appointment_service.AppointmentNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada") from None
     except appointment_service.AppointmentNotActive:

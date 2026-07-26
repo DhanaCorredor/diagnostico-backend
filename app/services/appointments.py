@@ -97,12 +97,12 @@ def has_overlap(
     medico_id: uuid.UUID,
     starts_at: datetime,
     ends_at: datetime,
-    excluir_cita_id: uuid.UUID | None = None,
+    exclude_appointment_id: uuid.UUID | None = None,
 ) -> bool:
     """True si el médico ya tiene una cita activa cruzada con este horario.
 
     Solo cuentan las activas (una CANCELLED libera el hueco); las pegadas no se cruzan.
-    `excluir_cita_id` omite una cita (al mover, para que no choque consigo misma).
+    `exclude_appointment_id` omite una cita (al mover, para que no choque consigo misma).
     """
     q = (
         db.query(Appointment)
@@ -111,8 +111,8 @@ def has_overlap(
         .filter(Appointment.starts_at < ends_at)
         .filter(Appointment.ends_at > starts_at)
     )
-    if excluir_cita_id is not None:
-        q = q.filter(Appointment.id != excluir_cita_id)
+    if exclude_appointment_id is not None:
+        q = q.filter(Appointment.id != exclude_appointment_id)
     return db.query(q.exists()).scalar()
 
 
@@ -141,14 +141,14 @@ def _validate_slot(
     starts_at: datetime,
     ends_at: datetime,
     permitir_sobrecupo: bool,
-    excluir_cita_id: uuid.UUID | None = None,
+    exclude_appointment_id: uuid.UUID | None = None,
 ) -> None:
     """Valida disponibilidad (salvo sobrecupo) y anti-solapamiento del hueco (crear/editar)."""
     if not permitir_sobrecupo and not within_availability(
         db, medico_id, starts_at, ends_at
     ):
         raise OutsideAvailability()
-    if has_overlap(db, medico_id, starts_at, ends_at, excluir_cita_id=excluir_cita_id):
+    if has_overlap(db, medico_id, starts_at, ends_at, exclude_appointment_id=exclude_appointment_id):
         raise Overlap()
 
 
@@ -165,19 +165,19 @@ def create_appointment(
     creado_por_id: uuid.UUID,
     motivo: str | None = None,
     permitir_sobrecupo: bool = False,
-    ahora: datetime | None = None,
+    now: datetime | None = None,
 ) -> Appointment:
     """Valida las reglas y crea la cita (upsert del paciente incluido). Flush, no commit.
 
-    `ahora` se inyecta para poder probar en test la regla de "no en el pasado".
+    `now` se inyecta para poder probar en test la regla de "no en el pasado".
     """
     _validate_service_doctor_and_grid(
         db, servicio_id=servicio_id, medico_id=medico_id, starts_at=starts_at
     )
 
-    if ahora is None:
-        ahora = now_center()
-    if starts_at < ahora:
+    if now is None:
+        now = now_center()
+    if starts_at < now:
         raise AppointmentInThePast()
 
     if paciente_id is not None:
@@ -222,9 +222,9 @@ def list_appointments(
 
     `medico_id` filtra por médico; `incluir_canceladas` añade también las canceladas.
     """
-    inicio = datetime.combine(desde, time.min)
-    fin = datetime.combine(hasta, time.min) + timedelta(days=1)
-    q = db.query(Appointment).filter(Appointment.starts_at >= inicio).filter(Appointment.starts_at < fin)
+    start = datetime.combine(desde, time.min)
+    end = datetime.combine(hasta, time.min) + timedelta(days=1)
+    q = db.query(Appointment).filter(Appointment.starts_at >= start).filter(Appointment.starts_at < end)
     if medico_id is not None:
         q = q.filter(Appointment.medico_id == medico_id)
     if not incluir_canceladas:
@@ -243,14 +243,14 @@ def list_patient_appointments(db: Session, paciente_id: uuid.UUID) -> list[Appoi
 
 
 def _get_active_appointment(
-    db: Session, cita_id: uuid.UUID, exc_no_activa: type[Exception]
+    db: Session, cita_id: uuid.UUID, exc_not_active: type[Exception]
 ) -> Appointment:
     """Devuelve la cita activa (SCHEDULED/CONFIRMED); lanza si no existe o ya está cerrada."""
     appointment = db.get(Appointment, cita_id)
     if appointment is None:
         raise AppointmentNotFound()
     if appointment.estado not in (AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED):
-        raise exc_no_activa()
+        raise exc_not_active()
     return appointment
 
 
@@ -280,7 +280,7 @@ def edit_appointment(
     duracion_min: int | None = None,
     motivo: str | None = None,
     permitir_sobrecupo: bool = False,
-    ahora: datetime | None = None,
+    now: datetime | None = None,
 ) -> Appointment:
     """Edita o mueve una cita activa, revalidando las reglas de creación (excluye la propia cita).
 
@@ -289,38 +289,38 @@ def edit_appointment(
     """
     appointment = _get_active_appointment(db, cita_id, AppointmentNotEditable)
 
-    nuevo_medico_id = medico_id if medico_id is not None else appointment.medico_id
-    nuevo_servicio_id = servicio_id if servicio_id is not None else appointment.servicio_id
-    nuevo_starts_at = starts_at if starts_at is not None else appointment.starts_at
-    duracion_actual = int((appointment.ends_at - appointment.starts_at).total_seconds() // 60)
-    nueva_duracion = duracion_min if duracion_min is not None else duracion_actual
+    new_doctor_id = medico_id if medico_id is not None else appointment.medico_id
+    new_service_id = servicio_id if servicio_id is not None else appointment.servicio_id
+    new_starts_at = starts_at if starts_at is not None else appointment.starts_at
+    current_duration = int((appointment.ends_at - appointment.starts_at).total_seconds() // 60)
+    new_duration = duracion_min if duracion_min is not None else current_duration
 
     _validate_service_doctor_and_grid(
-        db, servicio_id=nuevo_servicio_id, medico_id=nuevo_medico_id, starts_at=nuevo_starts_at
+        db, servicio_id=new_service_id, medico_id=new_doctor_id, starts_at=new_starts_at
     )
 
     if starts_at is not None:
-        if ahora is None:
-            ahora = now_center()
-        if nuevo_starts_at < ahora:
+        if now is None:
+            now = now_center()
+        if new_starts_at < now:
             raise AppointmentInThePast()
 
-    nuevo_ends_at = calculate_ends_at(nuevo_starts_at, nueva_duracion)
+    new_ends_at = calculate_ends_at(new_starts_at, new_duration)
 
-    mismo_hueco = medico_id is None and starts_at is None and duracion_min is None
+    same_slot = medico_id is None and starts_at is None and duracion_min is None
     _validate_slot(
         db,
-        medico_id=nuevo_medico_id,
-        starts_at=nuevo_starts_at,
-        ends_at=nuevo_ends_at,
-        permitir_sobrecupo=permitir_sobrecupo or mismo_hueco,
-        excluir_cita_id=appointment.id,
+        medico_id=new_doctor_id,
+        starts_at=new_starts_at,
+        ends_at=new_ends_at,
+        permitir_sobrecupo=permitir_sobrecupo or same_slot,
+        exclude_appointment_id=appointment.id,
     )
 
-    appointment.medico_id = nuevo_medico_id
-    appointment.servicio_id = nuevo_servicio_id
-    appointment.starts_at = nuevo_starts_at
-    appointment.ends_at = nuevo_ends_at
+    appointment.medico_id = new_doctor_id
+    appointment.servicio_id = new_service_id
+    appointment.starts_at = new_starts_at
+    appointment.ends_at = new_ends_at
     if motivo is not None:
         appointment.motivo = motivo
     db.flush()
