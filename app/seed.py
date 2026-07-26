@@ -136,17 +136,22 @@ def seed_specialties(db):
 
 
 def seed_services(db):
-    """Inserta los servicios que falten, vinculando cada uno (N:M) a su especialidad. Devuelve cuántos añadió."""
-    existing = {s.nombre for s in db.query(Service.nombre).all()}
+    """Inserta los servicios que falten y asegura su vínculo (N:M) con la especialidad.
+
+    Idempotente: si un servicio ya existe pero sin especialidades, se las enlaza (así el
+    filtro por médico funciona sin resetear la base). Devuelve cuántos servicios creó.
+    """
+    existing = {s.nombre: s for s in db.query(Service).all()}
     catalog = {e.nombre: e for e in db.query(Specialty).all()}
     created = 0
     for nombre, categoria, especialidades in SERVICES:
-        if nombre in existing:
-            continue
-        service = Service(nombre=nombre, categoria=categoria)
-        service.especialidades = [catalog[e] for e in especialidades]
-        db.add(service)
-        created += 1
+        service = existing.get(nombre)
+        if service is None:
+            service = Service(nombre=nombre, categoria=categoria)
+            db.add(service)
+            created += 1
+        if not service.especialidades:
+            service.especialidades = [catalog[e] for e in especialidades]
     return created
 
 
