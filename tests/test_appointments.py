@@ -1,4 +1,4 @@
-"""Tests de las reglas de citas (R2, R3, R4) y del orquestador crear_cita."""
+"""Tests of the appointment rules (R2, R3, R4) and of the create_appointment orchestrator."""
 
 import uuid
 from datetime import date, datetime, time, timezone
@@ -395,7 +395,7 @@ def test_create_appointment_inactive_doctor(db, service, admin):
 
 
 def _appointment(db, doctor, service, admin, starts_at):
-    """Crea y devuelve una cita ya agendada (con franja disponible)."""
+    """Create and return an already scheduled appointment (with an available slot)."""
     _slot(db, doctor)
     return C.create_appointment(
         db,

@@ -1,4 +1,4 @@
-"""Estado de una cita."""
+"""Status of an appointment."""
 import enum
 
 

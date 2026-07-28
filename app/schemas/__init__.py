@@ -1,4 +1,4 @@
-"""Esquemas Pydantic (entrada/salida de la API), agrupados por dominio."""
+"""Pydantic schemas (API input/output), grouped by domain."""
 from app.schemas.appointment import (
     AppointmentCreate,
     AppointmentOut,

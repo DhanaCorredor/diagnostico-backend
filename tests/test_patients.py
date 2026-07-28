@@ -1,4 +1,4 @@
-"""Tests del upsert de paciente (R1)."""
+"""Tests of the patient upsert (R1)."""
 
 import uuid
 

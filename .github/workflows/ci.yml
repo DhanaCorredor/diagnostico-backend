@@ -1,5 +1,5 @@
-# Integración continua: en cada push y cada pull request levanta un PostgreSQL,
-# aplica las migraciones, ejecuta los tests, comprueba el seed y revisa el estilo.
+# Continuous integration: on every push and pull request it starts a PostgreSQL,
+# applies the migrations, runs the tests, checks the seed and lints the code.
 name: CI
 
 on:
@@ -11,7 +11,7 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
 
-    # Base de datos desechable para esta ejecución (la de producción no se toca).
+    # Throwaway database for this run (production is never touched).
     services:
       postgres:
         image: postgres:16
@@ -29,32 +29,32 @@ jobs:
 
     env:
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/diagnostico_test
-      JWT_SECRET: secreto-de-usar-y-tirar-solo-para-la-integracion-continua
-      ADMIN_PASSWORD: contrasena-de-usar-y-tirar-solo-para-la-integracion-continua
+      JWT_SECRET: throwaway-secret-for-continuous-integration-only
+      ADMIN_PASSWORD: throwaway-password-for-continuous-integration-only
 
     steps:
-      - name: Descargar el repositorio
+      - name: Check out the repository
         uses: actions/checkout@v4
 
-      - name: Preparar Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
 
-      - name: Instalar dependencias
+      - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Aplicar las migraciones
+      - name: Apply the migrations
         run: alembic upgrade head
 
-      - name: Ejecutar los tests
+      - name: Run the tests
         run: pytest -q
 
-      - name: Comprobar que el seed funciona
+      - name: Check that the seed works
         run: python -m app.seed
 
-      - name: Revisar el estilo del código
+      - name: Lint the code
         run: |
           pip install ruff==0.15.22
           ruff check app tests

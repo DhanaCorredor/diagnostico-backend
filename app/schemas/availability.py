@@ -1,4 +1,4 @@
-"""Esquemas de disponibilidad (franjas semanales del médico)."""
+"""Availability schemas (the doctor's weekly slots)."""
 import uuid
 from datetime import time
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class AvailabilityOut(BaseModel):
-    """Una franja de disponibilidad semanal de un médico."""
+    """One weekly availability slot of a doctor."""
 
     id: uuid.UUID
     medico_id: uuid.UUID = Field(validation_alias="usuario_id")
@@ -18,7 +18,7 @@ class AvailabilityOut(BaseModel):
 
 
 class AvailabilityCreate(BaseModel):
-    """Cuerpo del POST /disponibilidad (definir una franja de un médico)."""
+    """Body of POST /disponibilidad (define a slot for a doctor)."""
 
     medico_id: uuid.UUID
     dia_semana: int = Field(ge=0, le=6)

@@ -1,4 +1,4 @@
-"""Tests de disponibilidad: listar franjas + crear con sus validaciones."""
+"""Availability tests: list slots + create them with their validations."""
 
 import uuid
 from datetime import time

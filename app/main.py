@@ -1,4 +1,4 @@
-"""Punto de entrada del backend: crea la aplicación FastAPI y monta los routers."""
+"""Backend entry point: creates the FastAPI application and mounts the routers."""
 
 import os
 
@@ -18,7 +18,7 @@ DEFAULT_ORIGIN = "http://localhost:5173"
 
 
 def parse_origins(raw: str) -> list[str]:
-    """Convierte los orígenes separados por comas de la variable de entorno en una lista."""
+    """Turn the comma-separated origins of the environment variable into a list."""
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
@@ -43,11 +43,11 @@ app.include_router(patients.router)
 
 @app.exception_handler(IntegrityError)
 def integrity_conflict(request: Request, exc: IntegrityError):
-    """Traduce un fallo de restricción única de la BD a un 409 (conflicto) en vez de un 500."""
+    """Translate a database constraint failure (unique or exclusion) into a 409 instead of a 500."""
     return JSONResponse(status_code=409, content={"detail": "Conflicto de integridad de datos"})
 
 
 @app.get("/health")
 def health():
-    """Endpoint de salud: sirve para comprobar que el servidor responde."""
+    """Health endpoint: used to check that the server responds."""
     return {"status": "ok"}

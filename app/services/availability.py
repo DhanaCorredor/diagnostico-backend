@@ -1,4 +1,4 @@
-"""Lógica de disponibilidad: ver y definir las franjas horarias semanales de un médico."""
+"""Availability logic: view and define the weekly time slots of a doctor."""
 
 import uuid
 from datetime import time
@@ -10,19 +10,19 @@ from app.models import Availability, User
 
 
 class DoctorNotFound(Exception):
-    """El médico indicado no existe o no tiene rol MEDICO."""
+    """The given doctor does not exist or does not have the MEDICO role."""
 
 
 class InvalidSlot(Exception):
-    """La franja no es válida: la hora de inicio no es anterior a la de fin."""
+    """The slot is not valid: the start time is not earlier than the end time."""
 
 
 class OverlappingSlot(Exception):
-    """La franja se cruza con otra ya definida para ese médico ese mismo día."""
+    """The slot overlaps another one already defined for that doctor on that same day."""
 
 
 def list_availability(db: Session, medico_id: uuid.UUID) -> list[Availability]:
-    """Franjas de un médico, ordenadas por día de la semana y hora de inicio."""
+    """Slots of a doctor, ordered by day of the week and start time."""
     return (
         db.query(Availability)
         .filter(Availability.usuario_id == medico_id)
@@ -38,9 +38,9 @@ def has_overlapping_slot(
     hora_inicio: time,
     hora_fin: time,
 ) -> bool:
-    """True si el médico ya tiene ese día una franja cruzada con este horario.
+    """True if the doctor already has a slot on that day overlapping this time range.
 
-    Misma regla que en las citas: las franjas pegadas (08:00-12:00 y 12:00-16:00) no se cruzan.
+    Same rule as for appointments: adjacent slots (08:00-12:00 and 12:00-16:00) do not overlap.
     """
     q = (
         db.query(Availability)
@@ -60,7 +60,7 @@ def create_availability(
     hora_inicio: time,
     hora_fin: time,
 ) -> Availability:
-    """Crea una franja de un médico validando médico, inicio < fin y que no se cruce con otra.
+    """Create a slot for a doctor, validating the doctor, start < end and that it does not overlap.
 
     Flush, no commit.
     """

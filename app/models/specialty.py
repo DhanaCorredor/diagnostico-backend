@@ -1,4 +1,4 @@
-"""Modelo Especialidad (ej. Cardiología)."""
+"""Specialty model (e.g. Cardiology)."""
 from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship
 
@@ -7,7 +7,7 @@ from app.models.common import service_specialty, user_specialty, uuid_pk
 
 
 class Specialty(Base):
-    """Especialidad médica; N:M con los médicos que la ejercen y con los servicios que abarca."""
+    """Medical specialty; N:M with the doctors who practice it and the services it covers."""
 
     __tablename__ = "especialidades"
 

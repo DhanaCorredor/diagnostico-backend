@@ -1,4 +1,4 @@
-"""Tests de la configuración de la aplicación: lista de orígenes autorizados (CORS)."""
+"""Application configuration tests: the list of allowed origins (CORS)."""
 
 from app.main import parse_origins
 

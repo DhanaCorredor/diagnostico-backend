@@ -1,4 +1,4 @@
-"""Esquemas del personal (usuarios que hacen login)."""
+"""Staff schemas (the users who log in)."""
 import uuid
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -8,7 +8,7 @@ from app.schemas.catalog import SpecialtyOut
 
 
 class UserOut(BaseModel):
-    """Datos públicos del usuario (nunca incluye el password_hash)."""
+    """Public user data (never includes the password_hash)."""
 
     id: uuid.UUID
     nombre_completo: str
@@ -19,7 +19,7 @@ class UserOut(BaseModel):
 
 
 class UserDetail(BaseModel):
-    """Datos de un usuario del personal (lista/ficha), con especialidades si es médico."""
+    """Data of a staff user (list/detail), with specialties if they are a doctor."""
 
     id: uuid.UUID
     nombre_completo: str
@@ -33,7 +33,7 @@ class UserDetail(BaseModel):
 
 
 class UserCreate(BaseModel):
-    """Alta de personal/médico (ADMIN). El rol no puede ser PACIENTE (se valida en el servicio)."""
+    """Registration of staff/doctor (ADMIN). The role cannot be PACIENTE (validated in the service)."""
 
     nombre_completo: str = Field(min_length=1)
     rol: Role
@@ -44,7 +44,7 @@ class UserCreate(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    """Edición parcial de un usuario del personal. Solo se cambian los campos enviados."""
+    """Partial edit of a staff user. Only the fields sent are changed."""
 
     nombre_completo: str | None = Field(default=None, min_length=1)
     email: str | None = Field(default=None, min_length=3)

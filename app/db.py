@@ -1,4 +1,4 @@
-"""Conexión a la base de datos con SQLAlchemy."""
+"""Database connection with SQLAlchemy."""
 
 import os
 
@@ -20,7 +20,7 @@ Base = declarative_base()
 
 
 def get_db():
-    """Dependencia de FastAPI: abre una sesión de BD para la petición y la cierra al terminar."""
+    """FastAPI dependency: opens a database session for the request and closes it at the end."""
     db = SessionLocal()
     try:
         yield db
