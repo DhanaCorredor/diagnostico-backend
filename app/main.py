@@ -14,10 +14,20 @@ load_dotenv()
 
 app = FastAPI(title="Diagnóstico API")
 
-FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
+DEFAULT_ORIGIN = "http://localhost:5173"
+
+
+def parse_origins(raw: str) -> list[str]:
+    """Convierte los orígenes separados por comas de la variable de entorno en una lista."""
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
+FRONTEND_ORIGINS = parse_origins(
+    os.getenv("FRONTEND_ORIGINS") or os.getenv("FRONTEND_ORIGIN") or DEFAULT_ORIGIN
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_ORIGIN],
+    allow_origins=FRONTEND_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
