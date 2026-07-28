@@ -20,19 +20,24 @@ commits e *issues*, y tres etiquetas:
 ## 2. Plan priorizado
 
 Orden propuesto. `A7` va primero porque **tiene fecha límite externa**; el resto son mejoras
-de backend puro que no rompen la UI.
+de backend puro que no rompen la UI. Estado a **28 jul 2026**.
 
-| Orden | ID | Mejora | Coste | Toca frontend |
-|:-----:|:--:|--------|:-----:|:-------------:|
-| 0 | **A7** | Migrar la base de datos a Neon · **antes del ~14 ago 2026** | medio | no |
-| 1 | **A1** | Franjas de disponibilidad solapadas | bajo | no |
-| 2 | **A2** | CORS multi-origen | bajo | no |
-| 3 | **A6** | Integración continua (CI) | bajo | no |
-| 4 | **A3** | Anti-solapamiento a nivel de base de datos | medio | no |
-| 5 | **C1** | Historia clínica (notas del médico) | medio | sí |
-| 6 | **A4** | Unicidad insensible a mayúsculas y acentos | medio | no |
-| 7 | **A5** | Identificación robusta del paciente | medio | sí |
-| 8 | **B1** | Paginación de listados | medio | sí |
+| Orden | ID | Mejora | Coste | Toca frontend | Estado |
+|:-----:|:--:|--------|:-----:|:-------------:|:------:|
+| 0 | **A7** | Migrar la base de datos a Neon · **antes del ~14 ago 2026** | medio | no | ⬜ |
+| 1 | **A1** | Franjas de disponibilidad solapadas | bajo | no | ✅ |
+| 2 | **A2** | CORS multi-origen | bajo | no | ✅ |
+| 3 | **A6** | Integración continua (CI) | bajo | no | ✅ |
+| 4 | **A3** | Anti-solapamiento a nivel de base de datos | medio | no | ✅ |
+| 5 | **A8** | Código y configuración en inglés | bajo | no | ✅ |
+| 6 | **C1** | Historia clínica (notas del médico) | medio | sí | ⬜ |
+| 7 | **A4** | Unicidad insensible a mayúsculas y acentos | medio | no | ⬜ |
+| 8 | **A5** | Identificación robusta del paciente | medio | sí | ⬜ |
+| 9 | **B1** | Paginación de listados | medio | sí | ⬜ |
+
+> Lo hecho está en `develop` y **todavía no se ha publicado en producción**: la release `v0.7.0`
+> se hará junto con `A7`, para no desplegar dos veces y para que la migración
+> `3adfaea5a43a` se aplique ya sobre la base definitiva.
 
 El resto del catálogo (`B2`, `C2`–`C5`) queda **sin fecha**: son mejoras válidas pero de
 coste alto o de valor menor frente al riesgo que introducen.
@@ -200,6 +205,20 @@ coste alto o de valor menor frente al riesgo que introducen.
   base nueva, verificar el *login* en producción y documentarlo en [`DESPLIEGUE.md`](DESPLIEGUE.md).
 - **Por qué está la primera:** es la única del catálogo cuya demora tiene consecuencias
   irreversibles — si caduca, se pierden los datos y el backend desplegado deja de responder.
+
+### A8 · Código y configuración en inglés · coste bajo · **hecha**
+
+- **Antes:** los identificadores del código ya estaban en inglés, pero los **docstrings** y los
+  comentarios de configuración seguían en español, así que el proyecto leía mezclado.
+- **Qué se hizo:** 123 docstrings y comentarios traducidos a inglés en 46 archivos (`app/`,
+  `tests/`, `.env.example`, `render.yaml`, `.github/workflows/ci.yml`). Como efecto secundario,
+  **Swagger (`/docs`) pasa a describir los endpoints en inglés**.
+- **Qué se dejó en español, a propósito:** los **mensajes de error de la API** (los lee el
+  personal del centro a través de la interfaz), los **datos** del *seed* (nombres reales de
+  especialidades, servicios y médicos), las etiquetas de Swagger y el título de la aplicación,
+  que acompañan a las rutas en español del contrato.
+- **De regalo:** se corrigieron dos referencias obsoletas que la documentación arrastraba
+  (`GRID_MINUTOS` → `GRID_MINUTES` y `crear_cita` → `create_appointment`).
 
 ## 6. Bloque B — Cambios que tocan el contrato de la API
 
