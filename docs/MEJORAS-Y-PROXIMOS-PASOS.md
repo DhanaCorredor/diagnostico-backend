@@ -77,7 +77,41 @@ coste alto o de valor menor frente al riesgo que introducen.
   notas de los pacientes que ha atendido? Lo primero es más simple; lo segundo es más correcto en
   protección de datos.
 
-## 4. Bloque A — Deuda técnica del backend
+## 4. Qué hay que hacer en el frontend
+
+> El frontend vive en el **repo aparte** `diagnostico-frontend`, con su propio flujo de ramas.
+> Regla de orden: **primero se despliega la mejora en el backend, después se hace la UI**. Si la
+> pantalla sale antes, pide a la API algo que todavía no existe.
+> Las mejoras `A1`–`A4`, `A6` y `B2` no generan trabajo de UI (o solo el que se indica abajo).
+
+### 4.1 Pendiente hoy, sin esperar a ninguna mejora
+
+- **Pantalla para definir la disponibilidad de un médico.** `POST /disponibilidad` está
+  implementado y forma parte del contrato del MVP, pero la UI solo **lee** las franjas
+  (`DoctorsPage.jsx` hace `GET /disponibilidad?medico_id=`). Hoy las franjas solo se pueden crear
+  llamando a la API a mano o por el *seed*, así que el administrador no puede cambiar el horario
+  de un médico desde la aplicación. Es el hueco más visible que queda en la UI.
+  Al hacerla, hay que mostrar el `409` que ahora devuelve la mejora `A1` (franja cruzada) además
+  del `400` de "inicio posterior al fin".
+
+### 4.2 Trabajo derivado de cada mejora
+
+| Mejora | Qué hay que hacer en `diagnostico-frontend` |
+|--------|---------------------------------------------|
+| **A5** · identificación del paciente | En el formulario de paciente y en el de cita, pedir **fecha de nacimiento** en vez de edad, y mostrar la edad calculada a partir de ella |
+| **B1** · paginación | Paginador en las tablas de **Pacientes** y **Usuarios**, leyendo el total que pasa a devolver la API |
+| **C1** · historia clínica | En la ficha del paciente, una sección de **notas clínicas**: lista de notas y formulario para escribir una nueva. Visible solo para `MEDICO` y `ADMIN`. Implica que el médico **deja de ser solo lectura**, así que hay que revisar las guardas de rol y el menú |
+| **C2** · reportes | Sección nueva de **reportes**, solo para `ADMIN`: citas por médico/servicio/periodo, ausencias y ocupación |
+| **C3** · auditoría | En el detalle de la cita, el **historial de cambios** (quién la creó, editó o canceló). Solo `ADMIN` |
+| **C4** · recursos y salas | Selector de **recurso** en el formulario de cita, y mantenimiento del catálogo de recursos en la pantalla de configuración |
+
+### 4.3 Ya hecho — no rehacer
+
+- **Botón de baja del paciente:** implementado en `PatientsPage.jsx`, con modal de confirmación y
+  aviso de que la baja es lógica y recuperable. Figuraba como pendiente en la versión anterior de
+  este documento.
+
+## 5. Bloque A — Deuda técnica del backend
 
 ### A1 · Franjas de disponibilidad solapadas · coste bajo
 
@@ -148,7 +182,7 @@ coste alto o de valor menor frente al riesgo que introducen.
 - **Por qué importa:** el flujo de ramas ya es parte del proyecto; la CI es lo que lo convierte
   en una garantía y no en una costumbre.
 
-## 5. Bloque B — Cambios que tocan el contrato de la API
+## 6. Bloque B — Cambios que tocan el contrato de la API
 
 > Ninguno se puede hacer solo en este repo: cambian lo que el frontend consume.
 
@@ -172,7 +206,7 @@ coste alto o de valor menor frente al riesgo que introducen.
 - **Si algún día se hace:** en un único paso coordinado entre los dos repos, con migración de
   Alembic para el renombrado de tablas y columnas, y despliegue simultáneo.
 
-## 6. Bloque C — Fase 2, funcionalidades
+## 7. Bloque C — Fase 2, funcionalidades
 
 Funcionalidad de valor que se dejó **conscientemente fuera** del MVP para cumplir el plazo.
 
@@ -223,12 +257,12 @@ extender la regla de solapamiento a esa dimensión.
 | **Integración con Google Calendar** | Sincronizar la agenda del médico |
 | **PWA offline** | Uso básico sin conexión en recepción |
 
-## 7. Fuera del sistema
+## 8. Fuera del sistema
 
 **Facturación y cobros:** quedan fuera del ERP (SENIAT, pago directo). No es un pendiente, es una
 decisión de alcance.
 
-## 8. Ya resuelto
+## 9. Ya resuelto
 
 Se anota lo que estuvo en este documento como pendiente y hoy ya no lo está, para que no vuelva a
 proponerse:
