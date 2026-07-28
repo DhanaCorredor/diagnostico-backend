@@ -140,6 +140,22 @@ def has_overlap(db, medico_id, starts_at, ends_at):
     return db.query(q.exists()).scalar()
 ```
 
+Además de esta validación en la capa de servicio —que es la que produce mensajes de error
+entendibles—, la tabla `citas` lleva una **restricción de exclusión en la propia base de datos**
+(`no_overlapping_appointments_per_doctor`, migración `3adfaea5a43a`):
+
+```sql
+EXCLUDE USING gist (
+    medico_id WITH =,
+    tsrange(starts_at, ends_at, '[)') WITH &&
+) WHERE (estado IN ('SCHEDULED', 'CONFIRMED'))
+```
+
+Es una **red de seguridad**: impide el solapamiento aunque se escriba en la tabla por fuera de la
+aplicación (un script, una carga masiva, dos peticiones simultáneas). El rango `'[)'` incluye el
+inicio y excluye el fin, así que dos citas **pegadas** no se consideran cruzadas, igual que en la
+regla 3; y el `WHERE` deja fuera las canceladas, así que cancelar sigue liberando el hueco.
+
 ## Diagrama entidad-relación
 
 ```mermaid
