@@ -19,11 +19,12 @@ commits e *issues*, y tres etiquetas:
 
 ## 2. Plan priorizado
 
-Orden propuesto. Los cuatro primeros son **backend puro**: mejoran lo que ya existe sin
-abrir frentes nuevos ni romper la UI.
+Orden propuesto. `A7` va primero porque **tiene fecha límite externa**; el resto son mejoras
+de backend puro que no rompen la UI.
 
 | Orden | ID | Mejora | Coste | Toca frontend |
 |:-----:|:--:|--------|:-----:|:-------------:|
+| 0 | **A7** | Migrar la base de datos a Neon · **antes del ~14 ago 2026** | medio | no |
 | 1 | **A1** | Franjas de disponibilidad solapadas | bajo | no |
 | 2 | **A2** | CORS multi-origen | bajo | no |
 | 3 | **A6** | Integración continua (CI) | bajo | no |
@@ -181,6 +182,24 @@ coste alto o de valor menor frente al riesgo que introducen.
   la suite; más el *badge* de estado en el `README`.
 - **Por qué importa:** el flujo de ramas ya es parte del proyecto; la CI es lo que lo convierte
   en una garantía y no en una costumbre.
+
+### A7 · Migrar la base de datos a Neon · coste medio · **con fecha límite**
+
+- **Hoy:** producción usa el **PostgreSQL gratuito de Render** (`diagnostico-db`, definido en
+  `render.yaml`, añadido el 15 jul 2026).
+- **El problema:** en el plan gratuito de Render, una base de datos **expira a los 30 días de
+  crearse** y se **borra** tras 14 días de gracia. Con la fecha del *blueprint* como referencia,
+  eso son **~14 ago 2026** para la expiración y **~28 ago 2026** para el borrado. *(Pendiente de
+  confirmar la fecha real de creación en el panel de Render.)* El servicio web, en cambio, **no**
+  caduca: solo se duerme a los 15 minutos sin tráfico y arranca con la siguiente petición.
+- **La solución:** mover la base de datos a **Neon**, cuyo plan gratuito es **permanente** (0,5 GB
+  de almacenamiento y 100 horas de cómputo por proyecto y mes, de sobra para este ERP, que además
+  se suspende solo cuando nadie lo usa). El servicio web se queda en Render, gratis.
+- **Qué haríamos:** exportar los datos del Postgres de Render, crear el proyecto en Neon, cambiar
+  `DATABASE_URL` en Render, comprobar que `alembic upgrade head` y el *seed* funcionan contra la
+  base nueva, verificar el *login* en producción y documentarlo en [`DESPLIEGUE.md`](DESPLIEGUE.md).
+- **Por qué está la primera:** es la única del catálogo cuya demora tiene consecuencias
+  irreversibles — si caduca, se pierden los datos y el backend desplegado deja de responder.
 
 ## 6. Bloque B — Cambios que tocan el contrato de la API
 
