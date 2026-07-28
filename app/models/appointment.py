@@ -1,4 +1,4 @@
-"""Modelo Cita: el núcleo del sistema (anti-solapamiento por médico)."""
+"""Appointment model: the core of the system (no overlaps per doctor)."""
 from sqlalchemy import Column, DateTime, Enum, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -8,7 +8,7 @@ from app.models.common import uuid_pk
 
 
 class Appointment(Base):
-    """Cita médica: paciente + médico + servicio en una franja, con estado y auditoría mínima."""
+    """Medical appointment: patient + doctor + service in a time slot, with status and basic audit."""
 
     __tablename__ = "citas"
 

@@ -1,4 +1,4 @@
-"""Modelo Servicio: catálogo de consultas y estudios."""
+"""Service model: the catalog of consultations and studies."""
 from sqlalchemy import Boolean, Column, Enum, String
 from sqlalchemy.orm import relationship
 
@@ -8,7 +8,7 @@ from app.models.common import service_specialty, uuid_pk
 
 
 class Service(Base):
-    """Servicio del catálogo; se relaciona N:M con las especialidades que lo ofrecen."""
+    """A catalog service; related N:M to the specialties that offer it."""
 
     __tablename__ = "servicios"
 

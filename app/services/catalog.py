@@ -1,4 +1,4 @@
-"""Catálogo de servicios, especialidades y médicos: lecturas para los desplegables y gestión del ADMIN."""
+"""Catalog of services, specialties and doctors: reads for the dropdowns and ADMIN management."""
 
 import uuid
 
@@ -10,17 +10,17 @@ from app.services.common import value_in_use
 
 
 class ServiceNotFound(Exception):
-    """No existe un servicio con ese id."""
+    """There is no service with that id."""
 
 
 class DuplicateName(Exception):
-    """Ya existe un servicio o especialidad con ese nombre (el nombre es único)."""
+    """A service or specialty with that name already exists (the name is unique)."""
 
 
 def list_services(
     db: Session, medico_id: uuid.UUID | None = None
 ) -> list[Service]:
-    """Devuelve los servicios activos ordenados por nombre; con `medico_id`, solo los de sus especialidades."""
+    """Return the active services ordered by name; with `medico_id`, only those of their specialties."""
     query = (
         db.query(Service)
         .options(selectinload(Service.especialidades))
@@ -34,7 +34,7 @@ def list_services(
 
 
 def list_doctors(db: Session) -> list[User]:
-    """Devuelve los médicos activos, ordenados por nombre, con sus especialidades."""
+    """Return the active doctors, ordered by name, with their specialties."""
     return (
         db.query(User)
         .options(selectinload(User.especialidades))
@@ -46,21 +46,21 @@ def list_doctors(db: Session) -> list[User]:
 
 
 def list_specialties(db: Session) -> list[Specialty]:
-    """Devuelve todas las especialidades del catálogo, ordenadas por nombre."""
+    """Return every specialty in the catalog, ordered by name."""
     return db.query(Specialty).order_by(Specialty.nombre).all()
 
 
 def _service_name_in_use(
     db: Session, nombre: str, exclude_id: uuid.UUID | None = None
 ) -> bool:
-    """True si ya hay un servicio con ese nombre (excluyendo, si se indica, uno propio)."""
+    """True if a service with that name already exists (optionally excluding one of its own)."""
     return value_in_use(db, Service, Service.nombre, nombre, exclude_id)
 
 
 def create_service(
     db: Session, *, nombre: str, categoria: ServiceCategory
 ) -> Service:
-    """Da de alta un servicio en el catálogo. Nombre único. Flush (no commit)."""
+    """Register a service in the catalog. Unique name. Flush (no commit)."""
     if _service_name_in_use(db, nombre):
         raise DuplicateName()
     service = Service(nombre=nombre, categoria=categoria)
@@ -70,7 +70,7 @@ def create_service(
 
 
 def update_service(db: Session, servicio_id: uuid.UUID, changes: dict) -> Service:
-    """Edita solo los campos enviados de un servicio; permite desactivarlo (`activo=False`). Flush, no commit."""
+    """Edit only the fields sent for a service; allows deactivating it (`activo=False`). Flush, no commit."""
     service = db.get(Service, servicio_id)
     if service is None:
         raise ServiceNotFound()
@@ -86,7 +86,7 @@ def update_service(db: Session, servicio_id: uuid.UUID, changes: dict) -> Servic
 
 
 def create_specialty(db: Session, *, nombre: str) -> Specialty:
-    """Da de alta una especialidad en el catálogo. Nombre único. Flush (no commit)."""
+    """Register a specialty in the catalog. Unique name. Flush (no commit)."""
     if value_in_use(db, Specialty, Specialty.nombre, nombre):
         raise DuplicateName()
     specialty = Specialty(nombre=nombre)

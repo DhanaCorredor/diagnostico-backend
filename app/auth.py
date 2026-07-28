@@ -1,4 +1,4 @@
-"""Piezas de seguridad reutilizables: hash de contraseñas (bcrypt) y tokens JWT (PyJWT)."""
+"""Reusable security pieces: password hashing (bcrypt) and JWT tokens (PyJWT)."""
 
 import os
 import uuid
@@ -25,18 +25,18 @@ JWT_EXPIRE_MINUTES = 60 * 8
 
 
 def hash_password(password: str) -> str:
-    """Devuelve el hash bcrypt (con sal aleatoria) de una contraseña, listo para guardar en la BD."""
+    """Return the bcrypt hash (with a random salt) of a password, ready to store in the database."""
     hash_bytes = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
     return hash_bytes.decode("utf-8")
 
 
 def verify_password(password: str, password_hash: str) -> bool:
-    """Comprueba si una contraseña coincide con su hash guardado."""
+    """Check whether a password matches its stored hash."""
     return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
 
 
 def create_token(usuario_id: uuid.UUID) -> str:
-    """Crea un JWT firmado con el id del usuario (`sub`) y su caducidad (`exp`); el rol no se guarda."""
+    """Create a JWT signed with the user id (`sub`) and its expiry (`exp`); the role is not stored."""
     now = datetime.now(timezone.utc)
     payload = {
         "sub": str(usuario_id),
@@ -46,7 +46,7 @@ def create_token(usuario_id: uuid.UUID) -> str:
 
 
 def decode_token(token: str) -> dict:
-    """Verifica firma y caducidad del token y devuelve su payload; lanza jwt.InvalidTokenError si no es válido."""
+    """Verify the token signature and expiry and return its payload; raises jwt.InvalidTokenError if invalid."""
     return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
 
 
@@ -57,7 +57,7 @@ def current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
 ) -> User:
-    """Dependencia: valida el token del header y devuelve el usuario autenticado (401 si falla o está inactivo)."""
+    """Dependency: validates the header token and returns the authenticated user (401 if it fails or is inactive)."""
     unauthorized = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Token inválido o expirado",
@@ -74,7 +74,7 @@ def current_user(
 
 
 def require_role(*allowed_roles: Role):
-    """Fábrica de dependencias que exige que el usuario autenticado tenga uno de estos roles (403 si no)."""
+    """Dependency factory requiring the authenticated user to have one of these roles (403 otherwise)."""
 
     def verificar(user: User = Depends(current_user)) -> User:
         if user.rol not in allowed_roles:

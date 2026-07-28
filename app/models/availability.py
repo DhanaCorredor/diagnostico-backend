@@ -1,4 +1,4 @@
-"""Modelo Disponibilidad: franja horaria semanal en la que un médico atiende."""
+"""Availability model: the weekly time slot in which a doctor sees patients."""
 from sqlalchemy import Column, ForeignKey, Integer, Time
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -7,7 +7,7 @@ from app.models.common import uuid_pk
 
 
 class Availability(Base):
-    """Franja semanal (día + hora inicio/fin) de un médico; el calendario la usa para bloquear."""
+    """Weekly slot (day + start/end time) of a doctor; the calendar uses it to block bookings."""
 
     __tablename__ = "disponibilidad"
 

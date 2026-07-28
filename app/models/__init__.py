@@ -1,4 +1,4 @@
-"""Modelos SQLAlchemy (las 7 tablas del sistema). Ver docs/MODELO-DATOS.md."""
+"""SQLAlchemy models, one per system table. See docs/MODELO-DATOS.md."""
 from app.models.appointment import Appointment
 from app.models.availability import Availability
 from app.models.clinical_note import ClinicalNote

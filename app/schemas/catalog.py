@@ -1,4 +1,4 @@
-"""Esquemas del catálogo: servicios, especialidades y médicos."""
+"""Catalog schemas: services, specialties and doctors."""
 import uuid
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -7,7 +7,7 @@ from app.enums import ServiceCategory
 
 
 class SpecialtyOut(BaseModel):
-    """Una especialidad médica."""
+    """A medical specialty."""
 
     id: uuid.UUID
     nombre: str
@@ -16,13 +16,13 @@ class SpecialtyOut(BaseModel):
 
 
 class SpecialtyCreate(BaseModel):
-    """Cuerpo del POST /especialidades."""
+    """Body of POST /especialidades."""
 
     nombre: str = Field(min_length=1)
 
 
 class ServiceOut(BaseModel):
-    """Un servicio del catálogo con las especialidades que lo ofrecen (para el formulario de cita)."""
+    """A catalog service with the specialties that offer it (for the appointment form)."""
 
     id: uuid.UUID
     nombre: str
@@ -33,20 +33,20 @@ class ServiceOut(BaseModel):
 
 
 class ServiceDetail(ServiceOut):
-    """`ServicioOut` + `activo` (gestión del ADMIN)."""
+    """`ServicioOut` + `activo` (ADMIN management)."""
 
     activo: bool
 
 
 class ServiceCreate(BaseModel):
-    """Cuerpo del POST /servicios."""
+    """Body of POST /servicios."""
 
     nombre: str = Field(min_length=1)
     categoria: ServiceCategory
 
 
 class ServiceUpdate(BaseModel):
-    """Cuerpo del PUT /servicios/{id}. Solo se cambian los campos enviados."""
+    """Body of PUT /servicios/{id}. Only the fields sent are changed."""
 
     nombre: str | None = Field(default=None, min_length=1)
     categoria: ServiceCategory | None = None
@@ -54,7 +54,7 @@ class ServiceUpdate(BaseModel):
 
 
 class DoctorOut(BaseModel):
-    """Un médico con sus especialidades (para elegir médico al agendar)."""
+    """A doctor with their specialties (to pick a doctor when scheduling)."""
 
     id: uuid.UUID
     nombre_completo: str

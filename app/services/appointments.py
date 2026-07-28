@@ -1,4 +1,4 @@
-"""Lógica de negocio de las citas: duración, disponibilidad y anti-solapamiento."""
+"""Appointment business logic: duration, availability and overlap prevention."""
 
 import uuid
 from datetime import date, datetime, time, timedelta, timezone
@@ -15,52 +15,52 @@ CENTER_TZ = timezone(timedelta(hours=-4))
 
 
 def now_center() -> datetime:
-    """Hora actual en la zona del centro (UTC-4), naive (sin tzinfo)."""
+    """Current time in the center's timezone (UTC-4), naive (without tzinfo)."""
     return datetime.now(CENTER_TZ).replace(tzinfo=None)
 
 
 class ServiceNotFound(Exception):
-    """El servicio indicado no existe."""
+    """The given service does not exist."""
 
 
 class DoctorNotFound(Exception):
-    """El médico indicado no existe o no tiene rol MEDICO."""
+    """The given doctor does not exist or does not have the MEDICO role."""
 
 
 class OutsideAvailability(Exception):
-    """La cita cae fuera de la disponibilidad del médico (se puede forzar con sobrecupo)."""
+    """The appointment falls outside the doctor's availability (can be forced as an extra slot)."""
 
 
 class Overlap(Exception):
-    """El médico ya tiene una cita activa que se cruza con este horario."""
+    """The doctor already has an active appointment overlapping this time range."""
 
 
 class TimeNotAligned(Exception):
-    """El inicio no cae en la rejilla de minutos permitida (:00, :15, :30, :45)."""
+    """The start time does not fall on the allowed minute grid (:00, :15, :30, :45)."""
 
 
 class AppointmentInThePast(Exception):
-    """El inicio de la cita ya pasó; no se puede agendar en el pasado."""
+    """The appointment start is already in the past; scheduling in the past is not allowed."""
 
 
 class AppointmentNotFound(Exception):
-    """No existe ninguna cita con ese id."""
+    """There is no appointment with that id."""
 
 
 class AppointmentNotCancellable(Exception):
-    """La cita no se puede cancelar (ya está cancelada o completada)."""
+    """The appointment cannot be cancelled (it is already cancelled or completed)."""
 
 
 class AppointmentNotActive(Exception):
-    """La cita no está activa (SCHEDULED/CONFIRMED): no se puede marcar su asistencia."""
+    """The appointment is not active (SCHEDULED/CONFIRMED): attendance cannot be marked."""
 
 
 class AppointmentNotEditable(Exception):
-    """La cita no está activa (ya cancelada o cerrada): no se puede editar ni mover."""
+    """The appointment is not active (already cancelled or closed): it cannot be edited or moved."""
 
 
 def is_aligned(starts_at: datetime) -> bool:
-    """True si el inicio cae en la rejilla de GRID_MINUTOS, sin segundos ni microsegundos."""
+    """True if the start falls on the GRID_MINUTES grid, with no seconds or microseconds."""
     return (
         starts_at.minute % GRID_MINUTES == 0
         and starts_at.second == 0
@@ -69,14 +69,14 @@ def is_aligned(starts_at: datetime) -> bool:
 
 
 def calculate_ends_at(starts_at: datetime, duracion_min: int) -> datetime:
-    """Fin de la cita: inicio + la duración elegida (en minutos)."""
+    """End of the appointment: start + the chosen duration (in minutes)."""
     return starts_at + timedelta(minutes=duracion_min)
 
 
 def within_availability(
     db: Session, medico_id: uuid.UUID, starts_at: datetime, ends_at: datetime
 ) -> bool:
-    """True si la cita cabe entera dentro de alguna franja del médico ese día."""
+    """True if the appointment fits entirely inside one of the doctor's slots for that day."""
     dia_semana = (starts_at.weekday() + 1) % 7
     hora_inicio = starts_at.time()
     hora_fin = ends_at.time()
@@ -99,10 +99,10 @@ def has_overlap(
     ends_at: datetime,
     exclude_appointment_id: uuid.UUID | None = None,
 ) -> bool:
-    """True si el médico ya tiene una cita activa cruzada con este horario.
+    """True if the doctor already has an active appointment overlapping this time range.
 
-    Solo cuentan las activas (una CANCELLED libera el hueco); las pegadas no se cruzan.
-    `exclude_appointment_id` omite una cita (al mover, para que no choque consigo misma).
+    Only active ones count (a CANCELLED one frees the slot); adjacent ones do not overlap.
+    `exclude_appointment_id` skips one appointment (when moving, so it does not clash with itself).
     """
     q = (
         db.query(Appointment)
@@ -123,7 +123,7 @@ def _validate_service_doctor_and_grid(
     medico_id: uuid.UUID,
     starts_at: datetime,
 ) -> None:
-    """Valida servicio activo, médico activo con rol MEDICO y rejilla de minutos (crear/editar)."""
+    """Validate an active service, an active MEDICO-role doctor and the minute grid (create/edit)."""
     service = db.get(Service, servicio_id)
     if service is None or not service.activo:
         raise ServiceNotFound()
@@ -143,7 +143,7 @@ def _validate_slot(
     permitir_sobrecupo: bool,
     exclude_appointment_id: uuid.UUID | None = None,
 ) -> None:
-    """Valida disponibilidad (salvo sobrecupo) y anti-solapamiento del hueco (crear/editar)."""
+    """Validate availability (unless it is an extra slot) and that the slot is free (create/edit)."""
     if not permitir_sobrecupo and not within_availability(
         db, medico_id, starts_at, ends_at
     ):
@@ -167,9 +167,9 @@ def create_appointment(
     permitir_sobrecupo: bool = False,
     now: datetime | None = None,
 ) -> Appointment:
-    """Valida las reglas y crea la cita (upsert del paciente incluido). Flush, no commit.
+    """Validate the rules and create the appointment (patient upsert included). Flush, no commit.
 
-    `now` se inyecta para poder probar en test la regla de "no en el pasado".
+    `now` is injected so the "not in the past" rule can be tested.
     """
     _validate_service_doctor_and_grid(
         db, servicio_id=servicio_id, medico_id=medico_id, starts_at=starts_at
@@ -218,9 +218,9 @@ def list_appointments(
     medico_id: uuid.UUID | None = None,
     incluir_canceladas: bool = False,
 ) -> list[Appointment]:
-    """Citas del rango [desde, hasta] (ambos incluidos), ordenadas por inicio.
+    """Appointments in the range [desde, hasta] (both included), ordered by start time.
 
-    `medico_id` filtra por médico; `incluir_canceladas` añade también las canceladas.
+    `medico_id` filters by doctor; `incluir_canceladas` also includes the cancelled ones.
     """
     start = datetime.combine(desde, time.min)
     end = datetime.combine(hasta, time.min) + timedelta(days=1)
@@ -233,7 +233,7 @@ def list_appointments(
 
 
 def list_patient_appointments(db: Session, paciente_id: uuid.UUID) -> list[Appointment]:
-    """Historial completo de un paciente (todas sus citas, de la más reciente a la más antigua)."""
+    """Full history of a patient (all their appointments, from the most recent to the oldest)."""
     return (
         db.query(Appointment)
         .filter(Appointment.paciente_id == paciente_id)
@@ -245,7 +245,7 @@ def list_patient_appointments(db: Session, paciente_id: uuid.UUID) -> list[Appoi
 def _get_active_appointment(
     db: Session, cita_id: uuid.UUID, exc_not_active: type[Exception]
 ) -> Appointment:
-    """Devuelve la cita activa (SCHEDULED/CONFIRMED); lanza si no existe o ya está cerrada."""
+    """Return the active appointment (SCHEDULED/CONFIRMED); raise if missing or already closed."""
     appointment = db.get(Appointment, cita_id)
     if appointment is None:
         raise AppointmentNotFound()
@@ -255,7 +255,7 @@ def _get_active_appointment(
 
 
 def cancel_appointment(db: Session, cita_id: uuid.UUID) -> Appointment:
-    """Cancela una cita activa (estado CANCELLED, libera el cupo). Flush, no commit."""
+    """Cancel an active appointment (status CANCELLED, frees the slot). Flush, no commit."""
     appointment = _get_active_appointment(db, cita_id, AppointmentNotCancellable)
     appointment.estado = AppointmentStatus.CANCELLED
     db.flush()
@@ -263,7 +263,7 @@ def cancel_appointment(db: Session, cita_id: uuid.UUID) -> Appointment:
 
 
 def mark_attendance(db: Session, cita_id: uuid.UUID, estado: AppointmentStatus) -> Appointment:
-    """Marca una cita activa como atendida (COMPLETED) o no-show (NO_SHOW). Flush, no commit."""
+    """Mark an active appointment as attended (COMPLETED) or missed (NO_SHOW). Flush, no commit."""
     appointment = _get_active_appointment(db, cita_id, AppointmentNotActive)
     appointment.estado = estado
     db.flush()
@@ -282,10 +282,10 @@ def edit_appointment(
     permitir_sobrecupo: bool = False,
     now: datetime | None = None,
 ) -> Appointment:
-    """Edita o mueve una cita activa, revalidando las reglas de creación (excluye la propia cita).
+    """Edit or move an active appointment, revalidating the creation rules (excluding itself).
 
-    Actualización parcial: los campos en None se dejan igual. No cambia el paciente.
-    La regla de "no en el pasado" solo aplica si se mueve la hora. Flush, no commit.
+    Partial update: fields set to None are left unchanged. The patient is not changed.
+    The "not in the past" rule only applies if the time is moved. Flush, no commit.
     """
     appointment = _get_active_appointment(db, cita_id, AppointmentNotEditable)
 

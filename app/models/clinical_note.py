@@ -1,4 +1,4 @@
-"""Modelo NotaClinica: historia clínica mínima (andamiaje, reservada para fase 2)."""
+"""ClinicalNote model: minimal medical history (scaffolding, reserved for phase 2)."""
 from sqlalchemy import Column, DateTime, ForeignKey, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -7,7 +7,7 @@ from app.models.common import uuid_pk
 
 
 class ClinicalNote(Base):
-    """Nota de texto que el médico escribe sobre un paciente (sin funcionalidad en el MVP)."""
+    """Free-text note a doctor writes about a patient (no functionality in the MVP)."""
 
     __tablename__ = "notas_clinicas"
 

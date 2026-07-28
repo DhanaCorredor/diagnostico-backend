@@ -1,4 +1,4 @@
-"""Modelo Usuario: persona única (personal, médicos y pacientes) diferenciada por `rol`."""
+"""User model: a single person entity (staff, doctors and patients) told apart by `rol`."""
 from sqlalchemy import (
     Boolean,
     Column,
@@ -18,7 +18,7 @@ from app.models.common import user_specialty, uuid_pk
 
 
 class User(Base):
-    """Personal, médicos y pacientes comparten esta tabla; los campos que no aplican quedan a NULL."""
+    """Staff, doctors and patients share this table; fields that do not apply stay NULL."""
 
     __tablename__ = "usuarios"
 
