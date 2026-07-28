@@ -1,0 +1,60 @@
+# Integración continua: en cada push y cada pull request levanta un PostgreSQL,
+# aplica las migraciones, ejecuta los tests, comprueba el seed y revisa el estilo.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    # Base de datos desechable para esta ejecución (la de producción no se toca).
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: diagnostico_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/diagnostico_test
+      JWT_SECRET: secreto-de-usar-y-tirar-solo-para-la-integracion-continua
+      ADMIN_PASSWORD: contrasena-de-usar-y-tirar-solo-para-la-integracion-continua
+
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Aplicar las migraciones
+        run: alembic upgrade head
+
+      - name: Ejecutar los tests
+        run: pytest -q
+
+      - name: Comprobar que el seed funciona
+        run: python -m app.seed
+
+      - name: Revisar el estilo del código
+        run: |
+          pip install ruff==0.15.22
+          ruff check app tests

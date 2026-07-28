@@ -1,5 +1,7 @@
 # 🩺 Diagnóstico — Medical Appointment Management ERP
 
+[![CI](https://github.com/DhanaCorredor/diagnostico-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/DhanaCorredor/diagnostico-backend/actions/workflows/ci.yml)
+
 Internal **medical appointment** management system for the **Diagnóstico** health center (Maracay, Venezuela). It lets the staff log in by role and manage patients, doctors and appointments, with **strict schedule validation (zero overlaps per doctor)** and **availability-aware scheduling**.
 
 > Bootcamp final project — MVP scoped to a 2-week deadline. Documentation in `docs/` (in Spanish).
