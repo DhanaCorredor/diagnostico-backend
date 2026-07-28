@@ -1,4 +1,4 @@
-"""Tests del catálogo: lecturas y gestión (servicios, especialidades, médicos)."""
+"""Catalog tests: reads and management (services, specialties, doctors)."""
 
 import uuid
 

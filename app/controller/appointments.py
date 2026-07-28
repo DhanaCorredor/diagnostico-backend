@@ -1,4 +1,4 @@
-"""Router de citas: agendar, listar (agenda), editar/mover, cancelar y marcar asistencia."""
+"""Appointment router: schedule, list (agenda), edit/move, cancel and mark attendance."""
 
 import uuid
 from datetime import date
@@ -30,7 +30,7 @@ async def book_appointment(
     db: Session = Depends(get_db),
     user: User = Depends(require_role(Role.ADMIN, Role.RECEPCION)),
 ):
-    """Agenda una cita (recepción o admin) aplicando las reglas de negocio; cada fallo devuelve su código HTTP."""
+    """Schedule an appointment (reception or admin) applying the business rules; each failure returns its HTTP code."""
     try:
         appointment = appointment_service.create_appointment(
             db,
@@ -101,9 +101,9 @@ async def list_appointments(
     db: Session = Depends(get_db),
     user: User = Depends(require_role(Role.ADMIN, Role.RECEPCION, Role.MEDICO)),
 ):
-    """Lista la agenda de un día (`fecha`) o de un rango (`desde`..`hasta`), ambos incluidos.
+    """List the agenda of one day (`fecha`) or of a range (`desde`..`hasta`), both included.
 
-    Un MÉDICO solo ve su propia agenda. Por defecto excluye las canceladas.
+    A MEDICO only sees their own agenda. Cancelled appointments are excluded by default.
     """
     if fecha is not None:
         desde = hasta = fecha
@@ -140,7 +140,7 @@ async def edit_appointment(
     db: Session = Depends(get_db),
     _: User = Depends(require_role(Role.ADMIN, Role.RECEPCION)),
 ):
-    """Edita o mueve una cita activa (parcial, solo los campos enviados), revalidando las reglas. ADMIN o RECEPCIÓN."""
+    """Edit or move an active appointment (partial, only the fields sent), revalidating the rules. ADMIN or RECEPCION."""
     try:
         appointment = appointment_service.edit_appointment(
             db,
@@ -194,7 +194,7 @@ async def cancel_appointment(
     db: Session = Depends(get_db),
     _: User = Depends(require_role(Role.ADMIN, Role.RECEPCION)),
 ):
-    """Cancela una cita (libera el cupo). Solo ADMIN o RECEPCIÓN (el médico no cancela)."""
+    """Cancel an appointment (frees the slot). ADMIN or RECEPCION only (the doctor does not cancel)."""
     try:
         appointment = appointment_service.cancel_appointment(db, cita_id)
     except appointment_service.AppointmentNotFound:
@@ -215,7 +215,7 @@ async def mark_attendance(
     db: Session = Depends(get_db),
     _: User = Depends(require_role(Role.ADMIN, Role.RECEPCION)),
 ):
-    """Marca una cita como **atendida** (COMPLETED) o **no-show** (NO_SHOW). Solo ADMIN o RECEPCIÓN."""
+    """Mark an appointment as **attended** (COMPLETED) or **no-show** (NO_SHOW). ADMIN or RECEPCION only."""
     try:
         appointment = appointment_service.mark_attendance(db, cita_id, data.estado)
     except appointment_service.AppointmentNotFound:
