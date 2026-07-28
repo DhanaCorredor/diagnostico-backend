@@ -12,7 +12,8 @@ El backend se despliega en **Render** (un solo proveedor): el Web Service de la 
 2. En el panel: **New → Blueprint**.
 3. Conectar el repositorio `diagnostico-backend` y elegir la rama.
 4. Render detecta `render.yaml` y muestra lo que va a crear (la API + la base).
-5. Cuando lo pida, escribir el valor de **`ADMIN_PASSWORD`** (la contraseña del admin).
+5. Cuando lo pida, escribir el valor de **`ADMIN_PASSWORD`** (la contraseña del admin) y el de
+   **`FRONTEND_ORIGINS`** (ver más abajo).
 6. **Apply / Create** → Render crea la base, aplica las migraciones, carga el seed y arranca la API.
 7. Probar la **URL pública** (la actual: `https://diagnostico-api-jtbw.onrender.com`):
    - `GET /health` → `{"status":"ok"}`
@@ -24,7 +25,22 @@ El backend se despliega en **Render** (un solo proveedor): el Web Service de la 
 - **Base de datos:** crea un PostgreSQL gratis y enchufa su conexión en `DATABASE_URL`.
 - **Build:** `pip install` + `alembic upgrade head` (crea las tablas) + `python -m app.seed` (datos base).
 - **Arranque:** `uvicorn` en el puerto que Render asigna (`$PORT`).
-- **Secretos:** `JWT_SECRET` lo genera Render; `ADMIN_PASSWORD` lo pones tú.
+- **Secretos:** `JWT_SECRET` lo genera Render; `ADMIN_PASSWORD` y `FRONTEND_ORIGINS` los pones tú.
+
+## CORS: quién puede llamar a la API
+
+El navegador solo deja que el frontend llame a la API si la API declara ese origen como
+autorizado. La variable **`FRONTEND_ORIGINS`** admite **varios orígenes separados por comas**,
+para que convivan el entorno local y el desplegado:
+
+```
+FRONTEND_ORIGINS=http://localhost:5173,https://mi-frontend.onrender.com
+```
+
+- **Sin barra final** y con el esquema incluido (`https://`): el origen se compara tal cual.
+- Si la variable no está definida, se usa `http://localhost:5173`. Es decir, **si se despliega el
+  frontend y no se define esta variable, el navegador bloqueará sus llamadas**.
+- Por compatibilidad se sigue aceptando el nombre antiguo `FRONTEND_ORIGIN` (un solo origen).
 
 ## Notas
 
