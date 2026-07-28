@@ -47,6 +47,11 @@ async def create_availability(
             status.HTTP_400_BAD_REQUEST,
             "La hora de inicio debe ser anterior a la de fin",
         ) from None
+    except availability_service.OverlappingSlot:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "El médico ya tiene una franja que se cruza con esa ese día",
+        ) from None
 
     db.commit()
     return slot

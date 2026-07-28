@@ -17,6 +17,10 @@ class InvalidSlot(Exception):
     """La franja no es válida: la hora de inicio no es anterior a la de fin."""
 
 
+class OverlappingSlot(Exception):
+    """La franja se cruza con otra ya definida para ese médico ese mismo día."""
+
+
 def list_availability(db: Session, medico_id: uuid.UUID) -> list[Availability]:
     """Franjas de un médico, ordenadas por día de la semana y hora de inicio."""
     return (
@@ -27,6 +31,27 @@ def list_availability(db: Session, medico_id: uuid.UUID) -> list[Availability]:
     )
 
 
+def has_overlapping_slot(
+    db: Session,
+    medico_id: uuid.UUID,
+    dia_semana: int,
+    hora_inicio: time,
+    hora_fin: time,
+) -> bool:
+    """True si el médico ya tiene ese día una franja cruzada con este horario.
+
+    Misma regla que en las citas: las franjas pegadas (08:00-12:00 y 12:00-16:00) no se cruzan.
+    """
+    q = (
+        db.query(Availability)
+        .filter(Availability.usuario_id == medico_id)
+        .filter(Availability.dia_semana == dia_semana)
+        .filter(Availability.hora_inicio < hora_fin)
+        .filter(Availability.hora_fin > hora_inicio)
+    )
+    return db.query(q.exists()).scalar()
+
+
 def create_availability(
     db: Session,
     *,
@@ -35,12 +60,17 @@ def create_availability(
     hora_inicio: time,
     hora_fin: time,
 ) -> Availability:
-    """Crea una franja para un médico, validando el médico y que inicio < fin. Flush, no commit."""
+    """Crea una franja de un médico validando médico, inicio < fin y que no se cruce con otra.
+
+    Flush, no commit.
+    """
     doctor = db.get(User, medico_id)
     if doctor is None or doctor.rol != Role.MEDICO:
         raise DoctorNotFound()
     if hora_inicio >= hora_fin:
         raise InvalidSlot()
+    if has_overlapping_slot(db, medico_id, dia_semana, hora_inicio, hora_fin):
+        raise OverlappingSlot()
 
     slot = Availability(
         usuario_id=medico_id,
