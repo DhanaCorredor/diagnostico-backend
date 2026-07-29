@@ -57,6 +57,19 @@ def test_login_ok_and_me(client, db):
     assert me.status_code == 200 and me.json()["rol"] == "ADMIN"
 
 
+def test_login_ignores_email_case(client, db):
+    u = User(
+        nombre_completo="Admin Case",
+        rol=Role.ADMIN,
+        email=f"case-{uuid.uuid4()}@test.local",
+        password_hash=hash_password("secret123"),
+    )
+    db.add(u)
+    db.flush()
+    r = client.post("/auth/login", json={"email": u.email.upper(), "password": "secret123"})
+    assert r.status_code == 200
+
+
 def test_login_wrong_password(client, db):
     u = User(
         nombre_completo="Admin Malo",

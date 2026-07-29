@@ -7,18 +7,22 @@ from app.auth import create_token, current_user, hash_password, verify_password
 from app.db import get_db
 from app.models import User
 from app.schemas import LoginRequest, TokenResponse, UserOut
+from app.services.common import normalized
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-_HASH_SENUELO = hash_password("timing-attack-decoy")
+_DECOY_HASH = hash_password("timing-attack-decoy")
 
 
 @router.post("/login", response_model=TokenResponse)
 async def login(data: LoginRequest, db: Session = Depends(get_db)):
-    """Check email + password and, if they are correct, return a JWT token."""
-    user = db.query(User).filter_by(email=data.email).first()
-    hash_a_verificar = user.password_hash if user and user.password_hash else _HASH_SENUELO
-    password_ok = verify_password(data.password, hash_a_verificar)
+    """Check email + password and, if they are correct, return a JWT token.
+
+    The email is matched ignoring case, the same way duplicates are rejected when creating users.
+    """
+    user = db.query(User).filter(normalized(User.email) == normalized(data.email)).first()
+    hash_to_verify = user.password_hash if user and user.password_hash else _DECOY_HASH
+    password_ok = verify_password(data.password, hash_to_verify)
     if user is None or not user.password_hash or not password_ok:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
