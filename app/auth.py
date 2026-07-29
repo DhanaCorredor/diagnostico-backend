@@ -19,7 +19,7 @@ load_dotenv()
 
 JWT_SECRET = os.getenv("JWT_SECRET")
 if not JWT_SECRET:
-    raise RuntimeError("Falta JWT_SECRET en el .env (secreto para firmar los tokens JWT).")
+    raise RuntimeError("JWT_SECRET is missing from .env (the secret used to sign the JWT tokens).")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_MINUTES = 60 * 8
 

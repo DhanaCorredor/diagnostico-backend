@@ -19,7 +19,7 @@ from app.schemas import (
 from app.services import appointments as appointment_service
 from app.services.patients import AmbiguousPatients, PatientNotFound
 
-router = APIRouter(prefix="/citas", tags=["citas"])
+router = APIRouter(prefix="/citas", tags=["appointments"])
 
 MAX_RANGE_DAYS = 60
 

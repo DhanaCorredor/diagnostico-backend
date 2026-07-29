@@ -19,7 +19,7 @@ from app.schemas import (
 )
 from app.services import catalog as catalog_service
 
-router = APIRouter(tags=["catálogos"])
+router = APIRouter(tags=["catalog"])
 
 
 @router.get("/servicios", response_model=list[ServiceOut])

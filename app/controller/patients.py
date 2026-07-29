@@ -14,7 +14,7 @@ from app.services import patients as patient_service
 
 router = APIRouter(
     prefix="/pacientes",
-    tags=["pacientes"],
+    tags=["patients"],
     dependencies=[Depends(require_role(Role.ADMIN, Role.RECEPCION))],
 )
 
