@@ -1,10 +1,12 @@
 # 🩺 Diagnóstico — Medical Appointment Management ERP
 
+[![CI](https://github.com/DhanaCorredor/diagnostico-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/DhanaCorredor/diagnostico-backend/actions/workflows/ci.yml)
+
 Internal **medical appointment** management system for the **Diagnóstico** health center (Maracay, Venezuela). It lets the staff log in by role and manage patients, doctors and appointments, with **strict schedule validation (zero overlaps per doctor)** and **availability-aware scheduling**.
 
 > Bootcamp final project — MVP scoped to a 2-week deadline. Documentation in `docs/` (in Spanish).
 >
-> **Status:** the backend MVP is **complete and deployed** — [live API](https://diagnostico-api-jtbw.onrender.com/docs) (release **v0.6.0** on Render, auto-deploy on push to `main`). 100 passing tests (unit + integration). The React frontend (`diagnostico-frontend`) is the remaining phase.
+> **Status:** the backend MVP is **complete and deployed** — [live API](https://diagnostico-api-jtbw.onrender.com/docs) (release **v0.7.0**, auto-deploy on push to `main`). **118 passing tests** (unit + integration), run on every push by CI. The API runs on Render and its PostgreSQL database on Neon; the React frontend (`diagnostico-frontend`) is deployed on Vercel.
 
 ---
 

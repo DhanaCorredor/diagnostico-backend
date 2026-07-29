@@ -1,4 +1,4 @@
-"""Router de catálogos: lecturas de servicios/especialidades/médicos (autenticado) y su gestión (ADMIN)."""
+"""Catalog router: reads of services/specialties/doctors (authenticated) and their management (ADMIN)."""
 
 import uuid
 
@@ -28,7 +28,7 @@ async def list_services(
     db: Session = Depends(get_db),
     _: object = Depends(current_user),
 ):
-    """Devuelve el catálogo de servicios activos; con `?medico_id=` filtra por las especialidades del médico."""
+    """Return the catalog of active services; with `?medico_id=` it filters by the doctor's specialties."""
     return catalog_service.list_services(db, medico_id)
 
 
@@ -37,7 +37,7 @@ async def list_doctors(
     db: Session = Depends(get_db),
     _: object = Depends(current_user),
 ):
-    """Devuelve los médicos activos con sus especialidades (para elegir al agendar)."""
+    """Return the active doctors with their specialties (to pick one when scheduling)."""
     return catalog_service.list_doctors(db)
 
 
@@ -46,7 +46,7 @@ async def list_specialties(
     db: Session = Depends(get_db),
     _: object = Depends(current_user),
 ):
-    """Devuelve el catálogo de especialidades médicas."""
+    """Return the catalog of medical specialties."""
     return catalog_service.list_specialties(db)
 
 
@@ -60,7 +60,7 @@ async def create_service(
     db: Session = Depends(get_db),
     _: object = Depends(require_role(Role.ADMIN)),
 ):
-    """Da de alta un servicio en el catálogo (ADMIN)."""
+    """Register a service in the catalog (ADMIN)."""
     try:
         service = catalog_service.create_service(
             db, nombre=data.nombre, categoria=data.categoria
@@ -79,7 +79,7 @@ async def update_service(
     db: Session = Depends(get_db),
     _: object = Depends(require_role(Role.ADMIN)),
 ):
-    """Edita un servicio del catálogo (ADMIN). Permite desactivarlo sin borrarlo."""
+    """Edit a service in the catalog (ADMIN). It can be deactivated without deleting it."""
     changes = data.model_dump(exclude_unset=True)
     try:
         service = catalog_service.update_service(db, servicio_id, changes)
@@ -102,7 +102,7 @@ async def create_specialty(
     db: Session = Depends(get_db),
     _: object = Depends(require_role(Role.ADMIN)),
 ):
-    """Da de alta una especialidad médica (ADMIN)."""
+    """Register a medical specialty (ADMIN)."""
     try:
         specialty = catalog_service.create_specialty(db, nombre=data.nombre)
     except catalog_service.DuplicateName:

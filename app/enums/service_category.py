@@ -1,4 +1,4 @@
-"""Categoría de un servicio del catálogo."""
+"""Category of a service in the catalog."""
 import enum
 
 

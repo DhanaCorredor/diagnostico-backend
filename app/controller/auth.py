@@ -1,4 +1,4 @@
-"""Router de autenticación: login (emite token) y me (quién soy)."""
+"""Authentication router: login (issues a token) and me (who am I)."""
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -15,7 +15,7 @@ _HASH_SENUELO = hash_password("timing-attack-decoy")
 
 @router.post("/login", response_model=TokenResponse)
 async def login(data: LoginRequest, db: Session = Depends(get_db)):
-    """Verifica email + contraseña y, si son correctos, devuelve un token JWT."""
+    """Check email + password and, if they are correct, return a JWT token."""
     user = db.query(User).filter_by(email=data.email).first()
     hash_a_verificar = user.password_hash if user and user.password_hash else _HASH_SENUELO
     password_ok = verify_password(data.password, hash_a_verificar)
@@ -35,5 +35,5 @@ async def login(data: LoginRequest, db: Session = Depends(get_db)):
 
 @router.get("/me", response_model=UserOut)
 async def me(user: User = Depends(current_user)):
-    """Devuelve los datos del usuario autenticado (según el token del header)."""
+    """Return the data of the authenticated user (according to the header token)."""
     return user

@@ -1,4 +1,4 @@
-"""Tests de la gestión de personal/médicos (CRUD): crear, listar, ver, editar."""
+"""Tests of the staff/doctor management (CRUD): create, list, view, edit."""
 
 import uuid
 
@@ -10,7 +10,7 @@ from app.services import users as U
 
 
 def _create(db, **over):
-    """Crea un usuario de personal con datos por defecto (médico), sobreescribibles."""
+    """Create a staff user with default data (a doctor), which can be overridden."""
     base = dict(
         nombre_completo=f"Dr {uuid.uuid4()}",
         rol=Role.MEDICO,

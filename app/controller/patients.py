@@ -1,4 +1,4 @@
-"""Router de pacientes: listar, ver ficha y editar. Gestión de recepción/admin."""
+"""Patient router: list, view details and edit. Managed by reception/admin."""
 
 import uuid
 
@@ -21,13 +21,13 @@ router = APIRouter(
 
 @router.get("", response_model=list[PatientOut])
 async def list_patients(db: Session = Depends(get_db)):
-    """Lista los pacientes activos."""
+    """List the active patients."""
     return patient_service.list_patients(db)
 
 
 @router.post("", response_model=PatientOut, status_code=status.HTTP_201_CREATED)
 async def create_patient(data: PatientCreate, db: Session = Depends(get_db)):
-    """Da de alta un paciente manualmente (sin agendarle una cita)."""
+    """Register a patient manually (without scheduling an appointment)."""
     try:
         patient = patient_service.create_patient(db, data.model_dump())
     except patient_service.DuplicateNationalId:
@@ -40,7 +40,7 @@ async def create_patient(data: PatientCreate, db: Session = Depends(get_db)):
 
 @router.get("/{paciente_id}", response_model=PatientOut)
 async def get_patient(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
-    """Devuelve la ficha de un paciente."""
+    """Return the details of a patient."""
     try:
         return patient_service.get_patient(db, paciente_id)
     except patient_service.PatientNotFound:
@@ -49,7 +49,7 @@ async def get_patient(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
 
 @router.get("/{paciente_id}/citas", response_model=list[AppointmentOut])
 async def appointment_history(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
-    """Devuelve el historial de citas de un paciente (de la más reciente a la más antigua)."""
+    """Return the appointment history of a patient (from the most recent to the oldest)."""
     try:
         patient_service.get_patient(db, paciente_id)
     except patient_service.PatientNotFound:
@@ -63,7 +63,7 @@ async def update_patient(
     data: PatientUpdate,
     db: Session = Depends(get_db),
 ):
-    """Edita un paciente: solo se actualizan los campos enviados (no borra los omitidos)."""
+    """Edit a patient: only the fields sent are updated (omitted ones are not cleared)."""
     changes = data.model_dump(exclude_unset=True)
     try:
         patient = patient_service.update_patient(db, paciente_id, changes)
@@ -80,7 +80,7 @@ async def update_patient(
 
 @router.delete("/{paciente_id}", response_model=PatientOut)
 async def deactivate_patient(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
-    """Da de baja (lógica) a un paciente: `activo=False`. Sale del listado (que solo muestra activos)."""
+    """Soft-delete a patient: `activo=False`. It leaves the list (which only shows active ones)."""
     try:
         patient = patient_service.deactivate_patient(db, paciente_id)
     except patient_service.PatientNotFound:

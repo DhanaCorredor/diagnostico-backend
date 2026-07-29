@@ -1,4 +1,4 @@
-"""Esquemas de citas, incluida la validación de la hora local del centro."""
+"""Appointment schemas, including the validation of the center's local time."""
 import uuid
 from datetime import datetime
 from typing import Literal
@@ -9,14 +9,14 @@ from app.enums import AppointmentStatus
 
 
 def _exigir_hora_local_naive(v: datetime | None) -> datetime | None:
-    """Exige hora local naive (sin zona); una fecha con zona horaria se rechaza."""
+    """Require a naive local time (no timezone); a date carrying a timezone is rejected."""
     if v is not None and v.tzinfo is not None:
         raise ValueError("La fecha debe ir en hora local del centro, sin zona horaria.")
     return v
 
 
 class AppointmentCreate(BaseModel):
-    """Cuerpo del POST /citas: identifica al paciente por nombre + edad (upsert) o por `paciente_id`."""
+    """Body of POST /citas: identifies the patient by name + age (upsert) or by `paciente_id`."""
 
     nombre_completo: str = Field(min_length=1)
     edad: int = Field(ge=0, le=120)
@@ -35,7 +35,7 @@ class AppointmentCreate(BaseModel):
 
 
 class AppointmentUpdate(BaseModel):
-    """PUT /citas/{id}: editar o mover. Campos opcionales; None = sin cambio. No cambia el paciente."""
+    """PUT /citas/{id}: edit or move. Optional fields; None = no change. The patient is not changed."""
 
     medico_id: uuid.UUID | None = None
     servicio_id: uuid.UUID | None = None
@@ -51,7 +51,7 @@ class AppointmentUpdate(BaseModel):
 
 
 class AppointmentOut(BaseModel):
-    """Datos de la cita creada."""
+    """Data of the created appointment."""
 
     id: uuid.UUID
     paciente_id: uuid.UUID
@@ -66,6 +66,6 @@ class AppointmentOut(BaseModel):
 
 
 class AttendanceUpdate(BaseModel):
-    """POST /citas/{id}/asistencia: marcar atendida o no-show."""
+    """POST /citas/{id}/asistencia: mark the appointment as attended or no-show."""
 
     estado: Literal[AppointmentStatus.COMPLETED, AppointmentStatus.NO_SHOW]

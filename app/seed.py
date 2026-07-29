@@ -1,4 +1,4 @@
-"""Seed idempotente de datos base: catálogos, personal y cuadro médico. Ejecutar con `python -m app.seed`."""
+"""Idempotent seed of base data: catalogs, staff and medical team. Run with `python -m app.seed`."""
 
 import os
 from datetime import time
@@ -128,7 +128,7 @@ PATIENTS = [
 
 
 def seed_specialties(db):
-    """Inserta las especialidades que aún no existan. Devuelve cuántas añadió."""
+    """Insert the specialties that do not exist yet. Returns how many it added."""
     existing = {e.nombre for e in db.query(Specialty.nombre).all()}
     new_ones = [Specialty(nombre=n) for n in SPECIALTIES if n not in existing]
     db.add_all(new_ones)
@@ -136,10 +136,10 @@ def seed_specialties(db):
 
 
 def seed_services(db):
-    """Inserta los servicios que falten y asegura su vínculo (N:M) con la especialidad.
+    """Insert the missing services and make sure they are linked (N:M) to their specialty.
 
-    Idempotente: si un servicio ya existe pero sin especialidades, se las enlaza (así el
-    filtro por médico funciona sin resetear la base). Devuelve cuántos servicios creó.
+    Idempotent: if a service already exists but has no specialties, they are linked (so the
+    filter by doctor works without resetting the database). Returns how many services it created.
     """
     existing = {s.nombre: s for s in db.query(Service).all()}
     catalog = {e.nombre: e for e in db.query(Specialty).all()}
@@ -156,7 +156,7 @@ def seed_services(db):
 
 
 def seed_doctors(db):
-    """Crea los médicos que falten (rol MEDICO, sin login), con sus especialidades (N:M) y franjas. Devuelve cuántos creó."""
+    """Create the missing doctors (MEDICO role, no login), with their specialties (N:M) and slots. Returns how many it created."""
     existing = {
         u.nombre_completo
         for u in db.query(User.nombre_completo).filter(User.rol == Role.MEDICO).all()
@@ -170,11 +170,11 @@ def seed_doctors(db):
         doctor.especialidades = [catalog[e] for e in especialidades]
         db.add(doctor)
         db.flush()
-        for dia, start, end in slots:
+        for day, start, end in slots:
             db.add(
                 Availability(
                     usuario_id=doctor.id,
-                    dia_semana=dia,
+                    dia_semana=day,
                     hora_inicio=start,
                     hora_fin=end,
                 )
@@ -184,7 +184,7 @@ def seed_doctors(db):
 
 
 def seed_patients(db):
-    """Crea los pacientes ficticios de demo (rol PACIENTE) que falten; nunca datos reales. Devuelve cuántos creó."""
+    """Create the missing fictional demo patients (PACIENTE role); never real data. Returns how many it created."""
     existing = {
         u.nombre_completo
         for u in db.query(User.nombre_completo).filter(User.rol == Role.PACIENTE).all()
@@ -207,7 +207,7 @@ def seed_patients(db):
 
 
 def seed_staff(db):
-    """Crea el personal interno con login (admin, recepción, médico) que falte, usando ADMIN_PASSWORD del .env. Devuelve cuántos creó."""
+    """Create the missing internal staff with login (admin, reception, doctor), using ADMIN_PASSWORD from .env. Returns how many it created."""
     password = os.getenv("ADMIN_PASSWORD")
     if not password:
         print("  (aviso) ADMIN_PASSWORD no está en el .env: me salto el personal.")
@@ -235,21 +235,21 @@ CLOSE_TIME = time(17, 30)
 
 
 def seed_availability(db):
-    """Da a cada médico sin franjas la jornada del centro (L-S 07:30-17:30); no toca a los que ya tienen. Devuelve cuántas creó."""
+    """Give every doctor without slots the center's working hours (Mon-Sat 07:30-17:30); doctors that already have slots are left alone. Returns how many it created."""
     created = 0
     for doctor in db.query(User).filter(User.rol == Role.MEDICO).all():
-        ya_tiene = (
+        already_has_slots = (
             db.query(Availability)
             .filter(Availability.usuario_id == doctor.id)
             .first()
         )
-        if ya_tiene:
+        if already_has_slots:
             continue
-        for dia in WORKDAYS:
+        for day in WORKDAYS:
             db.add(
                 Availability(
                     usuario_id=doctor.id,
-                    dia_semana=dia,
+                    dia_semana=day,
                     hora_inicio=OPEN_TIME,
                     hora_fin=CLOSE_TIME,
                 )

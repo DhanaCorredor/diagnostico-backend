@@ -1,4 +1,4 @@
-"""Router de disponibilidad: ver las franjas de un médico (autenticado) y definirlas (ADMIN)."""
+"""Availability router: view a doctor's slots (authenticated) and define them (ADMIN)."""
 
 import uuid
 
@@ -21,7 +21,7 @@ async def list_availability(
     db: Session = Depends(get_db),
     _: object = Depends(current_user),
 ):
-    """Devuelve las franjas de disponibilidad de un médico."""
+    """Return the availability slots of a doctor."""
     return availability_service.list_availability(db, medico_id)
 
 
@@ -31,7 +31,7 @@ async def create_availability(
     db: Session = Depends(get_db),
     user: User = Depends(require_role(Role.ADMIN)),
 ):
-    """Define una franja de disponibilidad para un médico (solo ADMIN)."""
+    """Define an availability slot for a doctor (ADMIN only)."""
     try:
         slot = availability_service.create_availability(
             db,
@@ -46,6 +46,11 @@ async def create_availability(
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "La hora de inicio debe ser anterior a la de fin",
+        ) from None
+    except availability_service.OverlappingSlot:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "El médico ya tiene una franja que se cruza con esa ese día",
         ) from None
 
     db.commit()

@@ -1,29 +1,26 @@
-# Blueprint de despliegue en Render (todo en un proveedor):
-#   - la API (FastAPI) como Web Service
-#   - su base de datos PostgreSQL
-# Render lee este archivo y crea ambos servicios automáticamente.
-
-databases:
-  - name: diagnostico-db
-    plan: free
+# Render deployment blueprint:
+#   - the API (FastAPI) as a Web Service
+# The database is NOT here: it lives on Neon, whose free plan does not expire, while a free
+# Render database is deleted 30 days after it is created. Its connection string is set by hand
+# in the Render dashboard (see docs/DESPLIEGUE.md).
 
 services:
   - type: web
     name: diagnostico-api
     runtime: python
     plan: free
-    # Build: instala dependencias, aplica migraciones y carga los datos base (seed).
+    # Build: installs dependencies, applies migrations and loads the base data (seed).
     buildCommand: "pip install -r requirements.txt && alembic upgrade head && python -m app.seed"
-    # Arranque: uvicorn escuchando en el puerto que Render inyecta ($PORT).
+    # Start: uvicorn listening on the port Render injects ($PORT).
     startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     envVars:
-      - key: DATABASE_URL           # la conexión a la base, enchufada por Render
-        fromDatabase:
-          name: diagnostico-db
-          property: connectionString
-      - key: JWT_SECRET             # secreto de los tokens: Render genera uno aleatorio
+      - key: DATABASE_URL           # Neon connection string: set by hand in the dashboard
+        sync: false
+      - key: JWT_SECRET             # token secret: Render generates a random one
         generateValue: true
-      - key: ADMIN_PASSWORD         # contraseña del admin: se pone a mano en el panel
+      - key: ADMIN_PASSWORD         # admin password: set by hand in the dashboard
+        sync: false
+      - key: FRONTEND_ORIGINS       # origins allowed by CORS, separated by commas
         sync: false
       - key: PYTHON_VERSION
         value: "3.12.0"

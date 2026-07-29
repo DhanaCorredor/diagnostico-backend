@@ -1,7 +1,7 @@
-"""Configuración común de los tests: sesión de BD aislada y datos de apoyo.
+"""Shared test setup: an isolated database session and supporting data.
 
-Cada test corre dentro de una transacción que se revierte al terminar (rollback),
-así las pruebas no dejan rastro en la base de datos.
+Every test runs inside a transaction that is rolled back at the end, so the
+tests leave no trace in the database.
 """
 
 import uuid
@@ -18,11 +18,11 @@ from app.models import Service, User
 
 @pytest.fixture
 def db():
-    """Sesión envuelta en una transacción que se revierte al final del test.
+    """Session wrapped in a transaction that is rolled back at the end of the test.
 
-    `join_transaction_mode="create_savepoint"`: los `commit()` que hacen los
-    endpoints (en los tests de integración) se confinan a un SAVEPOINT, así el
-    rollback final los deshace igual y nada queda en la base de datos.
+    `join_transaction_mode="create_savepoint"`: the `commit()` calls made by the
+    endpoints (in the integration tests) are confined to a SAVEPOINT, so the final
+    rollback undoes them anyway and nothing is left in the database.
     """
     connection = engine.connect()
     trans = connection.begin()
@@ -37,10 +37,10 @@ def db():
 
 @pytest.fixture
 def client(db):
-    """TestClient con la BD de test inyectada: la app usa la MISMA sesión que el test.
+    """TestClient with the test database injected: the app uses the SAME session as the test.
 
-    Sobrescribe la dependencia `get_db` para que los endpoints compartan la
-    transacción del test (que se revierte al final).
+    Overrides the `get_db` dependency so the endpoints share the test's
+    transaction (which is rolled back at the end).
     """
     def _get_db_override():
         yield db
@@ -53,7 +53,7 @@ def client(db):
 
 @pytest.fixture
 def token_for():
-    """Devuelve una función que construye la cabecera Authorization de un usuario."""
+    """Return a function that builds the Authorization header of a user."""
     def _header(user):
         return {"Authorization": f"Bearer {create_token(user.id)}"}
 
@@ -62,7 +62,7 @@ def token_for():
 
 @pytest.fixture
 def doctor(db):
-    """Un médico de prueba (email único para no chocar con otros)."""
+    """A test doctor (unique email so it does not clash with others)."""
     m = User(
         nombre_completo="Dr. Test",
         rol=Role.MEDICO,
@@ -75,7 +75,7 @@ def doctor(db):
 
 @pytest.fixture
 def admin(db):
-    """Un admin de prueba (hace de 'creado_por' de las citas)."""
+    """A test admin (acts as the 'creado_por' of the appointments)."""
     a = User(
         nombre_completo="Admin Test",
         rol=Role.ADMIN,
@@ -88,7 +88,7 @@ def admin(db):
 
 @pytest.fixture
 def recepcion(db):
-    """Un usuario de recepción de prueba (para los guardas por rol)."""
+    """A test reception user (for the role guards)."""
     r = User(
         nombre_completo="Recep Test",
         rol=Role.RECEPCION,
@@ -101,7 +101,7 @@ def recepcion(db):
 
 @pytest.fixture
 def service(db):
-    """Un servicio de prueba del catálogo (nombre único)."""
+    """A test catalog service (unique name)."""
     s = Service(
         nombre=f"Servicio {uuid.uuid4()}",
         categoria=ServiceCategory.CONSULTA,

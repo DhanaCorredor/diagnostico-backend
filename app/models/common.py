@@ -1,4 +1,4 @@
-"""Utilidades compartidas por los modelos: PK uuid y las tablas de asociación N:M."""
+"""Helpers shared by the models: uuid primary key and the N:M association tables."""
 import uuid
 
 from sqlalchemy import Column, ForeignKey, Table
@@ -8,7 +8,7 @@ from app.db import Base
 
 
 def uuid_pk():
-    """Columna id: clave primaria uuid generada en Python (uuid4)."""
+    """Id column: uuid primary key generated in Python (uuid4)."""
     return Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
 

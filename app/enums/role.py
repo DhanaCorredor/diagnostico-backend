@@ -1,4 +1,4 @@
-"""Rol de un usuario del sistema."""
+"""Role of a system user."""
 import enum
 
 

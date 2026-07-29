@@ -1,8 +1,8 @@
-"""Tests de integración HTTP (TestClient): auth, guardas por rol y flujo de citas.
+"""HTTP integration tests (TestClient): auth, role guards and the appointment flow.
 
-Cubren la capa que los tests de servicio NO tocan: autenticación, dependencias
-por rol, serialización y el contrato real de la API de punta a punta. Portados
-del smoke test manual para que queden repetibles y en CI.
+They cover the layer the service tests do NOT touch: authentication, role
+dependencies, serialization and the real API contract end to end. Ported from
+the manual smoke test so they are repeatable and run in CI.
 """
 
 import uuid
@@ -14,7 +14,7 @@ from app.models import Availability, User
 
 
 def _aligned_future_slot() -> datetime:
-    """Un inicio válido: mañana (o el siguiente día laborable) a las 10:00, en rejilla."""
+    """A valid start: tomorrow (or the next working day) at 10:00, on the grid."""
     d = datetime.now() + timedelta(days=1)
     while d.weekday() == 6:
         d += timedelta(days=1)
@@ -22,7 +22,7 @@ def _aligned_future_slot() -> datetime:
 
 
 def _with_availability(db, doctor, slot):
-    """Da al médico una franja amplia (08:00-18:00) el día del slot."""
+    """Give the doctor a wide slot (08:00-18:00) on the day of the appointment."""
     dia = (slot.weekday() + 1) % 7
     db.add(
         Availability(
@@ -140,7 +140,7 @@ def test_full_appointment_flow(client, db, admin, doctor, service, token_for):
 
 
 def test_appointment_tzaware_date_rejected(client, db, admin, doctor, service, token_for):
-    """Contrato: una fecha con zona (la 'Z' del navegador) se rechaza con 422."""
+    """Contract: a date carrying a timezone (the browser's 'Z') is rejected with 422."""
     slot = _aligned_future_slot()
     _with_availability(db, doctor, slot)
     body = {

@@ -1,4 +1,4 @@
-"""Lógica de gestión del personal que hace login (ADMIN/RECEPCION/MEDICO): CRUD, solo ADMIN."""
+"""Management logic for the staff who log in (ADMIN/RECEPCION/MEDICO): CRUD, ADMIN only."""
 
 import uuid
 
@@ -13,23 +13,23 @@ ROLES_STAFF = (Role.ADMIN, Role.RECEPCION, Role.MEDICO)
 
 
 class UserNotFound(Exception):
-    """No existe un usuario de personal con ese id."""
+    """There is no staff user with that id."""
 
 
 class DuplicateEmail(Exception):
-    """El email ya lo usa otro usuario."""
+    """The email is already used by another user."""
 
 
 class RoleNotAllowed(Exception):
-    """El rol indicado no se puede crear aquí (p. ej. PACIENTE)."""
+    """The given role cannot be created here (e.g. PACIENTE)."""
 
 
 class SpecialtyNotFound(Exception):
-    """Alguna de las especialidades indicadas no existe."""
+    """One of the given specialties does not exist."""
 
 
 class DoctorOnlyData(Exception):
-    """Se han indicado especialidades o matrícula para un usuario que no es médico."""
+    """Specialties or a license number were given for a user who is not a doctor."""
 
 
 def _email_in_use(db: Session, email: str, exclude_id: uuid.UUID | None = None) -> bool:
@@ -37,7 +37,7 @@ def _email_in_use(db: Session, email: str, exclude_id: uuid.UUID | None = None) 
 
 
 def _resolve_specialties(db: Session, ids: list[uuid.UUID]) -> list[Specialty]:
-    """Convierte una lista de ids en objetos de especialidad; lanza SpecialtyNotFound si alguno no existe."""
+    """Turn a list of ids into specialty objects; raises SpecialtyNotFound if any is missing."""
     if not ids:
         return []
     found = db.query(Specialty).filter(Specialty.id.in_(ids)).all()
@@ -47,7 +47,7 @@ def _resolve_specialties(db: Session, ids: list[uuid.UUID]) -> list[Specialty]:
 
 
 def list_staff(db: Session) -> list[User]:
-    """Devuelve el personal (todo menos pacientes), ordenado por nombre."""
+    """Return the staff (everyone except patients), ordered by name."""
     return (
         db.query(User)
         .options(selectinload(User.especialidades))
@@ -58,7 +58,7 @@ def list_staff(db: Session) -> list[User]:
 
 
 def get_user(db: Session, usuario_id: uuid.UUID) -> User:
-    """Devuelve un usuario de personal por id, o lanza UserNotFound."""
+    """Return a staff user by id, or raise UserNotFound."""
     user = db.get(User, usuario_id)
     if user is None or user.rol == Role.PACIENTE:
         raise UserNotFound()
@@ -75,7 +75,7 @@ def create_user(
     matricula: str | None,
     especialidades: list[uuid.UUID],
 ) -> User:
-    """Crea un usuario de personal. Valida rol y email, hashea la contraseña. Flush (no commit)."""
+    """Create a staff user. Validates role and email, hashes the password. Flush (no commit)."""
     if rol not in ROLES_STAFF:
         raise RoleNotAllowed()
     if rol != Role.MEDICO and (especialidades or matricula is not None):
@@ -98,7 +98,7 @@ def create_user(
 
 
 def update_user(db: Session, usuario_id: uuid.UUID, changes: dict) -> User:
-    """Actualiza SOLO los campos enviados. La contraseña se hashea; especialidades se resuelven."""
+    """Update ONLY the fields sent. The password is hashed; the specialties are resolved."""
     user = get_user(db, usuario_id)
 
     if user.rol != Role.MEDICO and (
@@ -124,7 +124,7 @@ def update_user(db: Session, usuario_id: uuid.UUID, changes: dict) -> User:
 
 
 def deactivate_user(db: Session, usuario_id: uuid.UUID) -> User:
-    """Baja lógica de un usuario de personal: `activo=False`. Flush (no commit)."""
+    """Soft-delete a staff user: `activo=False`. Flush (no commit)."""
     user = get_user(db, usuario_id)
     user.activo = False
     db.flush()

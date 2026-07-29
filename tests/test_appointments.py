@@ -1,10 +1,11 @@
-"""Tests de las reglas de citas (R2, R3, R4) y del orquestador crear_cita."""
+"""Tests of the appointment rules (R2, R3, R4) and of the create_appointment orchestrator."""
 
 import uuid
 from datetime import date, datetime, time, timezone
 
 import pytest
 from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
 
 from app.enums import AppointmentStatus, Role
 from app.models import Appointment, Availability, User
@@ -132,6 +133,69 @@ def test_overlap_and_adjacent_appointments(db, doctor, service, admin):
     assert C.has_overlap(
         db, doctor.id, datetime(2026, 7, 20, 10, 45), datetime(2026, 7, 20, 11, 30)
     ) is False
+
+
+def _raw_appointment(db, doctor, service, admin, starts_at, ends_at, estado):
+    patient = User(nombre_completo=f"P {uuid.uuid4()}", edad=1, rol=Role.PACIENTE)
+    db.add(patient)
+    db.flush()
+    db.add(
+        Appointment(
+            paciente_id=patient.id,
+            medico_id=doctor.id,
+            servicio_id=service.id,
+            starts_at=starts_at,
+            ends_at=ends_at,
+            estado=estado,
+            creado_por_id=admin.id,
+        )
+    )
+
+
+def test_db_rejects_overlapping_appointments(db, doctor, service, admin):
+    _raw_appointment(
+        db, doctor, service, admin,
+        datetime(2026, 7, 20, 10, 0), datetime(2026, 7, 20, 10, 45),
+        AppointmentStatus.SCHEDULED,
+    )
+    db.flush()
+    _raw_appointment(
+        db, doctor, service, admin,
+        datetime(2026, 7, 20, 10, 30), datetime(2026, 7, 20, 11, 15),
+        AppointmentStatus.SCHEDULED,
+    )
+    with pytest.raises(IntegrityError):
+        db.flush()
+
+
+def test_db_allows_adjacent_appointments(db, doctor, service, admin):
+    _raw_appointment(
+        db, doctor, service, admin,
+        datetime(2026, 7, 20, 10, 0), datetime(2026, 7, 20, 10, 45),
+        AppointmentStatus.SCHEDULED,
+    )
+    db.flush()
+    _raw_appointment(
+        db, doctor, service, admin,
+        datetime(2026, 7, 20, 10, 45), datetime(2026, 7, 20, 11, 30),
+        AppointmentStatus.SCHEDULED,
+    )
+    db.flush()
+
+
+def test_db_allows_overlap_when_the_other_is_cancelled(db, doctor, service, admin):
+    _raw_appointment(
+        db, doctor, service, admin,
+        datetime(2026, 7, 20, 10, 0), datetime(2026, 7, 20, 10, 45),
+        AppointmentStatus.CANCELLED,
+    )
+    db.flush()
+    _raw_appointment(
+        db, doctor, service, admin,
+        datetime(2026, 7, 20, 10, 30), datetime(2026, 7, 20, 11, 15),
+        AppointmentStatus.SCHEDULED,
+    )
+    db.flush()
 
 
 def test_create_appointment_happy_path(db, doctor, service, admin):
@@ -331,7 +395,7 @@ def test_create_appointment_inactive_doctor(db, service, admin):
 
 
 def _appointment(db, doctor, service, admin, starts_at):
-    """Crea y devuelve una cita ya agendada (con franja disponible)."""
+    """Create and return an already scheduled appointment (with an available slot)."""
     _slot(db, doctor)
     return C.create_appointment(
         db,

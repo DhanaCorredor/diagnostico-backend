@@ -1,4 +1,4 @@
-"""Esquemas de pacientes."""
+"""Patient schemas."""
 import uuid
 from datetime import date
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class PatientOut(BaseModel):
-    """Datos de un paciente (lista y ficha)."""
+    """Patient data (list and detail view)."""
 
     id: uuid.UUID
     nombre_completo: str
@@ -19,7 +19,7 @@ class PatientOut(BaseModel):
 
 
 class PatientCreate(BaseModel):
-    """Cuerpo del POST /pacientes: alta manual (sin agendarle cita)."""
+    """Body of POST /pacientes: manual registration (without scheduling an appointment)."""
 
     nombre_completo: str = Field(min_length=1)
     edad: int = Field(ge=0, le=120)
@@ -29,4 +29,4 @@ class PatientCreate(BaseModel):
 
 
 class PatientUpdate(PatientCreate):
-    """Cuerpo del PUT /pacientes/{id}: mismos campos que el alta."""
+    """Body of PUT /pacientes/{id}: same fields as the registration."""

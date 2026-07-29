@@ -1,4 +1,4 @@
-"""Router de gestión del personal que hace login (ADMIN/RECEPCION/MEDICO): CRUD, solo ADMIN."""
+"""Management router for the staff who log in (ADMIN/RECEPCION/MEDICO): CRUD, ADMIN only."""
 
 import uuid
 
@@ -20,13 +20,13 @@ router = APIRouter(
 
 @router.get("", response_model=list[UserDetail])
 async def list_staff(db: Session = Depends(get_db)):
-    """Lista el personal (ADMIN, RECEPCIÓN, MEDICO). No incluye pacientes."""
+    """List the staff (ADMIN, RECEPCION, MEDICO). Patients are not included."""
     return user_service.list_staff(db)
 
 
 @router.get("/{usuario_id}", response_model=UserDetail)
 async def get_user(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
-    """Devuelve la ficha de un usuario del personal."""
+    """Return the details of a staff user."""
     try:
         return user_service.get_user(db, usuario_id)
     except user_service.UserNotFound:
@@ -35,7 +35,7 @@ async def get_user(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
 
 @router.post("", response_model=UserDetail, status_code=status.HTTP_201_CREATED)
 async def create_user(data: UserCreate, db: Session = Depends(get_db)):
-    """Crea un usuario de personal (médico o staff), con su contraseña y especialidades."""
+    """Create a staff user (doctor or staff), with their password and specialties."""
     try:
         user = user_service.create_user(
             db,
@@ -65,7 +65,7 @@ async def create_user(data: UserCreate, db: Session = Depends(get_db)):
 
 @router.delete("/{usuario_id}", response_model=UserDetail)
 async def deactivate_user(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
-    """Da de baja (lógica) a un usuario: `activo=False`. Reactivar con PUT {"activo": true}."""
+    """Soft-delete a user: `activo=False`. Reactivate with PUT {"activo": true}."""
     try:
         user = user_service.deactivate_user(db, usuario_id)
     except user_service.UserNotFound:
@@ -81,7 +81,7 @@ async def update_user(
     data: UserUpdate,
     db: Session = Depends(get_db),
 ):
-    """Edita un usuario del personal (solo los campos enviados)."""
+    """Edit a staff user (only the fields sent)."""
     changes = data.model_dump(exclude_unset=True)
     try:
         user = user_service.update_user(db, usuario_id, changes)

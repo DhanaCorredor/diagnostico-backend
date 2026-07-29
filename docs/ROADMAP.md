@@ -116,6 +116,8 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 
 > Detalle completo (deuda técnica + funcionalidades de fase 2 + próximos pasos) en **[`MEJORAS-Y-PROXIMOS-PASOS.md`](MEJORAS-Y-PROXIMOS-PASOS.md)** — hogar único de las mejoras.
 
+La checklist de §3.1 cubre **el contrato del MVP**, y está cerrada. Los endpoints que **añade o cambia la fase 2** tienen su propia checklist, con el mismo formato y la misma función, en [`MEJORAS-Y-PROXIMOS-PASOS.md`](MEJORAS-Y-PROXIMOS-PASOS.md) §3.
+
 ## 4. Modelo de datos
 
 **Definido** → ver [`MODELO-DATOS.md`](MODELO-DATOS.md) (incluye el diagrama entidad-relación).
