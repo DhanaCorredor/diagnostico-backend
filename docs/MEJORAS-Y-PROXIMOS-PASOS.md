@@ -28,7 +28,7 @@ de backend puro que no rompen la UI. Estado a **28 jul 2026**.
 | previa | **A12** | Dependencias con versión fijada | bajo | no | ✅ |
 | previa | **A13** | `/health` comprueba la base de datos | bajo | no | ✅ |
 | previa | **A15** | Últimos identificadores en español | bajo | no | ✅ |
-| 0 | **A7** | Migrar la base de datos a Neon · **antes del ~14 ago 2026** | medio | no | ⬜ |
+| 0 | **A7** | Migrar la base de datos a Neon | medio | no | ✅ |
 | 1 | **A1** | Franjas de disponibilidad solapadas | bajo | no | ✅ |
 | 2 | **A2** | CORS multi-origen | bajo | no | ✅ |
 | 3 | **A6** | Integración continua (CI) | bajo | no | ✅ |
@@ -41,9 +41,8 @@ de backend puro que no rompen la UI. Estado a **28 jul 2026**.
 | — | **A14** | Índices en la base de datos | bajo | no | ⬜ |
 | — | **A17** | Copias de seguridad de la base | medio | no | ⬜ |
 
-> Lo hecho está en `develop` y **todavía no se ha publicado en producción**: la release `v0.7.0`
-> se hará junto con `A7`, para no desplegar dos veces y para que la migración
-> `3adfaea5a43a` se aplique ya sobre la base definitiva.
+> Todo lo marcado ✅ está **publicado en producción** con la release `v0.7.0` (29 jul 2026), ya
+> sobre la base de datos definitiva en Neon.
 
 El resto del catálogo (`B2`, `C2`–`C5`) queda **sin fecha**: son mejoras válidas pero de
 coste alto o de valor menor frente al riesgo que introducen.
@@ -194,7 +193,15 @@ coste alto o de valor menor frente al riesgo que introducen.
 - **Por qué importa:** el flujo de ramas ya es parte del proyecto; la CI es lo que lo convierte
   en una garantía y no en una costumbre.
 
-### A7 · Migrar la base de datos a Neon · coste medio · **con fecha límite**
+### A7 · Migrar la base de datos a Neon · coste medio · **hecha (29 jul 2026)**
+
+> **Migración completada y verificada.** La API de producción corre sobre **Neon**
+> (PostgreSQL 18.4, región `us-east-2`), publicada con la release `v0.7.0`. Se comprobó que
+> producción usa realmente la base nueva comparando los **UUID** de los catálogos, que se generan
+> al azar en cada siembra y por tanto difieren entre bases. Verificado además: `/health` con
+> `"database":"ok"`, *login* correcto, CORS autorizando el frontend de Vercel y el *bundle* del
+> frontend apuntando a la API de Render. La base antigua de Render (`diagnostico-db`) se puede
+> dejar caducar. **La herramienta queda funcionando gratis y sin fecha de caducidad.**
 
 - **Hoy:** producción usa el **PostgreSQL gratuito de Render** (`diagnostico-db`, definido en
   `render.yaml`, añadido el 15 jul 2026).
