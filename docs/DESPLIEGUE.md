@@ -36,11 +36,22 @@ no se versiona.
 
 El navegador solo deja que el frontend llame a la API si la API declara ese origen como
 autorizado. La variable **`FRONTEND_ORIGINS`** admite **varios orígenes separados por comas**,
-para que convivan el entorno local y el desplegado:
+para que convivan el entorno local y el desplegado. Valor en producción:
 
 ```
-FRONTEND_ORIGINS=http://localhost:5173,https://mi-frontend.onrender.com
+FRONTEND_ORIGINS=http://localhost:5173,https://erp-diagnostico.vercel.app
 ```
+
+> **El frontend está desplegado en Vercel**, en `https://erp-diagnostico.vercel.app`, y llama a
+> esta API directamente (su `vercel.json` solo reescribe rutas de la SPA, no hace de proxy). Por
+> eso su origen **tiene que** estar en esta lista.
+>
+> **Del otro lado**, el frontend necesita `VITE_API_URL=https://diagnostico-api-jtbw.onrender.com`
+> en las variables de Vercel. Vite **incrusta esa variable en el build**, así que cambiarla exige
+> **volver a desplegar el frontend**; no basta con guardarla.
+>
+> Las **previews de Vercel** (una URL distinta por rama) **no** están en la lista y el navegador
+> las bloqueará. Es esperado: solo el dominio de producción habla con la API.
 
 - **Sin barra final** y con el esquema incluido (`https://`): el origen se compara tal cual.
 - Si la variable no está definida, se usa `http://localhost:5173`. Es decir, **si se despliega el
