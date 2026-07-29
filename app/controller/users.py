@@ -13,7 +13,7 @@ from app.services import users as user_service
 
 router = APIRouter(
     prefix="/usuarios",
-    tags=["usuarios"],
+    tags=["users"],
     dependencies=[Depends(require_role(Role.ADMIN))],
 )
 

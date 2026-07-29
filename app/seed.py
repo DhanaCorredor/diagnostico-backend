@@ -210,7 +210,7 @@ def seed_staff(db):
     """Create the missing internal staff with login (admin, reception, doctor), using ADMIN_PASSWORD from .env. Returns how many it created."""
     password = os.getenv("ADMIN_PASSWORD")
     if not password:
-        print("  (aviso) ADMIN_PASSWORD no está en el .env: me salto el personal.")
+        print("  (warning) ADMIN_PASSWORD is not in .env: skipping the staff.")
         return 0
     created = 0
     for nombre, rol, email, matricula in STAFF:
@@ -271,9 +271,9 @@ def main():
         n_pac = seed_patients(db)
         db.commit()
         print(
-            f"Seed OK: +{n_esp} especialidades, +{n_serv} servicios, "
-            f"+{n_med} médicos, +{n_staff} personal, +{n_disp} franjas de disponibilidad, "
-            f"+{n_pac} pacientes ficticios."
+            f"Seed OK: +{n_esp} specialties, +{n_serv} services, "
+            f"+{n_med} doctors, +{n_staff} staff, +{n_disp} availability slots, "
+            f"+{n_pac} fictional patients."
         )
     finally:
         db.close()
