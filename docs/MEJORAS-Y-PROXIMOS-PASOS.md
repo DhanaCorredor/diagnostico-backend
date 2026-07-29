@@ -26,6 +26,8 @@ de backend puro que no rompen la UI. Estado a **28 jul 2026**.
 |:-----:|:--:|--------|:-----:|:-------------:|:------:|
 | previa | **A9** | Conexiones caídas con una base que se suspende | bajo | no | ✅ |
 | previa | **A12** | Dependencias con versión fijada | bajo | no | ✅ |
+| previa | **A13** | `/health` comprueba la base de datos | bajo | no | ✅ |
+| previa | **A15** | Últimos identificadores en español | bajo | no | ✅ |
 | 0 | **A7** | Migrar la base de datos a Neon · **antes del ~14 ago 2026** | medio | no | ⬜ |
 | 1 | **A1** | Franjas de disponibilidad solapadas | bajo | no | ✅ |
 | 2 | **A2** | CORS multi-origen | bajo | no | ✅ |
@@ -36,6 +38,8 @@ de backend puro que no rompen la UI. Estado a **28 jul 2026**.
 | 7 | **A4** | Unicidad insensible a mayúsculas y acentos | medio | no | ⬜ |
 | 8 | **A5** | Identificación robusta del paciente | medio | sí | ⬜ |
 | 9 | **B1** | Paginación de listados | medio | sí | ⬜ |
+| — | **A14** | Índices en la base de datos | bajo | no | ⬜ |
+| — | **A17** | Copias de seguridad de la base | medio | no | ⬜ |
 
 > Lo hecho está en `develop` y **todavía no se ha publicado en producción**: la release `v0.7.0`
 > se hará junto con `A7`, para no desplegar dos veces y para que la migración
@@ -244,6 +248,29 @@ coste alto o de valor menor frente al riesgo que introducen.
   lo último publicado ese día y la CI podía estar usando versiones distintas de producción.
 - **Qué se hizo:** versión exacta para las diez dependencias. El despliegue deja de poder romperse
   por una actualización ajena.
+
+### A13 · `/health` comprueba la base de datos · coste bajo · **hecha**
+
+- **Antes:** `/health` devolvía `{"status":"ok"}` con solo comprobar que el servidor respondía.
+- **El problema:** con una base que se suspende sola, el servidor puede estar perfectamente vivo y
+  la base inalcanzable, y el *health check* decía que todo iba bien.
+- **Qué se hizo:** el endpoint ejecuta un `SELECT 1` y responde `{"status":"ok","database":"ok"}`;
+  si la base no contesta, devuelve `503` con `"database":"unreachable"`. De paso pasó a `async`.
+
+### A14 · Índices en la base de datos · coste bajo
+
+- **Hoy:** no hay **ni un índice declarado** en los modelos ni creado en la migración inicial.
+  Solo existen los implícitos de clave primaria y `UNIQUE`, más el `gist` de `A3`.
+- **Dónde se notaría:** `GET /citas` filtra por rango de `starts_at`, y el *upsert* de paciente
+  filtra por `rol` + `nombre_completo` + `edad` en **cada** cita que se agenda.
+- **Con honestidad:** con ~60 citas al día las tablas son pequeñas y PostgreSQL las recorre
+  enteras sin despeinarse, así que la mejora **no se va a notar en la práctica** a corto plazo.
+  Es barata y correcta, pero no urgente.
+
+### A15 · Últimos identificadores en español · coste bajo · **hecha**
+
+Quedaban `ya_tiene` y dos variables de bucle `dia` en `app/seed.py`, del renombrado anterior.
+Los nombres de columna (`dia_semana`) **no** se tocan: son contrato.
 
 ### A17 · Copias de seguridad de la base · coste medio · **condicionada**
 
