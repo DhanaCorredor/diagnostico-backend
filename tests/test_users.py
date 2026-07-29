@@ -49,6 +49,13 @@ def test_create_user_duplicate_email(db):
         _create(db, email=email)
 
 
+def test_create_user_duplicate_email_ignoring_case(db):
+    email = f"dup-{uuid.uuid4()}@test.local"
+    _create(db, email=email)
+    with pytest.raises(U.DuplicateEmail):
+        _create(db, email=email.upper())
+
+
 def test_create_user_specialty_not_found(db):
     with pytest.raises(U.SpecialtyNotFound):
         _create(db, especialidades=[uuid.uuid4()])
