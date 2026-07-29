@@ -1,11 +1,12 @@
-# Dependencias del backend (se añaden a medida que se usan)
-fastapi            # framework web para crear la API
-uvicorn[standard]  # servidor que ejecuta la app FastAPI
-sqlalchemy         # ORM: traduce entre Python y la base de datos
-psycopg2-binary    # driver que conecta Python con PostgreSQL
-python-dotenv      # carga las variables del archivo .env
-alembic            # migraciones: control de versiones del esquema de la BD
-pyjwt              # crea y verifica los tokens JWT (login)
-bcrypt             # hash seguro de contraseñas
-pytest             # framework de tests
-httpx              # cliente HTTP que usa TestClient en los tests de integración
+# Backend dependencies, with pinned versions so CI, the local environment and
+# the deployment all install exactly the same thing.
+fastapi==0.139.0             # web framework used to build the API
+uvicorn[standard]==0.51.0    # server that runs the FastAPI app
+sqlalchemy==2.0.51           # ORM: translates between Python and the database
+psycopg2-binary==2.9.12      # driver connecting Python to PostgreSQL
+python-dotenv==1.2.2         # loads the variables from the .env file
+alembic==1.18.5              # migrations: version control for the database schema
+pyjwt==2.13.0                # creates and verifies the JWT tokens (login)
+bcrypt==5.0.0                # secure password hashing
+pytest==9.1.1                # test framework
+httpx==0.28.1                # HTTP client used by TestClient in the integration tests
