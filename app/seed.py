@@ -170,11 +170,11 @@ def seed_doctors(db):
         doctor.especialidades = [catalog[e] for e in especialidades]
         db.add(doctor)
         db.flush()
-        for dia, start, end in slots:
+        for day, start, end in slots:
             db.add(
                 Availability(
                     usuario_id=doctor.id,
-                    dia_semana=dia,
+                    dia_semana=day,
                     hora_inicio=start,
                     hora_fin=end,
                 )
@@ -238,18 +238,18 @@ def seed_availability(db):
     """Give every doctor without slots the center's working hours (Mon-Sat 07:30-17:30); doctors that already have slots are left alone. Returns how many it created."""
     created = 0
     for doctor in db.query(User).filter(User.rol == Role.MEDICO).all():
-        ya_tiene = (
+        already_has_slots = (
             db.query(Availability)
             .filter(Availability.usuario_id == doctor.id)
             .first()
         )
-        if ya_tiene:
+        if already_has_slots:
             continue
-        for dia in WORKDAYS:
+        for day in WORKDAYS:
             db.add(
                 Availability(
                     usuario_id=doctor.id,
-                    dia_semana=dia,
+                    dia_semana=day,
                     hora_inicio=OPEN_TIME,
                     hora_fin=CLOSE_TIME,
                 )
