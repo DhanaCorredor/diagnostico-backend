@@ -105,6 +105,23 @@ def test_create_patient_duplicate_national_id(db):
         )
 
 
+def test_create_patient_duplicate_national_id_ignoring_case(db):
+    ced = f"ced-{uuid.uuid4()}"
+    db.add(User(nombre_completo=f"Otro {uuid.uuid4()}", edad=30, rol=Role.PACIENTE, cedula=ced))
+    db.flush()
+    with pytest.raises(DuplicateNationalId):
+        create_patient(
+            db,
+            {
+                "nombre_completo": "X",
+                "edad": 20,
+                "cedula": ced.upper(),
+                "telefono": None,
+                "fecha_nacimiento": None,
+            },
+        )
+
+
 def test_update_patient_duplicate_national_id(db):
     ced = f"CED-{uuid.uuid4()}"
     otro = User(nombre_completo=f"Otro {uuid.uuid4()}", edad=30, rol=Role.PACIENTE, cedula=ced)

@@ -12,7 +12,7 @@ from app.models import User
 from app.schemas import AvailabilityCreate, AvailabilityOut
 from app.services import availability as availability_service
 
-router = APIRouter(prefix="/disponibilidad", tags=["disponibilidad"])
+router = APIRouter(prefix="/disponibilidad", tags=["availability"])
 
 
 @router.get("", response_model=list[AvailabilityOut])

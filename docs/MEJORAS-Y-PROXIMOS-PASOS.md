@@ -28,22 +28,21 @@ de backend puro que no rompen la UI. Estado a **28 jul 2026**.
 | previa | **A12** | Dependencias con versión fijada | bajo | no | ✅ |
 | previa | **A13** | `/health` comprueba la base de datos | bajo | no | ✅ |
 | previa | **A15** | Últimos identificadores en español | bajo | no | ✅ |
-| 0 | **A7** | Migrar la base de datos a Neon · **antes del ~14 ago 2026** | medio | no | ⬜ |
+| 0 | **A7** | Migrar la base de datos a Neon | medio | no | ✅ |
 | 1 | **A1** | Franjas de disponibilidad solapadas | bajo | no | ✅ |
 | 2 | **A2** | CORS multi-origen | bajo | no | ✅ |
 | 3 | **A6** | Integración continua (CI) | bajo | no | ✅ |
 | 4 | **A3** | Anti-solapamiento a nivel de base de datos | medio | no | ✅ |
 | 5 | **A8** | Código y configuración en inglés | bajo | no | ✅ |
 | 6 | **C1** | Historia clínica (notas del médico) | medio | sí | ⬜ |
-| 7 | **A4** | Unicidad insensible a mayúsculas y acentos | medio | no | ⬜ |
+| 7 | **A4** | Unicidad insensible a mayúsculas y acentos | medio | no | ✅ |
 | 8 | **A5** | Identificación robusta del paciente | medio | sí | ⬜ |
 | 9 | **B1** | Paginación de listados | medio | sí | ⬜ |
 | — | **A14** | Índices en la base de datos | bajo | no | ⬜ |
 | — | **A17** | Copias de seguridad de la base | medio | no | ⬜ |
 
-> Lo hecho está en `develop` y **todavía no se ha publicado en producción**: la release `v0.7.0`
-> se hará junto con `A7`, para no desplegar dos veces y para que la migración
-> `3adfaea5a43a` se aplique ya sobre la base definitiva.
+> Todo lo marcado ✅ está **publicado en producción** con la release `v0.7.0` (29 jul 2026), ya
+> sobre la base de datos definitiva en Neon.
 
 El resto del catálogo (`B2`, `C2`–`C5`) queda **sin fecha**: son mejoras válidas pero de
 coste alto o de valor menor frente al riesgo que introducen.
@@ -164,15 +163,23 @@ coste alto o de valor menor frente al riesgo que introducen.
 - **Aviso:** la restricción es específica de PostgreSQL; hay que comprobar que los tests (que
   usan la misma base) siguen en verde.
 
-### A4 · Unicidad insensible a mayúsculas y acentos · coste medio
+### A4 · Unicidad insensible a mayúsculas y acentos · coste medio · **hecha**
 
-- **Hoy:** las comprobaciones de duplicado comparan las cadenas tal cual
-  (`value_in_use()` en [`app/services/common.py`](../app/services/common.py)).
-- **Consecuencia:** `MARÍA PÉREZ`, `maria perez` y `María Perez` conviven como tres registros
-  distintos. Con recepción escribiendo a mano, pasa.
-- **Qué haríamos:** normalizar antes de comparar (minúsculas + sin acentos) para `email`,
-  `nombre` de servicio/especialidad y `cédula`, y decidir si se guarda también una columna
-  normalizada con índice único, o basta con la comprobación en la capa de servicio.
+- **Antes:** las comprobaciones de duplicado comparaban las cadenas tal cual, así que
+  `Ecografía` y `ECOGRAFIA` eran dos servicios distintos.
+- **Qué se hizo:** `value_in_use()` en [`app/services/common.py`](../app/services/common.py) era
+  ya el **único** punto por el que pasan las cuatro comprobaciones (servicios, especialidades,
+  emails y cédulas), así que bastó cambiar esa función: ahora compara
+  `unaccent(lower(...))` **a los dos lados**, columna y valor. La extensión `unaccent` se instala
+  en la migración `c54ebd499eec`.
+- **Y de paso, el login.** Impedir emails duplicados sin distinguir mayúsculas obliga a que el
+  *login* tampoco distinga; si no, un usuario guardado como `Ana@centro.com` no podría entrar
+  escribiendo `ana@centro.com`. `POST /auth/login` usa ahora la misma comparación.
+- **Coste conocido:** esta comparación **no puede usar el índice único** de esas columnas, así que
+  recorre la tabla entera. Con 45 servicios y 26 usuarios es irrelevante; si algún día crece, la
+  solución es un índice funcional sobre `unaccent(lower(nombre))` → ver `A14`.
+- **No cubre** la identificación del paciente al agendar (`nombre_completo` + `edad`), que es un
+  problema distinto y tiene su propia ficha en `A5`.
 
 ### A5 · Identificación robusta del paciente · coste medio
 
@@ -194,7 +201,15 @@ coste alto o de valor menor frente al riesgo que introducen.
 - **Por qué importa:** el flujo de ramas ya es parte del proyecto; la CI es lo que lo convierte
   en una garantía y no en una costumbre.
 
-### A7 · Migrar la base de datos a Neon · coste medio · **con fecha límite**
+### A7 · Migrar la base de datos a Neon · coste medio · **hecha (29 jul 2026)**
+
+> **Migración completada y verificada.** La API de producción corre sobre **Neon**
+> (PostgreSQL 18.4, región `us-east-2`), publicada con la release `v0.7.0`. Se comprobó que
+> producción usa realmente la base nueva comparando los **UUID** de los catálogos, que se generan
+> al azar en cada siembra y por tanto difieren entre bases. Verificado además: `/health` con
+> `"database":"ok"`, *login* correcto, CORS autorizando el frontend de Vercel y el *bundle* del
+> frontend apuntando a la API de Render. La base antigua de Render (`diagnostico-db`) se puede
+> dejar caducar. **La herramienta queda funcionando gratis y sin fecha de caducidad.**
 
 - **Hoy:** producción usa el **PostgreSQL gratuito de Render** (`diagnostico-db`, definido en
   `render.yaml`, añadido el 15 jul 2026).

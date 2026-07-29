@@ -86,6 +86,13 @@ def test_create_service_duplicate_name(db):
         C.create_service(db, nombre=nombre, categoria=ServiceCategory.OTRO)
 
 
+def test_create_service_duplicate_name_ignoring_case_and_accents(db):
+    marker = uuid.uuid4()
+    C.create_service(db, nombre=f"Ecografía mamaria {marker}", categoria=ServiceCategory.ECOGRAFIA)
+    with pytest.raises(C.DuplicateName):
+        C.create_service(db, nombre=f"ECOGRAFIA MAMARIA {marker}", categoria=ServiceCategory.OTRO)
+
+
 def test_update_service_changes_fields(db):
     service = C.create_service(
         db, nombre=f"Viejo {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
@@ -137,3 +144,17 @@ def test_create_specialty_duplicate_name(db):
     C.create_specialty(db, nombre=nombre)
     with pytest.raises(C.DuplicateName):
         C.create_specialty(db, nombre=nombre)
+
+
+def test_create_specialty_duplicate_name_ignoring_case_and_accents(db):
+    marker = uuid.uuid4()
+    C.create_specialty(db, nombre=f"Traumatología {marker}")
+    with pytest.raises(C.DuplicateName):
+        C.create_specialty(db, nombre=f"TRAUMATOLOGIA {marker}")
+
+
+def test_create_specialty_allows_genuinely_different_names(db):
+    marker = uuid.uuid4()
+    C.create_specialty(db, nombre=f"Neurología {marker}")
+    other = C.create_specialty(db, nombre=f"Nefrología {marker}")
+    assert other.id is not None
