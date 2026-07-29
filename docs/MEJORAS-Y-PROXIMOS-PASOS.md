@@ -35,7 +35,7 @@ de backend puro que no rompen la UI. Estado a **28 jul 2026**.
 | 4 | **A3** | Anti-solapamiento a nivel de base de datos | medio | no | ✅ |
 | 5 | **A8** | Código y configuración en inglés | bajo | no | ✅ |
 | 6 | **C1** | Historia clínica (notas del médico) | medio | sí | ⬜ |
-| 7 | **A4** | Unicidad insensible a mayúsculas y acentos | medio | no | ⬜ |
+| 7 | **A4** | Unicidad insensible a mayúsculas y acentos | medio | no | ✅ |
 | 8 | **A5** | Identificación robusta del paciente | medio | sí | ⬜ |
 | 9 | **B1** | Paginación de listados | medio | sí | ⬜ |
 | — | **A14** | Índices en la base de datos | bajo | no | ⬜ |
@@ -163,15 +163,23 @@ coste alto o de valor menor frente al riesgo que introducen.
 - **Aviso:** la restricción es específica de PostgreSQL; hay que comprobar que los tests (que
   usan la misma base) siguen en verde.
 
-### A4 · Unicidad insensible a mayúsculas y acentos · coste medio
+### A4 · Unicidad insensible a mayúsculas y acentos · coste medio · **hecha**
 
-- **Hoy:** las comprobaciones de duplicado comparan las cadenas tal cual
-  (`value_in_use()` en [`app/services/common.py`](../app/services/common.py)).
-- **Consecuencia:** `MARÍA PÉREZ`, `maria perez` y `María Perez` conviven como tres registros
-  distintos. Con recepción escribiendo a mano, pasa.
-- **Qué haríamos:** normalizar antes de comparar (minúsculas + sin acentos) para `email`,
-  `nombre` de servicio/especialidad y `cédula`, y decidir si se guarda también una columna
-  normalizada con índice único, o basta con la comprobación en la capa de servicio.
+- **Antes:** las comprobaciones de duplicado comparaban las cadenas tal cual, así que
+  `Ecografía` y `ECOGRAFIA` eran dos servicios distintos.
+- **Qué se hizo:** `value_in_use()` en [`app/services/common.py`](../app/services/common.py) era
+  ya el **único** punto por el que pasan las cuatro comprobaciones (servicios, especialidades,
+  emails y cédulas), así que bastó cambiar esa función: ahora compara
+  `unaccent(lower(...))` **a los dos lados**, columna y valor. La extensión `unaccent` se instala
+  en la migración `c54ebd499eec`.
+- **Y de paso, el login.** Impedir emails duplicados sin distinguir mayúsculas obliga a que el
+  *login* tampoco distinga; si no, un usuario guardado como `Ana@centro.com` no podría entrar
+  escribiendo `ana@centro.com`. `POST /auth/login` usa ahora la misma comparación.
+- **Coste conocido:** esta comparación **no puede usar el índice único** de esas columnas, así que
+  recorre la tabla entera. Con 45 servicios y 26 usuarios es irrelevante; si algún día crece, la
+  solución es un índice funcional sobre `unaccent(lower(nombre))` → ver `A14`.
+- **No cubre** la identificación del paciente al agendar (`nombre_completo` + `edad`), que es un
+  problema distinto y tiene su propia ficha en `A5`.
 
 ### A5 · Identificación robusta del paciente · coste medio
 
