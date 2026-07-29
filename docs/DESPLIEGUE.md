@@ -1,7 +1,9 @@
 # Despliegue — ERP Diagnóstico (backend)
 
-El backend se despliega en **Render** (un solo proveedor): el Web Service de la API
-**y** su base de datos PostgreSQL. La configuración está en `render.yaml` (Blueprint).
+El backend se despliega en **dos proveedores**: la **API** (FastAPI) como Web Service en
+**Render**, configurada en `render.yaml` (Blueprint), y la **base de datos PostgreSQL** en
+**Neon**, cuyo plan gratuito no caduca. La conexión a Neon se pega a mano en el panel de Render;
+no se versiona.
 
 > 🌐 **API en producción:** **https://diagnostico-api-jtbw.onrender.com** · Swagger en [`/docs`](https://diagnostico-api-jtbw.onrender.com/docs) · salud en [`/health`](https://diagnostico-api-jtbw.onrender.com/health).
 > *(Ojo: el subdominio lleva sufijo `-jtbw` porque `diagnostico-api.onrender.com` estaba ocupado por otro servicio ajeno.)*
@@ -11,10 +13,10 @@ El backend se despliega en **Render** (un solo proveedor): el Web Service de la 
 1. Crear cuenta en **[render.com](https://render.com)** (login con GitHub).
 2. En el panel: **New → Blueprint**.
 3. Conectar el repositorio `diagnostico-backend` y elegir la rama.
-4. Render detecta `render.yaml` y muestra lo que va a crear (la API + la base).
-5. Cuando lo pida, escribir el valor de **`ADMIN_PASSWORD`** (la contraseña del admin) y el de
-   **`FRONTEND_ORIGINS`** (ver más abajo).
-6. **Apply / Create** → Render crea la base, aplica las migraciones, carga el seed y arranca la API.
+4. Render detecta `render.yaml` y muestra lo que va a crear (solo la API; la base está en Neon).
+5. Cuando lo pida, escribir los valores de **`DATABASE_URL`** (la cadena de Neon), de
+   **`ADMIN_PASSWORD`** (la contraseña del admin) y de **`FRONTEND_ORIGINS`** (ver más abajo).
+6. **Apply / Create** → Render aplica las migraciones sobre Neon, carga el seed y arranca la API.
 7. Probar la **URL pública** (la actual: `https://diagnostico-api-jtbw.onrender.com`):
    - `GET /health` → `{"status":"ok","database":"ok"}` (un `503` con `"database":"unreachable"`
      significa que el servidor está vivo pero no alcanza la base)
@@ -23,20 +25,33 @@ El backend se despliega en **Render** (un solo proveedor): el Web Service de la 
 
 ## Qué hace Render automáticamente (según `render.yaml`)
 
-- **Base de datos:** crea un PostgreSQL gratis y enchufa su conexión en `DATABASE_URL`.
+- **Base de datos:** **ninguna** — Render ya no crea Postgres; se conecta al de Neon a través de
+  `DATABASE_URL`, que se pega a mano en el panel.
 - **Build:** `pip install` + `alembic upgrade head` (crea las tablas) + `python -m app.seed` (datos base).
 - **Arranque:** `uvicorn` en el puerto que Render asigna (`$PORT`).
-- **Secretos:** `JWT_SECRET` lo genera Render; `ADMIN_PASSWORD` y `FRONTEND_ORIGINS` los pones tú.
+- **Secretos:** `JWT_SECRET` lo genera Render; `DATABASE_URL`, `ADMIN_PASSWORD` y
+  `FRONTEND_ORIGINS` los pones tú.
 
 ## CORS: quién puede llamar a la API
 
 El navegador solo deja que el frontend llame a la API si la API declara ese origen como
 autorizado. La variable **`FRONTEND_ORIGINS`** admite **varios orígenes separados por comas**,
-para que convivan el entorno local y el desplegado:
+para que convivan el entorno local y el desplegado. Valor en producción:
 
 ```
-FRONTEND_ORIGINS=http://localhost:5173,https://mi-frontend.onrender.com
+FRONTEND_ORIGINS=http://localhost:5173,https://erp-diagnostico.vercel.app
 ```
+
+> **El frontend está desplegado en Vercel**, en `https://erp-diagnostico.vercel.app`, y llama a
+> esta API directamente (su `vercel.json` solo reescribe rutas de la SPA, no hace de proxy). Por
+> eso su origen **tiene que** estar en esta lista.
+>
+> **Del otro lado**, el frontend necesita `VITE_API_URL=https://diagnostico-api-jtbw.onrender.com`
+> en las variables de Vercel. Vite **incrusta esa variable en el build**, así que cambiarla exige
+> **volver a desplegar el frontend**; no basta con guardarla.
+>
+> Las **previews de Vercel** (una URL distinta por rama) **no** están en la lista y el navegador
+> las bloqueará. Es esperado: solo el dominio de producción habla con la API.
 
 - **Sin barra final** y con el esquema incluido (`https://`): el origen se compara tal cual.
 - Si la variable no está definida, se usa `http://localhost:5173`. Es decir, **si se despliega el
