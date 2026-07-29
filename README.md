@@ -6,7 +6,7 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 
 > Bootcamp final project — MVP scoped to a 2-week deadline. Documentation in `docs/` (in Spanish).
 >
-> **Status:** the backend MVP is **complete and deployed** — [live API](https://diagnostico-api-jtbw.onrender.com/docs) (release **v0.7.0**, auto-deploy on push to `main`). **118 passing tests** (unit + integration), run on every push by CI. The API runs on Render and its PostgreSQL database on Neon; the React frontend (`diagnostico-frontend`) is deployed on Vercel.
+> **Status:** the backend MVP is **complete and deployed** — [live API](https://diagnostico-api-jtbw.onrender.com/docs) (release **v0.8.0**, auto-deploy on push to `main`). **124 passing tests** (unit + integration), run on every push by CI. The API runs on Render and its PostgreSQL database on Neon; the React frontend (`diagnostico-frontend`) is deployed on Vercel.
 
 ---
 
