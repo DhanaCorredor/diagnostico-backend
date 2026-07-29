@@ -42,9 +42,69 @@ FRONTEND_ORIGINS=http://localhost:5173,https://mi-frontend.onrender.com
   frontend y no se define esta variable, el navegador bloqueará sus llamadas**.
 - Por compatibilidad se sigue aceptando el nombre antiguo `FRONTEND_ORIGIN` (un solo origen).
 
+## Migración de la base de datos a Neon (mejora `A7`)
+
+**Por qué.** El PostgreSQL **gratuito de Render expira a los 30 días** de crearse y se **borra**
+tras 14 días de gracia. El plan gratuito de **Neon es permanente** (0,5 GB de almacenamiento y
+100 horas de cómputo por proyecto y mes). El **servicio web se queda en Render**, que sí es
+gratis indefinidamente: solo se duerme a los 15 minutos sin tráfico.
+
+> **Datos.** Mientras el sistema no esté entregado al cliente, en producción solo hay lo que crea
+> el *seed* y las pruebas propias, así que **no hace falta volcar ni restaurar nada**: se crea la
+> base nueva y se deja que las migraciones y el *seed* la llenen. En cuanto el centro empiece a
+> registrar citas reales, esto deja de ser cierto y hará falta `pg_dump` antes de tocar nada
+> (ver la mejora `A17` en [`MEJORAS-Y-PROXIMOS-PASOS.md`](MEJORAS-Y-PROXIMOS-PASOS.md)).
+
+### Pasos
+
+1. **Crear el proyecto en Neon** (región más cercana, PostgreSQL 16) y copiar su cadena de
+   conexión.
+2. **Comprobar la extensión `btree_gist`** desde el editor SQL de Neon, **antes** de migrar:
+
+   ```sql
+   CREATE EXTENSION IF NOT EXISTS btree_gist;
+   ```
+
+   La migración `3adfaea5a43a` (restricción anti-solapamiento) la necesita. Si este paso falla,
+   `alembic upgrade head` se quedará a medias.
+3. **Adaptar la cadena** al driver del proyecto y a los requisitos de Neon:
+
+   ```
+   postgresql+psycopg2://USUARIO:CLAVE@HOST.neon.tech/BASE?sslmode=require&channel_binding=require
+   ```
+
+   Neon **exige SSL**: sin `sslmode=require` no conecta.
+4. **Probar en local antes de tocar producción**: poner esa cadena en el `.env` local y ejecutar
+
+   ```bash
+   alembic upgrade head
+   python -m app.seed
+   pytest
+   ```
+
+   Si los tests pasan contra Neon, el resto es configuración.
+5. **Ajustar `render.yaml`**: quitar el bloque `databases:` (deja de crearse el Postgres de
+   Render) y cambiar `DATABASE_URL` de `fromDatabase:` a `sync: false`, para pegarla a mano.
+6. **En el panel de Render**, poner el valor de `DATABASE_URL` (la cadena de Neon) y comprobar
+   que `ADMIN_PASSWORD` y `FRONTEND_ORIGINS` siguen definidos.
+7. **Desplegar** (merge a `main` con su *tag*) y verificar en este orden: `GET /health`,
+   `GET /docs` y un `POST /auth/login` con `admin@diagnostico.com`.
+8. **No borrar la base vieja de Render hasta haber verificado el login** contra la nueva. Es la
+   única vuelta atrás. Una vez verificada, se puede dejar que caduque.
+
+### Ya resuelto en el código
+
+- **Conexiones caídas:** Neon **suspende el cómputo** cuando nadie usa la base, y las conexiones
+  guardadas en el pool mueren con ella. `app/db.py` crea el *engine* con `pool_pre_ping=True`,
+  que comprueba que la conexión sigue viva antes de entregarla; sin eso, la primera petición tras
+  la suspensión falla con `SSL SYSCALL error: EOF detected`.
+- **Dependencias fijadas:** `requirements.txt` lleva versiones exactas, así que el despliegue no
+  puede romperse por una actualización ajena justo el día de la migración.
+
 ## Notas
 
-- El plan **gratuito** de la base de datos y del servicio tiene límites (el servicio
-  "duerme" tras un rato de inactividad → el primer acceso tarda unos segundos; la base
-  gratis caduca a las pocas semanas). Suficiente para el MVP y la presentación.
+- Límites concretos del plan **gratuito** de Render: el servicio web **se duerme a los 15 minutos**
+  sin tráfico y arranca con la siguiente petición (el primer acceso tarda), con **750 horas de
+  instancia** al mes por *workspace*; y la base de datos **expira a los 30 días** de crearse, con
+  14 días de gracia antes de borrarse — de ahí la migración a Neon descrita arriba.
 - Cada `git push` a la rama desplegada vuelve a desplegar (migraciones incluidas).

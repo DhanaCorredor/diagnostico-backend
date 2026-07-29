@@ -24,6 +24,8 @@ de backend puro que no rompen la UI. Estado a **28 jul 2026**.
 
 | Orden | ID | Mejora | Coste | Toca frontend | Estado |
 |:-----:|:--:|--------|:-----:|:-------------:|:------:|
+| previa | **A9** | Conexiones caídas con una base que se suspende | bajo | no | ✅ |
+| previa | **A12** | Dependencias con versión fijada | bajo | no | ✅ |
 | 0 | **A7** | Migrar la base de datos a Neon · **antes del ~14 ago 2026** | medio | no | ⬜ |
 | 1 | **A1** | Franjas de disponibilidad solapadas | bajo | no | ✅ |
 | 2 | **A2** | CORS multi-origen | bajo | no | ✅ |
@@ -205,6 +207,13 @@ coste alto o de valor menor frente al riesgo que introducen.
   base nueva, verificar el *login* en producción y documentarlo en [`DESPLIEGUE.md`](DESPLIEGUE.md).
 - **Por qué está la primera:** es la única del catálogo cuya demora tiene consecuencias
   irreversibles — si caduca, se pierden los datos y el backend desplegado deja de responder.
+- **Procedimiento paso a paso:** escrito en [`DESPLIEGUE.md`](DESPLIEGUE.md), sección
+  *Migración de la base de datos a Neon*. Incluye dos cambios de configuración que forman parte
+  de esta mejora y no tienen ficha propia: **quitar el bloque `databases:` de `render.yaml`** (si
+  no, Render sigue creando y enchufando su propia base) y **añadir `sslmode=require` a la cadena
+  de conexión** (Neon exige SSL).
+- **Requisitos previos, ya resueltos:** `A9` (comprobar las conexiones del pool antes de usarlas)
+  y `A12` (dependencias con versión fijada).
 
 ### A8 · Código y configuración en inglés · coste bajo · **hecha**
 
@@ -219,6 +228,32 @@ coste alto o de valor menor frente al riesgo que introducen.
   que acompañan a las rutas en español del contrato.
 - **De regalo:** se corrigieron dos referencias obsoletas que la documentación arrastraba
   (`GRID_MINUTOS` → `GRID_MINUTES` y `crear_cita` → `create_appointment`).
+
+### A9 · Conexiones caídas con una base que se suspende · coste bajo · **hecha**
+
+- **Antes:** `app/db.py` creaba el *engine* con `create_engine(DATABASE_URL)` a secas.
+- **El problema:** una base gestionada que **se suspende cuando nadie la usa** (como Neon) mata
+  las conexiones que SQLAlchemy guarda en el pool. Al despertar, la primera petición reutiliza una
+  conexión muerta y falla con `SSL SYSCALL error: EOF detected`.
+- **Qué se hizo:** `pool_pre_ping=True`, que comprueba que la conexión sigue viva antes de
+  entregarla, más dos tests (`tests/test_db.py`). Es requisito para `A7`.
+
+### A12 · Dependencias con versión fijada · coste bajo · **hecha**
+
+- **Antes:** `requirements.txt` no fijaba ninguna versión, así que cada build de Render instalaba
+  lo último publicado ese día y la CI podía estar usando versiones distintas de producción.
+- **Qué se hizo:** versión exacta para las diez dependencias. El despliegue deja de poder romperse
+  por una actualización ajena.
+
+### A17 · Copias de seguridad de la base · coste medio · **condicionada**
+
+- **Hoy no es urgente:** el sistema aún no se ha entregado al cliente, así que en producción solo
+  hay datos del *seed* y pruebas propias. Se puede recrear la base desde cero sin perder nada.
+- **Cuándo pasa a ser lo más importante del proyecto:** en cuanto el centro registre citas y
+  pacientes reales. Un plan gratuito no trae copias automáticas, y son datos de salud.
+- **Qué haría falta:** un volcado periódico (`pg_dump`) guardado fuera del proveedor, y —lo que
+  más se olvida— **probar la restauración**, porque una copia que nunca se ha restaurado no se
+  sabe si sirve.
 
 ## 6. Bloque B — Cambios que tocan el contrato de la API
 
