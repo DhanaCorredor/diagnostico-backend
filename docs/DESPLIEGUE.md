@@ -16,7 +16,8 @@ El backend se despliega en **Render** (un solo proveedor): el Web Service de la 
    **`FRONTEND_ORIGINS`** (ver más abajo).
 6. **Apply / Create** → Render crea la base, aplica las migraciones, carga el seed y arranca la API.
 7. Probar la **URL pública** (la actual: `https://diagnostico-api-jtbw.onrender.com`):
-   - `GET /health` → `{"status":"ok"}`
+   - `GET /health` → `{"status":"ok","database":"ok"}` (un `503` con `"database":"unreachable"`
+     significa que el servidor está vivo pero no alcanza la base)
    - `GET /docs` → la documentación Swagger
    - `POST /auth/login` con `admin@diagnostico.com` y la contraseña que pusiste.
 

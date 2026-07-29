@@ -1,6 +1,9 @@
-"""Application configuration tests: the list of allowed origins (CORS)."""
+"""Application tests: allowed origins (CORS) and the health endpoint."""
 
-from app.main import parse_origins
+from sqlalchemy.exc import SQLAlchemyError
+
+from app.db import get_db
+from app.main import app, parse_origins
 
 
 def test_parse_origins_single():
@@ -27,3 +30,24 @@ def test_unknown_origin_gets_no_cors_header(client):
     r = client.get("/health", headers={"Origin": "https://sitio-no-autorizado.com"})
     assert r.status_code == 200
     assert "access-control-allow-origin" not in r.headers
+
+
+def test_health_reports_a_reachable_database(client):
+    r = client.get("/health")
+    assert r.status_code == 200
+    assert r.json() == {"status": "ok", "database": "ok"}
+
+
+def test_health_reports_an_unreachable_database(client):
+    class UnreachableSession:
+        def execute(self, *args, **kwargs):
+            raise SQLAlchemyError("the database does not answer")
+
+    def _unreachable_db():
+        yield UnreachableSession()
+
+    app.dependency_overrides[get_db] = _unreachable_db
+
+    r = client.get("/health")
+    assert r.status_code == 503
+    assert r.json() == {"status": "error", "database": "unreachable"}
