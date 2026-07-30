@@ -216,3 +216,33 @@ def test_update_specialty_keeping_its_own_name(db):
     spec = C.create_specialty(db, nombre=f"Misma {uuid.uuid4()}")
     updated = C.update_specialty(db, spec.id, nombre=spec.nombre)
     assert updated.id == spec.id
+
+
+def test_delete_specialty(db):
+    spec = C.create_specialty(db, nombre=f"Suelta {uuid.uuid4()}")
+    C.delete_specialty(db, spec.id)
+    assert db.get(Specialty, spec.id) is None
+
+
+def test_delete_specialty_not_found(db):
+    with pytest.raises(C.SpecialtyNotFound):
+        C.delete_specialty(db, uuid.uuid4())
+
+
+def test_delete_specialty_blocked_when_a_service_uses_it(db):
+    spec = C.create_specialty(db, nombre=f"Usada {uuid.uuid4()}")
+    service = C.create_service(
+        db, nombre=f"Servicio {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
+    )
+    C.update_service(db, service.id, {"especialidades": [spec.id]})
+    with pytest.raises(C.SpecialtyInUse):
+        C.delete_specialty(db, spec.id)
+
+
+def test_delete_specialty_blocked_when_a_doctor_has_it(db, doctor):
+    spec = C.create_specialty(db, nombre=f"DeMedico {uuid.uuid4()}")
+    doctor.especialidades = [spec]
+    db.flush()
+    with pytest.raises(C.SpecialtyInUse) as excinfo:
+        C.delete_specialty(db, spec.id)
+    assert excinfo.value.doctors == 1

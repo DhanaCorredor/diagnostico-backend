@@ -130,3 +130,30 @@ def update_specialty(db: Session, especialidad_id: uuid.UUID, *, nombre: str) ->
     specialty.nombre = nombre
     db.flush()
     return specialty
+
+
+def delete_specialty(db: Session, especialidad_id: uuid.UUID) -> None:
+    """Remove a specialty, unless doctors or services are still linked to it. Flush, no commit.
+
+    Specialties have no `activo` column: they are a small closed catalog, so instead of a soft
+    delete the removal is blocked while something depends on it.
+    """
+    specialty = db.get(Specialty, especialidad_id)
+    if specialty is None:
+        raise SpecialtyNotFound()
+
+    doctors = (
+        db.query(User)
+        .filter(User.especialidades.any(Specialty.id == especialidad_id))
+        .count()
+    )
+    services = (
+        db.query(Service)
+        .filter(Service.especialidades.any(Specialty.id == especialidad_id))
+        .count()
+    )
+    if doctors or services:
+        raise SpecialtyInUse(doctors, services)
+
+    db.delete(specialty)
+    db.flush()

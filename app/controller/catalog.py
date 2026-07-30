@@ -140,3 +140,26 @@ async def update_specialty(
 
     db.commit()
     return specialty
+
+
+@router.delete("/especialidades/{especialidad_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_specialty(
+    especialidad_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _: object = Depends(require_role(Role.ADMIN)),
+):
+    """Remove a medical specialty, unless doctors or services still use it (ADMIN)."""
+    try:
+        catalog_service.delete_specialty(db, especialidad_id)
+    except catalog_service.SpecialtyNotFound:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Especialidad no encontrada"
+        ) from None
+    except catalog_service.SpecialtyInUse as e:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"La especialidad la usan {e.doctors} médico(s) y {e.services} servicio(s). "
+            "Desvincúlalos antes de eliminarla.",
+        ) from None
+
+    db.commit()
