@@ -13,6 +13,7 @@ commits e *issues*, y tres etiquetas:
 | Etiqueta | Significado |
 |----------|-------------|
 | **Bloque** | `A` deuda técnica del backend · `B` cambios que tocan el contrato de la API · `C` funcionalidad de fase 2 |
+| **Estado** | ✅ hecha · 🔶 a medias · ⬜ pendiente |
 | **Coste** | `bajo` (una sesión) · `medio` (una o dos sesiones, con migración o tests nuevos) · `alto` (varias sesiones o servicios externos) |
 | **Toca frontend** | Si es `sí`, el cambio **no** se puede hacer solo en este repo: hay que coordinarlo con `diagnostico-frontend` |
 
@@ -38,7 +39,7 @@ de backend puro que no rompen la UI. Estado a **28 jul 2026**.
 | 8 | **A5** | Identificación robusta del paciente | medio | sí | ⬜ |
 | 9 | **B1** | Paginación de listados | medio | sí | ⬜ |
 | — | **A14** | Índices en la base de datos | bajo | no | ⬜ |
-| — | **A17** | Copias de seguridad de la base | medio | no | ⬜ |
+| **ahora** | **A17** | Copias de seguridad de la base | medio | no | 🔶 |
 
 > Todo lo marcado ✅ está **publicado en producción** con la release `v0.7.0` (29 jul 2026), ya
 > sobre la base de datos definitiva en Neon.
@@ -368,15 +369,28 @@ coste alto o de valor menor frente al riesgo que introducen.
 Quedaban `ya_tiene` y dos variables de bucle `dia` en `app/seed.py`, del renombrado anterior.
 Los nombres de columna (`dia_semana`) **no** se tocan: son contrato.
 
-### A17 · Copias de seguridad de la base · coste medio · **condicionada**
+### A17 · Copias de seguridad de la base · coste medio · **🔶 a medias, y urgente**
 
-- **Hoy no es urgente:** el sistema aún no se ha entregado al cliente, así que en producción solo
-  hay datos del *seed* y pruebas propias. Se puede recrear la base desde cero sin perder nada.
-- **Cuándo pasa a ser lo más importante del proyecto:** en cuanto el centro registre citas y
-  pacientes reales. Un plan gratuito no trae copias automáticas, y son datos de salud.
-- **Qué haría falta:** un volcado periódico (`pg_dump`) guardado fuera del proveedor, y —lo que
-  más se olvida— **probar la restauración**, porque una copia que nunca se ha restaurado no se
-  sabe si sirve.
+**Por qué es urgente ahora:** el centro empieza a usar el sistema **esta semana**. En cuanto entren
+citas y pacientes reales, no tener copias pasa a ser el mayor riesgo del proyecto — y son datos de
+salud.
+
+**Hecho:**
+- `scripts/backup.ps1`: vuelca, **comprueba que el volcado se puede leer** y rota los últimos 14.
+  Aborta si falta la cadena de conexión o si `pg_dump` es anterior a la 18.
+- `.gitignore` bloquea `*.dump`, `*.sql.gz` y `backups/`, para que no pueda subirse por accidente
+  al repositorio, **que es público**.
+- Procedimiento y restauración documentados en [`DESPLIEGUE.md`](DESPLIEGUE.md).
+
+**Pendiente, y hasta entonces esto NO protege nada:**
+1. Instalar las *client tools* de **PostgreSQL 18** (las de la 17 no sirven contra un servidor 18).
+2. **Decidir dónde se guardan** los volcados. Fuera del repositorio y, a poder ser, fuera de la
+   máquina; lo natural es una carpeta sincronizada con un disco en la nube.
+3. **Probar una restauración de verdad.** Es la mitad del trabajo y la que siempre se salta.
+4. Programar la tarea diaria en Windows.
+
+**Lo que sí protege ya, sin hacer nada:** el *instant restore* de Neon cubre las **últimas 6 horas**
+en el plan gratuito. Sirve para un borrado que se detecta enseguida; no para nada más.
 
 ## 6. Bloque B — Cambios que tocan el contrato de la API
 
