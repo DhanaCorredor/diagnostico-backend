@@ -41,8 +41,9 @@ de backend puro que no rompen la UI. Estado a **28 jul 2026**.
 | — | **A14** | Índices en la base de datos | bajo | no | ⬜ |
 | **ahora** | **A17** | Copias de seguridad de la base | medio | no | 🔶 |
 
-> Todo lo marcado ✅ está **publicado en producción** con la release `v0.7.0` (29 jul 2026), ya
-> sobre la base de datos definitiva en Neon.
+> Todo lo marcado ✅ está **publicado en producción** (última release `v0.8.0`), sobre la base de
+> datos definitiva en Neon. El CRUD completo de disponibilidad y catálogo y el borrado definitivo
+> de pacientes están en `develop`, **pendientes de publicar**.
 
 El resto del catálogo (`B2`, `C2`–`C5`) queda **sin fecha**: son mejoras válidas pero de
 coste alto o de valor menor frente al riesgo que introducen.
