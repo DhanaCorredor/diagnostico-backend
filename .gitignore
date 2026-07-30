@@ -29,3 +29,8 @@ docs/BRIEFING.pdf
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Copias de seguridad de la base de datos (¡contienen datos de pacientes!)
+*.dump
+*.sql.gz
+backups/
