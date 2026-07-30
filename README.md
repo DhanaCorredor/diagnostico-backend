@@ -4,7 +4,7 @@
 
 Internal **medical appointment** management system for the **Diagnóstico** health center (Maracay, Venezuela). It lets the staff log in by role and manage patients, doctors and appointments, with **strict schedule validation (zero overlaps per doctor)** and **availability-aware scheduling**.
 
-> Bootcamp final project — MVP scoped to a 2-week deadline. Documentation in `docs/` (in Spanish).
+> Bootcamp final project, delivered. Documentation in `docs/` (in Spanish).
 >
 > **Status:** the backend MVP is **complete and deployed** — [live API](https://diagnostico-api-jtbw.onrender.com/docs) (release **v0.8.0**, auto-deploy on push to `main`). **124 passing tests** (unit + integration), run on every push by CI. The API runs on Render and its PostgreSQL database on Neon; the React frontend (`diagnostico-frontend`) is deployed on Vercel.
 
@@ -96,7 +96,7 @@ cp .env.example .env         # set DATABASE_URL, JWT_SECRET and ADMIN_PASSWORD
 alembic upgrade head         # apply migrations
 python -m app.seed           # seed catalogs + staff login users (needs ADMIN_PASSWORD)
 uvicorn app.main:app --reload   # http://localhost:8000  (Swagger at /docs)
-pytest                       # run the test suite (100 tests)
+pytest                       # run the test suite
 
 # Frontend (separate repo, in another terminal)
 git clone <frontend-repo-url> && cd diagnostico-frontend

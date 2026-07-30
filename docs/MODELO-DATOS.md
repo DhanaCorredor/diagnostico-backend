@@ -1,6 +1,6 @@
 # ERP Diagnóstico — Modelo de Datos
 
-> Modelo del **MVP** (deadline 2 semanas), definido a partir de los requisitos reales del centro. Se formaliza como **modelos SQLAlchemy** sobre **PostgreSQL**. Incluye el diagrama entidad-relación.
+> Modelo de datos definido a partir de los requisitos reales del centro. Se formaliza como **modelos SQLAlchemy** sobre **PostgreSQL**. Incluye el diagrama entidad-relación.
 > IDs tipo `uuid` (no autoincrementales) para evitar colisiones al migrar entre entornos.
 > Nomenclatura **snake_case** (convención de Python/SQLAlchemy y PostgreSQL).
 

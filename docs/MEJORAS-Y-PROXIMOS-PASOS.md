@@ -1,10 +1,9 @@
 # ERP Diagnóstico — Mejoras y Próximos Pasos
 
-> El MVP cubre el **núcleo** (agendar citas con cero solapamientos, validación de disponibilidad,
-> gestión de pacientes/médicos/servicios), está **probado** y **desplegado** en producción
-> (release `v0.6.1`). Este documento es el **catálogo único** de lo que queda por hacer:
-> deuda técnica, mejoras que afectan al contrato de la API y funcionalidades de fase 2.
-> Revisado y contrastado contra el código el **28 jul 2026**.
+> El sistema está **entregado y en producción**: agendar citas con cero solapamientos, validación
+> de disponibilidad y CRUD completo de pacientes, médicos, servicios y especialidades.
+> Este documento es el **catálogo único de trabajo**: qué está hecho, qué queda y por qué.
+> Contrastado contra el código el **30 jul 2026**.
 
 ## 1. Cómo leer este catálogo
 
