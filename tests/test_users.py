@@ -1,13 +1,17 @@
-"""Tests of the staff/doctor management (CRUD): create, list, view, edit."""
+"""Tests of the staff/doctor management (CRUD): create, list, view, edit and erase."""
 
 import uuid
+from datetime import datetime, time, timedelta
 
 import pytest
 
-from app.enums import Role
-from app.models import Specialty, User
+from app.enums import AppointmentStatus, Role, ServiceCategory
+from app.models import Appointment, Availability, Service, Specialty, User
+
 from app.services import catalog as C
 from app.services import users as U
+
+NOW = datetime(2027, 1, 1, 8, 0)
 
 
 def _create(db, **over):
@@ -126,15 +130,89 @@ def test_update_user_not_found(db):
         U.update_user(db, uuid.uuid4(), {"nombre_completo": "X"})
 
 
-def test_deactivate_user(db):
+def test_deactivate_user_via_put(db):
     u = _create(db, rol=Role.MEDICO)
     assert u.activo is True
-    U.deactivate_user(db, u.id)
+    U.update_user(db, u.id, {"activo": False})
     assert u.activo is False
 
 
 def test_reactivate_user_via_put(db):
     u = _create(db, rol=Role.MEDICO)
-    U.deactivate_user(db, u.id)
+    U.update_user(db, u.id, {"activo": False})
     U.update_user(db, u.id, {"activo": True})
     assert u.activo is True
+
+
+def _appointment_for(db, doctor, *, starts_at, creado_por=None):
+    """Give the doctor one appointment, so erasing has to keep the record."""
+    patient = User(nombre_completo=f"P {uuid.uuid4()}", edad=30, rol=Role.PACIENTE)
+    service = Service(nombre=f"Serv {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA)
+    db.add_all([patient, service])
+    db.flush()
+    db.add(
+        Appointment(
+            paciente_id=patient.id,
+            medico_id=doctor.id,
+            servicio_id=service.id,
+            starts_at=starts_at,
+            ends_at=starts_at + timedelta(minutes=45),
+            estado=AppointmentStatus.SCHEDULED,
+            creado_por_id=(creado_por or doctor).id,
+        )
+    )
+    db.flush()
+
+
+def test_erase_user_without_history_deletes_the_row(db, admin):
+    u = _create(db, rol=Role.MEDICO)
+    resultado, citas = U.erase_user(db, u.id, requested_by_id=admin.id, now=NOW)
+    assert (resultado, citas) == ("eliminado", 0)
+    assert db.get(User, u.id) is None
+
+
+def test_erase_user_with_past_appointments_wipes_the_personal_data(db, admin):
+    u = _create(db, rol=Role.MEDICO)
+    _appointment_for(db, u, starts_at=datetime(2026, 1, 5, 10, 0))
+
+    resultado, citas = U.erase_user(db, u.id, requested_by_id=admin.id, now=NOW)
+
+    assert (resultado, citas) == ("anonimizado", 1)
+    assert u.nombre_completo == "Usuario eliminado"
+    assert u.email is None
+    assert u.password_hash is None
+    assert u.matricula is None
+    assert u.activo is False
+
+
+def test_erase_user_blocked_when_it_has_upcoming_appointments(db, admin):
+    u = _create(db, rol=Role.MEDICO)
+    _appointment_for(db, u, starts_at=datetime(2027, 6, 7, 10, 0))
+    with pytest.raises(U.UserHasUpcomingAppointments) as excinfo:
+        U.erase_user(db, u.id, requested_by_id=admin.id, now=NOW)
+    assert excinfo.value.count == 1
+
+
+def test_erase_user_cannot_erase_itself(db):
+    u = _create(db, rol=Role.ADMIN, matricula=None)
+    with pytest.raises(U.CannotEraseSelf):
+        U.erase_user(db, u.id, requested_by_id=u.id, now=NOW)
+
+
+def test_erase_user_drops_schedule_and_specialties(db, admin):
+    spec = Specialty(nombre=f"Esp {uuid.uuid4()}")
+    db.add(spec)
+    db.flush()
+    u = _create(db, rol=Role.MEDICO, especialidades=[spec.id])
+    db.add(
+        Availability(
+            usuario_id=u.id, dia_semana=1, hora_inicio=time(8, 0), hora_fin=time(12, 0)
+        )
+    )
+    db.flush()
+    _appointment_for(db, u, starts_at=datetime(2026, 1, 5, 10, 0))
+
+    U.erase_user(db, u.id, requested_by_id=admin.id, now=NOW)
+
+    assert u.especialidades == []
+    assert db.query(Availability).filter(Availability.usuario_id == u.id).count() == 0
