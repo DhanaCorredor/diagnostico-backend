@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.auth import require_role
+from app.controller.errors import as_http
 from app.db import get_db
 from app.enums import Role
 from app.models import User
@@ -19,6 +20,24 @@ router = APIRouter(
     dependencies=[Depends(require_role(Role.ADMIN))],
 )
 
+# Same failure, same answer, whichever endpoint hit it.
+STAFF_ERRORS = {
+    user_service.UserNotFound: (status.HTTP_404_NOT_FOUND, "Usuario no encontrado"),
+    user_service.DuplicateEmail: (status.HTTP_409_CONFLICT, "El email ya está en uso"),
+    user_service.RoleNotAllowed: (
+        status.HTTP_400_BAD_REQUEST,
+        "No se puede crear un usuario con ese rol",
+    ),
+    user_service.DoctorOnlyData: (
+        status.HTTP_400_BAD_REQUEST,
+        "Especialidades y matrícula son solo para médicos",
+    ),
+    catalog_service.SpecialtyNotFound: (
+        status.HTTP_400_BAD_REQUEST,
+        "Alguna especialidad no existe",
+    ),
+}
+
 
 @router.get("", response_model=list[UserDetail])
 async def list_staff(db: Session = Depends(get_db)):
@@ -29,16 +48,14 @@ async def list_staff(db: Session = Depends(get_db)):
 @router.get("/{usuario_id}", response_model=UserDetail)
 async def get_user(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
     """Return the details of a staff user."""
-    try:
+    with as_http(STAFF_ERRORS):
         return user_service.get_user(db, usuario_id)
-    except user_service.UserNotFound:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado") from None
 
 
 @router.post("", response_model=UserDetail, status_code=status.HTTP_201_CREATED)
 async def create_user(data: UserCreate, db: Session = Depends(get_db)):
     """Create a staff user (doctor or staff), with their password and specialties."""
-    try:
+    with as_http(STAFF_ERRORS):
         user = user_service.create_user(
             db,
             nombre_completo=data.nombre_completo,
@@ -48,18 +65,6 @@ async def create_user(data: UserCreate, db: Session = Depends(get_db)):
             matricula=data.matricula,
             especialidades=data.especialidades,
         )
-    except user_service.RoleNotAllowed:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "No se puede crear un usuario con ese rol"
-        ) from None
-    except user_service.DuplicateEmail:
-        raise HTTPException(status.HTTP_409_CONFLICT, "El email ya está en uso") from None
-    except catalog_service.SpecialtyNotFound:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Alguna especialidad no existe") from None
-    except user_service.DoctorOnlyData:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "Especialidades y matrícula son solo para médicos"
-        ) from None
 
     db.commit()
     return user
@@ -77,11 +82,10 @@ async def erase_user(
     instead: that one is reversible and keeps their data.
     """
     try:
-        resultado, citas = user_service.erase_user(
-            db, usuario_id, requested_by_id=user.id
-        )
-    except user_service.UserNotFound:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado") from None
+        with as_http(STAFF_ERRORS):
+            resultado, citas = user_service.erase_user(
+                db, usuario_id, requested_by_id=user.id
+            )
     except user_service.CannotEraseSelf:
         raise HTTPException(
             status.HTTP_409_CONFLICT, "No puedes eliminar tu propio usuario"
@@ -105,18 +109,8 @@ async def update_user(
 ):
     """Edit a staff user (only the fields sent)."""
     changes = data.model_dump(exclude_unset=True)
-    try:
+    with as_http(STAFF_ERRORS):
         user = user_service.update_user(db, usuario_id, changes)
-    except user_service.UserNotFound:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado") from None
-    except user_service.DuplicateEmail:
-        raise HTTPException(status.HTTP_409_CONFLICT, "El email ya está en uso") from None
-    except catalog_service.SpecialtyNotFound:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Alguna especialidad no existe") from None
-    except user_service.DoctorOnlyData:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "Especialidades y matrícula son solo para médicos"
-        ) from None
 
     db.commit()
     return user

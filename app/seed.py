@@ -78,9 +78,11 @@ SERVICES = [
 ]
 
 MON, TUE, WED, THU, FRI, SAT = 1, 2, 3, 4, 5, 6
+WORKDAYS = (MON, TUE, WED, THU, FRI, SAT)
+OPEN_TIME = time(7, 30)
+CLOSE_TIME = time(17, 30)
 MORNING = (time(8, 0), time(13, 0))
-AFTERNOON = (time(14, 0), time(17, 30))
-CLOSE = time(17, 30)
+AFTERNOON = (time(14, 0), CLOSE_TIME)
 
 DOCTORS = [
     ("Dra. Fabiola González", ["Cardiología"],
@@ -88,11 +90,11 @@ DOCTORS = [
     ("Divian Herrera", ["Cardiología"],
      [(TUE, *AFTERNOON), (THU, *MORNING), (FRI, *AFTERNOON)]),
     ("Dr. Richard Rodríguez", ["Cardiología"],
-     [(WED, time(8, 0), CLOSE)]),
+     [(WED, time(8, 0), CLOSE_TIME)]),
     ("Dra. Mariana Contreras", ["Cardiología"],
      [(MON, *AFTERNOON), (FRI, *MORNING), (SAT, *MORNING)]),
     ("Dr. Luis Peralta", ["Cardiología"],
-     [(SAT, time(12, 0), CLOSE)]),
+     [(SAT, time(12, 0), CLOSE_TIME)]),
     ("Dra. Elsa Blanco", ["Otorrinolaringología"], []),
     ("Dra. Andrea Blanco", ["Dermatología", "Venereología"], []),
     ("Dra. Milaurys Fernández", ["Cirugía General"], []),
@@ -100,22 +102,22 @@ DOCTORS = [
     ("Dra. Katherinne Castro", ["Traumatología"], []),
     ("Dra. Cristina Jiménez", ["Traumatología"], []),
     ("Dra. Neirys Magdaleno", ["Gastroenterología", "Medicina Interna"],
-     [(FRI, time(13, 0), CLOSE)]),
+     [(FRI, time(13, 0), CLOSE_TIME)]),
     ("Dr. José Reyes", ["Gastroenterología"],
-     [(TUE, time(8, 0), CLOSE)]),
+     [(TUE, time(8, 0), CLOSE_TIME)]),
     ("Dra. Jessika Colmenarez", ["Ginecología"],
-     [(THU, time(8, 0), CLOSE)]),
+     [(THU, time(8, 0), CLOSE_TIME)]),
     ("Dra. Nancy Borgas", ["Neumonología"],
-     [(WED, time(13, 0), CLOSE)]),
+     [(WED, time(13, 0), CLOSE_TIME)]),
     ("Dra. Nena Alvarado", ["Medicina Interna"],
-     [(SAT, time(8, 0), CLOSE)]),
+     [(SAT, time(8, 0), CLOSE_TIME)]),
     ("Dra. Tania Hernández", ["Ecografía"],
-     [(MON, time(13, 0), CLOSE), (TUE, time(13, 0), CLOSE),
-      (WED, time(13, 0), CLOSE), (THU, time(7, 30), CLOSE)]),
+     [(MON, time(13, 0), CLOSE_TIME), (TUE, time(13, 0), CLOSE_TIME),
+      (WED, time(13, 0), CLOSE_TIME), (THU, time(7, 30), CLOSE_TIME)]),
     ("Dr. Michell Caballero", ["Ecografía"],
-     [(MON, time(7, 30), CLOSE), (TUE, time(7, 30), CLOSE),
-      (WED, time(7, 30), CLOSE), (FRI, time(7, 30), CLOSE),
-      (SAT, time(7, 30), CLOSE)]),
+     [(MON, time(7, 30), CLOSE_TIME), (TUE, time(7, 30), CLOSE_TIME),
+      (WED, time(7, 30), CLOSE_TIME), (FRI, time(7, 30), CLOSE_TIME),
+      (SAT, time(7, 30), CLOSE_TIME)]),
 ]
 
 PATIENTS = [
@@ -227,11 +229,6 @@ def seed_staff(db):
         )
         created += 1
     return created
-
-
-WORKDAYS = (1, 2, 3, 4, 5, 6)
-OPEN_TIME = time(7, 30)
-CLOSE_TIME = time(17, 30)
 
 
 def seed_availability(db):
