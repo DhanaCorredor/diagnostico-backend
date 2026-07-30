@@ -246,3 +246,27 @@ def test_delete_specialty_blocked_when_a_doctor_has_it(db, doctor):
     with pytest.raises(C.SpecialtyInUse) as excinfo:
         C.delete_specialty(db, spec.id)
     assert excinfo.value.doctors == 1
+
+
+def test_deactivate_service_soft_delete(db):
+    service = C.create_service(
+        db, nombre=f"Servicio {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
+    )
+    deactivated = C.deactivate_service(db, service.id)
+    assert deactivated.activo is False
+    assert db.get(Service, service.id) is not None
+    assert service.id not in [s.id for s in C.list_services(db)]
+
+
+def test_deactivate_service_not_found(db):
+    with pytest.raises(C.ServiceNotFound):
+        C.deactivate_service(db, uuid.uuid4())
+
+
+def test_deactivated_service_can_be_reactivated(db):
+    service = C.create_service(
+        db, nombre=f"Servicio {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
+    )
+    C.deactivate_service(db, service.id)
+    C.update_service(db, service.id, {"activo": True})
+    assert service.id in [s.id for s in C.list_services(db)]

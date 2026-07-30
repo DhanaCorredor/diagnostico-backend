@@ -157,3 +157,17 @@ def delete_specialty(db: Session, especialidad_id: uuid.UUID) -> None:
 
     db.delete(specialty)
     db.flush()
+
+
+def deactivate_service(db: Session, servicio_id: uuid.UUID) -> Service:
+    """Soft-delete a service: `activo=False`. Flush (no commit).
+
+    It is never removed for good: appointments already booked point at it, and the catalog has
+    to keep explaining what they were for.
+    """
+    service = db.get(Service, servicio_id)
+    if service is None:
+        raise ServiceNotFound()
+    service.activo = False
+    db.flush()
+    return service

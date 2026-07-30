@@ -163,3 +163,19 @@ async def delete_specialty(
         ) from None
 
     db.commit()
+
+
+@router.delete("/servicios/{servicio_id}", response_model=ServiceDetail)
+async def deactivate_service(
+    servicio_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _: object = Depends(require_role(Role.ADMIN)),
+):
+    """Soft-delete a service (ADMIN): it leaves the catalog but keeps explaining old appointments."""
+    try:
+        service = catalog_service.deactivate_service(db, servicio_id)
+    except catalog_service.ServiceNotFound:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado") from None
+
+    db.commit()
+    return service
