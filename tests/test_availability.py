@@ -1,7 +1,7 @@
 """Availability tests: list, create, edit and remove slots, with their validations."""
 
 import uuid
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 import pytest
 
@@ -29,7 +29,7 @@ def _booking(db, doctor, service, admin, starts_at=FUTURE, minutes=45,
     patient = User(nombre_completo=f"P {uuid.uuid4()}", edad=30, rol=Role.PACIENTE)
     db.add(patient)
     db.flush()
-    ends_at = starts_at.replace(minute=starts_at.minute + minutes)
+    ends_at = starts_at + timedelta(minutes=minutes)
     db.add(
         Appointment(
             paciente_id=patient.id,
