@@ -158,3 +158,115 @@ def test_create_specialty_allows_genuinely_different_names(db):
     C.create_specialty(db, nombre=f"Neurología {marker}")
     other = C.create_specialty(db, nombre=f"Nefrología {marker}")
     assert other.id is not None
+
+
+def test_update_service_replaces_its_specialties(db):
+    spec_a = C.create_specialty(db, nombre=f"Esp A {uuid.uuid4()}")
+    spec_b = C.create_specialty(db, nombre=f"Esp B {uuid.uuid4()}")
+    service = C.create_service(
+        db, nombre=f"Servicio {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
+    )
+
+    C.update_service(db, service.id, {"especialidades": [spec_a.id]})
+    assert [e.id for e in service.especialidades] == [spec_a.id]
+
+    C.update_service(db, service.id, {"especialidades": [spec_b.id]})
+    assert [e.id for e in service.especialidades] == [spec_b.id]
+
+
+def test_update_service_can_unlink_every_specialty(db):
+    spec = C.create_specialty(db, nombre=f"Esp {uuid.uuid4()}")
+    service = C.create_service(
+        db, nombre=f"Servicio {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
+    )
+    C.update_service(db, service.id, {"especialidades": [spec.id]})
+    C.update_service(db, service.id, {"especialidades": []})
+    assert service.especialidades == []
+
+
+def test_update_service_unknown_specialty(db):
+    service = C.create_service(
+        db, nombre=f"Servicio {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
+    )
+    with pytest.raises(C.SpecialtyNotFound):
+        C.update_service(db, service.id, {"especialidades": [uuid.uuid4()]})
+
+
+def test_update_specialty_renames_it(db):
+    spec = C.create_specialty(db, nombre=f"Cardiologia {uuid.uuid4()}")
+    nuevo = f"Cardiología {uuid.uuid4()}"
+    updated = C.update_specialty(db, spec.id, nombre=nuevo)
+    assert updated.nombre == nuevo
+
+
+def test_update_specialty_not_found(db):
+    with pytest.raises(C.SpecialtyNotFound):
+        C.update_specialty(db, uuid.uuid4(), nombre="X")
+
+
+def test_update_specialty_duplicate_name(db):
+    marker = uuid.uuid4()
+    C.create_specialty(db, nombre=f"Primera {marker}")
+    otra = C.create_specialty(db, nombre=f"Segunda {marker}")
+    with pytest.raises(C.DuplicateName):
+        C.update_specialty(db, otra.id, nombre=f"PRIMERA {marker}")
+
+
+def test_update_specialty_keeping_its_own_name(db):
+    spec = C.create_specialty(db, nombre=f"Misma {uuid.uuid4()}")
+    updated = C.update_specialty(db, spec.id, nombre=spec.nombre)
+    assert updated.id == spec.id
+
+
+def test_delete_specialty(db):
+    spec = C.create_specialty(db, nombre=f"Suelta {uuid.uuid4()}")
+    C.delete_specialty(db, spec.id)
+    assert db.get(Specialty, spec.id) is None
+
+
+def test_delete_specialty_not_found(db):
+    with pytest.raises(C.SpecialtyNotFound):
+        C.delete_specialty(db, uuid.uuid4())
+
+
+def test_delete_specialty_blocked_when_a_service_uses_it(db):
+    spec = C.create_specialty(db, nombre=f"Usada {uuid.uuid4()}")
+    service = C.create_service(
+        db, nombre=f"Servicio {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
+    )
+    C.update_service(db, service.id, {"especialidades": [spec.id]})
+    with pytest.raises(C.SpecialtyInUse):
+        C.delete_specialty(db, spec.id)
+
+
+def test_delete_specialty_blocked_when_a_doctor_has_it(db, doctor):
+    spec = C.create_specialty(db, nombre=f"DeMedico {uuid.uuid4()}")
+    doctor.especialidades = [spec]
+    db.flush()
+    with pytest.raises(C.SpecialtyInUse) as excinfo:
+        C.delete_specialty(db, spec.id)
+    assert excinfo.value.doctors == 1
+
+
+def test_deactivate_service_soft_delete(db):
+    service = C.create_service(
+        db, nombre=f"Servicio {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
+    )
+    deactivated = C.deactivate_service(db, service.id)
+    assert deactivated.activo is False
+    assert db.get(Service, service.id) is not None
+    assert service.id not in [s.id for s in C.list_services(db)]
+
+
+def test_deactivate_service_not_found(db):
+    with pytest.raises(C.ServiceNotFound):
+        C.deactivate_service(db, uuid.uuid4())
+
+
+def test_deactivated_service_can_be_reactivated(db):
+    service = C.create_service(
+        db, nombre=f"Servicio {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
+    )
+    C.deactivate_service(db, service.id)
+    C.update_service(db, service.id, {"activo": True})
+    assert service.id in [s.id for s in C.list_services(db)]

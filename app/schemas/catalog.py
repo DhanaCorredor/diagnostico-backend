@@ -46,11 +46,16 @@ class ServiceCreate(BaseModel):
 
 
 class ServiceUpdate(BaseModel):
-    """Body of PUT /servicios/{id}. Only the fields sent are changed."""
+    """Body of PUT /servicios/{id}. Only the fields sent are changed.
+
+    `especialidades` replaces the whole list of specialties that offer the service; sending an
+    empty list unlinks them all, which is what drives the "services of this doctor" filter.
+    """
 
     nombre: str | None = Field(default=None, min_length=1)
     categoria: ServiceCategory | None = None
     activo: bool | None = None
+    especialidades: list[uuid.UUID] | None = None
 
 
 class DoctorOut(BaseModel):
@@ -61,3 +66,9 @@ class DoctorOut(BaseModel):
     especialidades: list[SpecialtyOut]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class SpecialtyUpdate(BaseModel):
+    """Body of PUT /especialidades/{id}: the only editable field is the name."""
+
+    nombre: str = Field(min_length=1)

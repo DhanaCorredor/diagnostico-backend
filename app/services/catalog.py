@@ -13,8 +13,31 @@ class ServiceNotFound(Exception):
     """There is no service with that id."""
 
 
+class SpecialtyNotFound(Exception):
+    """One of the given specialties does not exist."""
+
+
 class DuplicateName(Exception):
     """A service or specialty with that name already exists (the name is unique)."""
+
+
+class SpecialtyInUse(Exception):
+    """The specialty is still linked to doctors or services, so it cannot be removed."""
+
+    def __init__(self, doctors: int, services: int):
+        self.doctors = doctors
+        self.services = services
+        super().__init__(f"linked to {doctors} doctors and {services} services")
+
+
+def resolve_specialties(db: Session, ids: list[uuid.UUID]) -> list[Specialty]:
+    """Turn a list of ids into specialty objects; raises SpecialtyNotFound if any is missing."""
+    if not ids:
+        return []
+    found = db.query(Specialty).filter(Specialty.id.in_(ids)).all()
+    if len(found) != len(set(ids)):
+        raise SpecialtyNotFound()
+    return found
 
 
 def list_services(
@@ -78,6 +101,8 @@ def update_service(db: Session, servicio_id: uuid.UUID, changes: dict) -> Servic
         db, changes["nombre"], exclude_id=servicio_id
     ):
         raise DuplicateName()
+    if "especialidades" in changes:
+        service.especialidades = resolve_specialties(db, changes["especialidades"] or [])
     for field in ("nombre", "categoria", "activo"):
         if field in changes:
             setattr(service, field, changes[field])
@@ -93,3 +118,56 @@ def create_specialty(db: Session, *, nombre: str) -> Specialty:
     db.add(specialty)
     db.flush()
     return specialty
+
+
+def update_specialty(db: Session, especialidad_id: uuid.UUID, *, nombre: str) -> Specialty:
+    """Rename a specialty, keeping the name unique. Flush (no commit)."""
+    specialty = db.get(Specialty, especialidad_id)
+    if specialty is None:
+        raise SpecialtyNotFound()
+    if value_in_use(db, Specialty, Specialty.nombre, nombre, exclude_id=especialidad_id):
+        raise DuplicateName()
+    specialty.nombre = nombre
+    db.flush()
+    return specialty
+
+
+def delete_specialty(db: Session, especialidad_id: uuid.UUID) -> None:
+    """Remove a specialty, unless doctors or services are still linked to it. Flush, no commit.
+
+    Specialties have no `activo` column: they are a small closed catalog, so instead of a soft
+    delete the removal is blocked while something depends on it.
+    """
+    specialty = db.get(Specialty, especialidad_id)
+    if specialty is None:
+        raise SpecialtyNotFound()
+
+    doctors = (
+        db.query(User)
+        .filter(User.especialidades.any(Specialty.id == especialidad_id))
+        .count()
+    )
+    services = (
+        db.query(Service)
+        .filter(Service.especialidades.any(Specialty.id == especialidad_id))
+        .count()
+    )
+    if doctors or services:
+        raise SpecialtyInUse(doctors, services)
+
+    db.delete(specialty)
+    db.flush()
+
+
+def deactivate_service(db: Session, servicio_id: uuid.UUID) -> Service:
+    """Soft-delete a service: `activo=False`. Flush (no commit).
+
+    It is never removed for good: appointments already booked point at it, and the catalog has
+    to keep explaining what they were for.
+    """
+    service = db.get(Service, servicio_id)
+    if service is None:
+        raise ServiceNotFound()
+    service.activo = False
+    db.flush()
+    return service

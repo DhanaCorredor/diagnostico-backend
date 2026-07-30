@@ -16,6 +16,7 @@ from app.schemas import (
     ServiceUpdate,
     SpecialtyCreate,
     SpecialtyOut,
+    SpecialtyUpdate,
 )
 from app.services import catalog as catalog_service
 
@@ -79,12 +80,14 @@ async def update_service(
     db: Session = Depends(get_db),
     _: object = Depends(require_role(Role.ADMIN)),
 ):
-    """Edit a service in the catalog (ADMIN). It can be deactivated without deleting it."""
+    """Edit a service in the catalog (ADMIN), including the specialties that offer it."""
     changes = data.model_dump(exclude_unset=True)
     try:
         service = catalog_service.update_service(db, servicio_id, changes)
     except catalog_service.ServiceNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado") from None
+    except catalog_service.SpecialtyNotFound:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Alguna especialidad no existe") from None
     except catalog_service.DuplicateName:
         raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe un servicio con ese nombre") from None
 
@@ -112,3 +115,67 @@ async def create_specialty(
 
     db.commit()
     return specialty
+
+
+@router.put("/especialidades/{especialidad_id}", response_model=SpecialtyOut)
+async def update_specialty(
+    especialidad_id: uuid.UUID,
+    data: SpecialtyUpdate,
+    db: Session = Depends(get_db),
+    _: object = Depends(require_role(Role.ADMIN)),
+):
+    """Rename a medical specialty (ADMIN)."""
+    try:
+        specialty = catalog_service.update_specialty(
+            db, especialidad_id, nombre=data.nombre
+        )
+    except catalog_service.SpecialtyNotFound:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Especialidad no encontrada"
+        ) from None
+    except catalog_service.DuplicateName:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Ya existe una especialidad con ese nombre"
+        ) from None
+
+    db.commit()
+    return specialty
+
+
+@router.delete("/especialidades/{especialidad_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_specialty(
+    especialidad_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _: object = Depends(require_role(Role.ADMIN)),
+):
+    """Remove a medical specialty, unless doctors or services still use it (ADMIN)."""
+    try:
+        catalog_service.delete_specialty(db, especialidad_id)
+    except catalog_service.SpecialtyNotFound:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Especialidad no encontrada"
+        ) from None
+    except catalog_service.SpecialtyInUse as e:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"La especialidad la usan {e.doctors} médico(s) y {e.services} servicio(s). "
+            "Desvincúlalos antes de eliminarla.",
+        ) from None
+
+    db.commit()
+
+
+@router.delete("/servicios/{servicio_id}", response_model=ServiceDetail)
+async def deactivate_service(
+    servicio_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _: object = Depends(require_role(Role.ADMIN)),
+):
+    """Soft-delete a service (ADMIN): it leaves the catalog but keeps explaining old appointments."""
+    try:
+        service = catalog_service.deactivate_service(db, servicio_id)
+    except catalog_service.ServiceNotFound:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado") from None
+
+    db.commit()
+    return service

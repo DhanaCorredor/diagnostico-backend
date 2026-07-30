@@ -4,9 +4,9 @@
 
 Internal **medical appointment** management system for the **Diagnóstico** health center (Maracay, Venezuela). It lets the staff log in by role and manage patients, doctors and appointments, with **strict schedule validation (zero overlaps per doctor)** and **availability-aware scheduling**.
 
-> Bootcamp final project — MVP scoped to a 2-week deadline. Documentation in `docs/` (in Spanish).
+> Bootcamp final project, delivered. Documentation in `docs/` (in Spanish).
 >
-> **Status:** the backend MVP is **complete and deployed** — [live API](https://diagnostico-api-jtbw.onrender.com/docs) (release **v0.8.0**, auto-deploy on push to `main`). **124 passing tests** (unit + integration), run on every push by CI. The API runs on Render and its PostgreSQL database on Neon; the React frontend (`diagnostico-frontend`) is deployed on Vercel.
+> **Status:** the backend is **complete and deployed** — [live API](https://diagnostico-api-jtbw.onrender.com/docs) (release **v0.9.0**, auto-deploy on push to `main`). Every entity has a full CRUD and **159 passing tests** (unit + integration) run on every push by CI. The API runs on Render, its PostgreSQL database on Neon and the React frontend (`diagnostico-frontend`) on Vercel.
 
 ---
 
@@ -96,7 +96,7 @@ cp .env.example .env         # set DATABASE_URL, JWT_SECRET and ADMIN_PASSWORD
 alembic upgrade head         # apply migrations
 python -m app.seed           # seed catalogs + staff login users (needs ADMIN_PASSWORD)
 uvicorn app.main:app --reload   # http://localhost:8000  (Swagger at /docs)
-pytest                       # run the test suite (100 tests)
+pytest                       # run the test suite
 
 # Frontend (separate repo, in another terminal)
 git clone <frontend-repo-url> && cd diagnostico-frontend
@@ -135,17 +135,16 @@ pnpm dev                     # http://localhost:5173
     └── components/      # reusable UI (Tailwind)
 ```
 
-## 🗺️ Roadmap
+## 🗺️ Status
 
-- [x] Documentation, unified data model and visual prototype
-- [x] **Phase 0** — Scaffolding (FastAPI backend here + React/Vite frontend in its own repo)
-- [x] **Phase 1** — SQLAlchemy models + Alembic migration + seed
-- [x] **Phase 2** — Authentication (JWT) and roles
-- [x] **Phase 3** — Appointments core (patient upsert + availability + overlap per doctor) + tests
-- [ ] **Phase 4** — UI (login, calendar, Patients/Doctors views, appointment form) — frontend repo, pending
-- [x] **Phase 5** — Deployment (backend live on Render, release v0.5.0)
+The MVP is **delivered and running in production**: the API on Render, its PostgreSQL database on
+Neon and the React frontend on Vercel, all on free plans with no expiry date.
 
-Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+Every entity has a full CRUD, the appointment rules are enforced both in the service layer and by
+a database constraint, and the whole suite runs on every push.
+
+What is done and what is still open — with the reasoning behind each decision — lives in a single
+place: [`docs/MEJORAS-Y-PROXIMOS-PASOS.md`](docs/MEJORAS-Y-PROXIMOS-PASOS.md).
 
 ## 📚 Documentation
 
@@ -153,17 +152,14 @@ Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 | Document | Content |
 |----------|---------|
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Roadmap and planning: phases, schedule (Gantt), kanban and risks |
-| [`docs/DOCUMENTACION-FUNCIONAL.md`](docs/DOCUMENTACION-FUNCIONAL.md) | Requirements, roles, user stories and use cases |
-| [`docs/FLUJO-USUARIO.md`](docs/FLUJO-USUARIO.md) | User-flow flowchart (Mermaid) |
+| [`docs/DOCUMENTACION-FUNCIONAL.md`](docs/DOCUMENTACION-FUNCIONAL.md) | What the system does: requirements, roles, use cases and the decisions behind them |
+| [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | How it is built: layers, data flow, the service layer, patterns and technical decisions |
 | [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md) | Entities, fields, relations, ER diagram and rules |
 | [`docs/REGLAS-DE-NEGOCIO.md`](docs/REGLAS-DE-NEGOCIO.md) | Canonical business rules and how they are implemented |
-| [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Architecture, layers, data flow, design principles/patterns and technical decisions |
-| [`docs/SERVICIOS-BACKEND.md`](docs/SERVICIOS-BACKEND.md) | Backend service layer: what each service does and the exceptions it raises |
-| [`docs/TESTING.md`](docs/TESTING.md) | Testing strategy and what the 100 tests cover |
-| [`docs/MEJORAS-Y-PROXIMOS-PASOS.md`](docs/MEJORAS-Y-PROXIMOS-PASOS.md) | Improvements and next steps: immediate, phase-2 features and technical debt |
-| [`docs/MANUAL-USUARIO.md`](docs/MANUAL-USUARIO.md) | Step-by-step usage guide for the staff |
-| [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) | Deployment guide (Render + PostgreSQL) |
+| [`docs/MANUAL-USUARIO.md`](docs/MANUAL-USUARIO.md) | Step-by-step usage guide for the staff, with the user flow |
+| [`docs/TESTING.md`](docs/TESTING.md) | Testing strategy and what the tests cover |
+| [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) | Deployment guide (Render + Neon + Vercel) |
+| [`docs/MEJORAS-Y-PROXIMOS-PASOS.md`](docs/MEJORAS-Y-PROXIMOS-PASOS.md) | The work catalogue: what is done, what is pending and the API contract |
 
 ---
 

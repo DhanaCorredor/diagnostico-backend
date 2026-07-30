@@ -28,5 +28,16 @@ class PatientCreate(BaseModel):
     fecha_nacimiento: date | None = None
 
 
+class PatientErased(BaseModel):
+    """Response of DELETE /pacientes/{id}: what happened to the record.
+
+    `resultado` is `eliminado` when nothing was left, or `anonimizado` when the personal data was
+    wiped but the appointments were kept.
+    """
+
+    resultado: str
+    citas_conservadas: int
+
+
 class PatientUpdate(PatientCreate):
     """Body of PUT /pacientes/{id}: same fields as the registration."""
