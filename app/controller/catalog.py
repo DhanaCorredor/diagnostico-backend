@@ -79,12 +79,14 @@ async def update_service(
     db: Session = Depends(get_db),
     _: object = Depends(require_role(Role.ADMIN)),
 ):
-    """Edit a service in the catalog (ADMIN). It can be deactivated without deleting it."""
+    """Edit a service in the catalog (ADMIN), including the specialties that offer it."""
     changes = data.model_dump(exclude_unset=True)
     try:
         service = catalog_service.update_service(db, servicio_id, changes)
     except catalog_service.ServiceNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado") from None
+    except catalog_service.SpecialtyNotFound:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Alguna especialidad no existe") from None
     except catalog_service.DuplicateName:
         raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe un servicio con ese nombre") from None
 

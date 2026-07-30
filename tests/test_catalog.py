@@ -158,3 +158,35 @@ def test_create_specialty_allows_genuinely_different_names(db):
     C.create_specialty(db, nombre=f"Neurología {marker}")
     other = C.create_specialty(db, nombre=f"Nefrología {marker}")
     assert other.id is not None
+
+
+def test_update_service_replaces_its_specialties(db):
+    spec_a = C.create_specialty(db, nombre=f"Esp A {uuid.uuid4()}")
+    spec_b = C.create_specialty(db, nombre=f"Esp B {uuid.uuid4()}")
+    service = C.create_service(
+        db, nombre=f"Servicio {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
+    )
+
+    C.update_service(db, service.id, {"especialidades": [spec_a.id]})
+    assert [e.id for e in service.especialidades] == [spec_a.id]
+
+    C.update_service(db, service.id, {"especialidades": [spec_b.id]})
+    assert [e.id for e in service.especialidades] == [spec_b.id]
+
+
+def test_update_service_can_unlink_every_specialty(db):
+    spec = C.create_specialty(db, nombre=f"Esp {uuid.uuid4()}")
+    service = C.create_service(
+        db, nombre=f"Servicio {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
+    )
+    C.update_service(db, service.id, {"especialidades": [spec.id]})
+    C.update_service(db, service.id, {"especialidades": []})
+    assert service.especialidades == []
+
+
+def test_update_service_unknown_specialty(db):
+    service = C.create_service(
+        db, nombre=f"Servicio {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA
+    )
+    with pytest.raises(C.SpecialtyNotFound):
+        C.update_service(db, service.id, {"especialidades": [uuid.uuid4()]})

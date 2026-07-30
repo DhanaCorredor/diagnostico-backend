@@ -101,6 +101,8 @@ def update_service(db: Session, servicio_id: uuid.UUID, changes: dict) -> Servic
         db, changes["nombre"], exclude_id=servicio_id
     ):
         raise DuplicateName()
+    if "especialidades" in changes:
+        service.especialidades = resolve_specialties(db, changes["especialidades"] or [])
     for field in ("nombre", "categoria", "activo"):
         if field in changes:
             setattr(service, field, changes[field])
