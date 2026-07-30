@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 from app.auth import require_role
 from app.db import get_db
 from app.enums import Role
-from app.schemas import UserCreate, UserDetail, UserUpdate
+from app.models import User
+from app.schemas import UserCreate, UserDetail, UserErased, UserUpdate
 from app.services import catalog as catalog_service
 from app.services import users as user_service
 
@@ -64,16 +65,36 @@ async def create_user(data: UserCreate, db: Session = Depends(get_db)):
     return user
 
 
-@router.delete("/{usuario_id}", response_model=UserDetail)
-async def deactivate_user(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
-    """Soft-delete a user: `activo=False`. Reactivate with PUT {"activo": true}."""
+@router.delete("/{usuario_id}", response_model=UserErased)
+async def erase_user(
+    usuario_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_role(Role.ADMIN)),
+):
+    """Erase a staff member for good, for someone who has left. **Irreversible**.
+
+    To put someone aside temporarily and bring them back later, use `PUT {"activo": false}`
+    instead: that one is reversible and keeps their data.
+    """
     try:
-        user = user_service.deactivate_user(db, usuario_id)
+        resultado, citas = user_service.erase_user(
+            db, usuario_id, requested_by_id=user.id
+        )
     except user_service.UserNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado") from None
+    except user_service.CannotEraseSelf:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "No puedes eliminar tu propio usuario"
+        ) from None
+    except user_service.UserHasUpcomingAppointments as e:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Ese médico tiene {e.count} cita(s) agendadas por delante. "
+            "Reasígnalas o cancélalas antes de eliminarlo.",
+        ) from None
 
     db.commit()
-    return user
+    return UserErased(resultado=resultado, citas_conservadas=citas)
 
 
 @router.put("/{usuario_id}", response_model=UserDetail)

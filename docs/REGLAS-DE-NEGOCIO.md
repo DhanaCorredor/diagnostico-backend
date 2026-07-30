@@ -22,6 +22,7 @@
 | R8 | Editar o borrar una franja no puede dejar citas fuera de horario | `update_availability()` / `delete_availability()` · `app/services/availability.py` | ✅ |
 | R9 | No se elimina una especialidad que médicos o servicios sigan usando | `delete_specialty()` · `app/services/catalog.py` | ✅ |
 | R10 | Borrar un paciente elimina sus datos personales de verdad | `erase_patient()` · `app/services/patients.py` | ✅ |
+| R11 | Borrar personal elimina sus datos, y nunca deja citas sin médico | `erase_user()` · `app/services/users.py` | ✅ |
 | — | Orquestación de todas al crear la cita | `create_appointment()` + `POST /citas` | ✅ |
 
 ---
@@ -172,6 +173,30 @@ una cancelada deja de contar automáticamente. *(El cambio de estado lo hace `ca
 **Marco legal.** Venezuela no tiene ley integral de protección de datos; el marco es el **habeas data** (art. 28 de la Constitución), que ampara pedir la destrucción de los datos propios y desaconseja conservarlos indefinidamente sin motivo. Al mismo tiempo, un centro de salud necesita su registro de actividad. Anonimizar satisface ambas cosas: el dato personal desaparece y el hecho de que hubo una consulta permanece. *(Cuando se implemente la historia clínica —`C1`— habrá que revisar esto: ahí sí hay contenido clínico, con obligaciones de conservación propias.)*
 
 **La confirmación es cosa de la interfaz.** El backend expone la operación sin pedir nada extra; el aviso y la confirmación escrita ("escribe ELIMINAR") se montan en la pantalla, que es donde el usuario decide.
+
+---
+
+## R11 · Borrar personal elimina sus datos, y nunca deja citas sin médico
+
+**Regla.** Cuando alguien del personal **se va**, se le borra. Desactivarlo lo dejaría en la lista como si fuera a volver, y su nombre, correo y matrícula seguirían ahí sin motivo.
+
+**Funciona igual que con los pacientes (R10)**, porque el problema es el mismo: las citas apuntan a quién las atendió (`medico_id`) y a quién las creó (`creado_por_id`).
+
+| Situación | Qué ocurre | Respuesta |
+|-----------|------------|-----------|
+| **Sin citas** en el histórico | Se **elimina la fila** | `resultado: "eliminado"` |
+| **Con citas** | Se vacían nombre, correo, contraseña y matrícula; pasa a llamarse *"Usuario eliminado"* y sale del listado. Sus citas pasadas se conservan | `resultado: "anonimizado"` |
+
+En ambos casos se le retiran **la disponibilidad y las especialidades**: quien se fue no tiene horario ni ejerce nada. Y al vaciarse el correo, ese email **queda libre** para otra persona.
+
+**Dos protecciones:**
+
+1. **No se puede borrar a un médico con citas por delante.** Si tiene pacientes agendados, la operación se rechaza con un `409` indicando **cuántas**; hay que reasignarlas o cancelarlas primero. Sin esto quedarían citas futuras sin médico real.
+2. **Nadie puede borrarse a sí mismo**, para que un administrador no se deje fuera de su propia aplicación.
+
+**La baja temporal sigue existiendo**, y es otra cosa: `PUT /usuarios/{id}` con `{"activo": false}` aparta a alguien conservando sus datos, y `{"activo": true}` lo devuelve. Eso es para una ausencia; `DELETE` es para una marcha.
+
+**Implementación.** `erase_user()` en `app/services/users.py`.
 
 ---
 

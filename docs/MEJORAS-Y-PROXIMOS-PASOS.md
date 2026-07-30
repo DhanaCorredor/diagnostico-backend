@@ -69,7 +69,7 @@ coste alto o de valor menor frente al riesgo que introducen.
 | `GET /usuarios` · `GET /usuarios/{id}` | Listar / ficha de personal | ADMIN | ✅ |
 | `POST /usuarios` | Alta de personal o médico (+ especialidades) | ADMIN | ✅ |
 | `PUT /usuarios/{id}` | Editar (parcial); no cambia el rol | ADMIN | ✅ |
-| `DELETE /usuarios/{id}` | Baja lógica (`activo=False`) | ADMIN | ✅ |
+| `DELETE /usuarios/{id}` | **Eliminar a quien se ha ido** (irreversible). La baja temporal se hace con `PUT {activo:false}` | ADMIN | ✅ |
 
 **Pacientes**
 
