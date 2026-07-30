@@ -135,17 +135,16 @@ pnpm dev                     # http://localhost:5173
     └── components/      # reusable UI (Tailwind)
 ```
 
-## 🗺️ Roadmap
+## 🗺️ Status
 
-- [x] Documentation, unified data model and visual prototype
-- [x] **Phase 0** — Scaffolding (FastAPI backend here + React/Vite frontend in its own repo)
-- [x] **Phase 1** — SQLAlchemy models + Alembic migration + seed
-- [x] **Phase 2** — Authentication (JWT) and roles
-- [x] **Phase 3** — Appointments core (patient upsert + availability + overlap per doctor) + tests
-- [ ] **Phase 4** — UI (login, calendar, Patients/Doctors views, appointment form) — frontend repo, pending
-- [x] **Phase 5** — Deployment (backend live on Render, release v0.5.0)
+The MVP is **delivered and running in production**: the API on Render, its PostgreSQL database on
+Neon and the React frontend on Vercel, all on free plans with no expiry date.
 
-Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+Every entity has a full CRUD, the appointment rules are enforced both in the service layer and by
+a database constraint, and the whole suite runs on every push.
+
+What is done and what is still open — with the reasoning behind each decision — lives in a single
+place: [`docs/MEJORAS-Y-PROXIMOS-PASOS.md`](docs/MEJORAS-Y-PROXIMOS-PASOS.md).
 
 ## 📚 Documentation
 

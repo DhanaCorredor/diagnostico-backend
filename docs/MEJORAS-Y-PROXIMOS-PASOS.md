@@ -414,7 +414,7 @@ Funcionalidad de valor que se dejó **conscientemente fuera** del MVP para cumpl
   paciente, médico y cita; y `usuarios` ya tiene las columnas `alergias` y `antecedentes`.
 - **Qué falta:** los *schemas* Pydantic, el servicio, los endpoints
   (`POST`/`GET /pacientes/{id}/notas`) y **devolver al médico capacidad de escritura**, que hoy
-  es de solo lectura por decisión de alcance del MVP (ver [`ROADMAP.md`](ROADMAP.md) §0).
+  es de solo lectura por decisión de alcance (ver [`DOCUMENTACION-FUNCIONAL.md`](DOCUMENTACION-FUNCIONAL.md) §0).
 - **Por qué va la primera de la fase 2:** es la que más base tiene construida y la que más se
   nota en una demostración.
 - **Aviso:** al abrir la escritura al rol `MEDICO` hay que revisar las guardas de rol y la
@@ -424,7 +424,7 @@ Funcionalidad de valor que se dejó **conscientemente fuera** del MVP para cumpl
 
 Citas por médico, por servicio y por periodo; tasa de ausencias (`NO_SHOW`); ocupación de la
 agenda frente a la disponibilidad declarada. No requiere datos nuevos: todo se calcula con lo
-que ya se guarda. Recepción **no** tiene acceso a reportes (ver `ROADMAP.md` §0).
+que ya se guarda. Recepción **no** tiene acceso a reportes (ver [`DOCUMENTACION-FUNCIONAL.md`](DOCUMENTACION-FUNCIONAL.md) §0).
 
 ### C3 · Auditoría / log de cambios · coste medio
 
@@ -473,5 +473,5 @@ proponerse:
 
 ---
 
-> Ver también: [`ROADMAP.md`](ROADMAP.md) (fases y planificación) · [`MODELO-DATOS.md`](MODELO-DATOS.md)
+> Ver también: [`DOCUMENTACION-FUNCIONAL.md`](DOCUMENTACION-FUNCIONAL.md) (qué hace y por qué) · [`MODELO-DATOS.md`](MODELO-DATOS.md)
 > (andamiaje de fase 2) · [`ARQUITECTURA.md`](ARQUITECTURA.md) (estructura y patrones).
