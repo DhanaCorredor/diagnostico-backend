@@ -76,7 +76,7 @@ coste alto o de valor menor frente al riesgo que introducen.
 | `GET /pacientes` · `GET /pacientes/{id}` | Listar / ficha | ADMIN·RECEP | ✅ |
 | `POST /pacientes` | Alta manual (sin agendar cita) | ADMIN·RECEP | ✅ |
 | `PUT /pacientes/{id}` | Editar ficha (parcial) | ADMIN·RECEP | ✅ |
-| `DELETE /pacientes/{id}` | Baja lógica | ADMIN·RECEP | ✅ |
+| `DELETE /pacientes/{id}` | **Borrar sus datos personales** (irreversible) | ADMIN·RECEP | ✅ |
 | `GET /pacientes/{id}/citas` | Historial de citas del paciente | ADMIN·RECEP | ✅ |
 
 **Citas**

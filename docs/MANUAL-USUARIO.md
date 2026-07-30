@@ -89,6 +89,15 @@ Si el mismo nombre y edad coinciden con **varios** pacientes, el sistema no adiv
 1. Entra en **Pacientes**.
 2. **Nuevo paciente:** rellena **nombre completo** y **edad**; la **cédula** (única; no la tienen niños ni extranjeros), la **fecha de nacimiento** y el **teléfono** son **opcionales**.
 3. Desde la **ficha** del paciente puedes ver su historial de citas.
+4. **Eliminar un paciente.** Si el paciente pide que borréis sus datos, usa **Eliminar** en su
+   ficha. Es **irreversible**: no hay papelera ni forma de recuperarlo, por eso la pantalla te
+   pedirá escribir la palabra **ELIMINAR** para confirmar.
+   - Si el paciente **nunca tuvo citas**, su ficha desaparece por completo.
+   - Si **tuvo citas**, se borran su nombre, cédula, teléfono y fecha de nacimiento, y sale del
+     listado. Sus citas pasadas siguen en la agenda como *"Paciente eliminado"*, porque el centro
+     necesita su registro de actividad — pero ya no se puede saber de quién eran.
+
+   El sistema te dirá cuál de las dos cosas ha pasado y cuántas citas se han conservado.
 
 ## 6. Gestionar médicos, servicios y especialidades (Admin)
 

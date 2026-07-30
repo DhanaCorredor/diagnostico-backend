@@ -21,6 +21,7 @@
 | R7 | Las franjas de un médico no se solapan entre sí | `has_overlapping_slot()` · `app/services/availability.py` | ✅ |
 | R8 | Editar o borrar una franja no puede dejar citas fuera de horario | `update_availability()` / `delete_availability()` · `app/services/availability.py` | ✅ |
 | R9 | No se elimina una especialidad que médicos o servicios sigan usando | `delete_specialty()` · `app/services/catalog.py` | ✅ |
+| R10 | Borrar un paciente elimina sus datos personales de verdad | `erase_patient()` · `app/services/patients.py` | ✅ |
 | — | Orquestación de todas al crear la cita | `create_appointment()` + `POST /citas` | ✅ |
 
 ---
@@ -150,6 +151,27 @@ una cancelada deja de contar automáticamente. *(El cambio de estado lo hace `ca
 **Implementación.** `delete_specialty()` en `app/services/catalog.py` cuenta médicos y servicios enlazados; si hay alguno lanza `SpecialtyInUse(doctors, services)` → **409** con ambos números en el mensaje.
 
 **Cómo desvincular.** Los servicios, con `PUT /servicios/{id}` enviando la lista `especialidades` sin ella. Los médicos, con `PUT /usuarios/{id}` de la misma forma.
+
+---
+
+## R10 · Borrar un paciente elimina sus datos de verdad
+
+**Regla.** Cuando se borra un paciente, sus **datos personales desaparecen**. No es una baja reversible: **no hay reactivación**.
+
+**Por qué es distinto del resto.** Personal y servicios usan baja lógica (`activo = False`) porque el motivo es "dejó de operar", y su histórico tiene que seguir explicándose. Un paciente que pide que le borren pide otra cosa: **que sus datos dejen de estar**. Esconderlo con un `activo = False` no cumple lo que pide.
+
+**Cómo se hace, y por qué en dos formas.** Las citas guardan `paciente_id`, no el nombre. Así que borrar la fila de un paciente con citas dejaría esas citas apuntando al vacío, y la base lo impide. De ahí las dos salidas, que desde fuera son la misma promesa:
+
+| Situación | Qué ocurre | Respuesta |
+|-----------|------------|-----------|
+| El paciente **no tiene citas** | Se **elimina la fila**. No queda nada | `resultado: "eliminado"` |
+| El paciente **tiene citas** | Se vacían nombre, cédula, teléfono, fecha de nacimiento y edad; la ficha pasa a llamarse *"Paciente eliminado"* y sale del listado. Sus citas se conservan, ya sin identificar | `resultado: "anonimizado"` con el número de citas |
+
+**Implementación.** `erase_patient()` en `app/services/patients.py`. Devuelve qué pasó y cuántas citas se conservaron, para que la interfaz pueda avisar.
+
+**Marco legal.** Venezuela no tiene ley integral de protección de datos; el marco es el **habeas data** (art. 28 de la Constitución), que ampara pedir la destrucción de los datos propios y desaconseja conservarlos indefinidamente sin motivo. Al mismo tiempo, un centro de salud necesita su registro de actividad. Anonimizar satisface ambas cosas: el dato personal desaparece y el hecho de que hubo una consulta permanece. *(Cuando se implemente la historia clínica —`C1`— habrá que revisar esto: ahí sí hay contenido clínico, con obligaciones de conservación propias.)*
+
+**La confirmación es cosa de la interfaz.** El backend expone la operación sin pedir nada extra; el aviso y la confirmación escrita ("escribe ELIMINAR") se montan en la pantalla, que es donde el usuario decide.
 
 ---
 

@@ -72,7 +72,7 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 | ID | Requisito |
 |----|-----------|
 | RNF-01 | Seguridad: contraseñas con **hash (bcrypt)**, **JWT**, control de acceso por rol. |
-| RNF-02 | Privacidad HIPAA/GDPR: sin credenciales hardcodeadas; bajas lógicas (sin borrado físico). |
+| RNF-02 | Privacidad: sin credenciales en el código; el paciente puede pedir que se borren sus datos y se borran (R10); el personal y el catálogo usan baja lógica. |
 | RNF-03 | Integridad: cero solapamientos garantizado en la capa de servicio del backend. |
 | RNF-04 | Rendimiento: soportar el volumen diario (~60 citas/día) con fluidez. |
 | RNF-05 | Usabilidad: interfaz en **español**, clara y **responsive** (uso frecuente desde el móvil). |
@@ -103,7 +103,7 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 | RN-04 | Un médico puede tener **varias especialidades** (N:M). |
 | RN-05 | Al **agendar** se hace **upsert** del paciente por **nombre completo + edad** (detectar o crear; si hay varios, recepción elige). |
 | RN-06 | Se agenda dentro de la **disponibilidad** del médico; recepción puede **forzar un cupo extra** (sobrecupo) de mutuo acuerdo. |
-| RN-07 | Bajas **lógicas** (`activo`), nunca borrado físico. |
+| RN-07 | Baja **lógica** (`activo`) para personal y catálogo. Para **pacientes**, borrado real de los datos personales (R10). |
 | RN-08 | Estados de cita: `SCHEDULED` · `CONFIRMED` · `CANCELLED` · `COMPLETED` · `NO_SHOW`. |
 | RN-09 | Al **cancelar** una cita, su hueco queda libre (sale de los estados activos) y puede reutilizarse. |
 

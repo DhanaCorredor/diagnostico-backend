@@ -117,7 +117,7 @@ package.json        # pnpm
 | **Excepciones de dominio → HTTP** | Los servicios lanzan excepciones propias; el router las traduce a 400/404/409. |
 | **Unit of Work** | Una transacción por petición: los servicios hacen `flush`, el endpoint hace `commit`. |
 | **Tabla de asociación N:M** | `usuario_especialidad`, `servicio_especialidad`. |
-| **Soft delete (baja lógica)** | `activo = False` en vez de borrar (conserva histórico; HIPAA/GDPR). |
+| **Soft delete (baja lógica)** | `activo = False` en vez de borrar, para personal y servicios (conserva el histórico). **Los pacientes no**: ver R10. |
 | **Upsert** | `find_or_create_patient` evita duplicados al agendar. |
 | **Enums de dominio** | Listas cerradas (`Role`, `AppointmentStatus`, `ServiceCategory`) validadas por Pydantic y la BD. |
 
@@ -132,7 +132,7 @@ package.json        # pnpm
 - **Sin dependencia de FastAPI:** reciben una `Session` de SQLAlchemy y datos simples; no conocen `Request` ni `Response`.
 - **`flush`, no `commit`:** los servicios hacen `db.flush()` (asignan ids, validan restricciones) pero **no confirman**. El `commit` lo hace el endpoint, para que toda la petición sea una única transacción.
 - **Excepciones de dominio:** cada regla que falla lanza una excepción propia (ej. `Overlap`, `PatientNotFound`). El router la captura y devuelve el código correcto. **El servicio nunca decide el HTTP.**
-- **Baja lógica:** desactivar ≠ borrar. `activo = False` conserva el histórico.
+- **Baja lógica:** desactivar ≠ borrar. `activo = False` conserva el histórico. La excepción son los **pacientes**, cuyo borrado sí elimina sus datos personales (R10).
 
 ### `appointments.py` — núcleo de las citas
 
@@ -157,7 +157,7 @@ package.json        # pnpm
 | `find_or_create_patient(nombre, edad)` | **Upsert:** busca por `nombre_completo` + `edad`; lo reutiliza, lo crea, o lanza `AmbiguousPatients` si hay varios. |
 | `list_patients` / `get_patient` | Listado (solo activos) y ficha por id. |
 | `create_patient` / `update_patient` | Alta manual y edición parcial; cédula única. |
-| `deactivate_patient` | Baja lógica. |
+| `erase_patient` | Borra sus datos personales **para siempre**: elimina la fila si no tiene citas, o la anonimiza si las tiene (R10). |
 
 **Excepciones:** `PatientNotFound` → 404 · `AmbiguousPatients` → 409 (devuelve los candidatos) · `DuplicateNationalId` → 409.
 
@@ -223,7 +223,7 @@ El router hace el `db.commit()` final si todo ha ido bien.
 - **JWT** firmado con secreto en variable de entorno; expiración razonable.
 - **Control de acceso por rol** en cada endpoint (dependencia `require_role`): RECEPCIÓN no accede a usuarios, configuración ni reportes.
 - **Secretos** solo en variables de entorno (`.env`), nunca en el repositorio.
-- **Datos médicos** (HIPAA/GDPR): bajas lógicas (`activo`), sin borrado físico. *(Auditoría completa → fase 2.)*
+- **Datos del paciente:** cuando pide que le borren, se le borran de verdad (R10); lo que se conserva es la cita, ya sin identificar. Personal y servicios sí usan baja lógica, porque ahí el motivo es otro: dejar de operar sin perder el histórico. *(Auditoría completa → fase 2.)*
 
 ## 8. Despliegue
 
