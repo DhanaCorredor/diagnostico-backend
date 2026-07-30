@@ -24,3 +24,11 @@ class AvailabilityCreate(BaseModel):
     dia_semana: int = Field(ge=0, le=6)
     hora_inicio: time
     hora_fin: time
+
+
+class AvailabilityUpdate(BaseModel):
+    """Body of PUT /disponibilidad/{id}. Only the fields sent are changed; the doctor is not."""
+
+    dia_semana: int | None = Field(default=None, ge=0, le=6)
+    hora_inicio: time | None = None
+    hora_fin: time | None = None

@@ -91,6 +91,34 @@ def test_reception_cannot_see_users(client, recepcion, token_for):
     assert client.get("/usuarios", headers=token_for(recepcion)).status_code == 403
 
 
+def test_admin_deletes_an_availability_slot(client, db, doctor, admin, token_for):
+    slot = Availability(
+        usuario_id=doctor.id, dia_semana=1, hora_inicio=time(8, 0), hora_fin=time(12, 0)
+    )
+    db.add(slot)
+    db.flush()
+    r = client.delete(f"/disponibilidad/{slot.id}", headers=token_for(admin))
+    assert r.status_code == 204
+    listed = client.get(
+        f"/disponibilidad?medico_id={doctor.id}", headers=token_for(admin)
+    ).json()
+    assert listed == []
+
+
+def test_reception_cannot_edit_availability(client, db, doctor, recepcion, token_for):
+    slot = Availability(
+        usuario_id=doctor.id, dia_semana=1, hora_inicio=time(8, 0), hora_fin=time(12, 0)
+    )
+    db.add(slot)
+    db.flush()
+    r = client.put(
+        f"/disponibilidad/{slot.id}",
+        headers=token_for(recepcion),
+        json={"hora_fin": "13:00:00"},
+    )
+    assert r.status_code == 403
+
+
 def test_admin_sees_users(client, admin, token_for):
     assert client.get("/usuarios", headers=token_for(admin)).status_code == 200
 
