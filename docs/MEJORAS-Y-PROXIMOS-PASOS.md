@@ -47,12 +47,79 @@ de backend puro que no rompen la UI. Estado a **28 jul 2026**.
 El resto del catálogo (`B2`, `C2`–`C5`) queda **sin fecha**: son mejoras válidas pero de
 coste alto o de valor menor frente al riesgo que introducen.
 
-## 3. Contrato de la API — qué añade y qué cambia la fase 2
+## 3. Contrato de la API
 
-> Mismo formato y misma función que la checklist del MVP ([`ROADMAP.md`](ROADMAP.md) §3.1):
-> **antes de dar por hecha cualquiera de estas mejoras, se coteja contra esta tabla.**
-> `✅` implementado · `⬜` pendiente. Las mejoras `A1`–`A4` y `A6` **no** aparecen aquí porque no
-> tocan el contrato: son validaciones, configuración o infraestructura.
+> **Fuente de verdad de qué existe.** Antes de dar algo por hecho, se coteja contra estas tablas.
+> `✅` implementado · `⬜` pendiente.
+
+### 3.1 Lo que hay hoy
+
+**Auth**
+
+| Endpoint | Acción | Rol | Estado |
+|----------|--------|-----|:------:|
+| `POST /auth/login` | Iniciar sesión (JWT) | público | ✅ |
+| `GET /auth/me` | Usuario y rol de la sesión | autenticado | ✅ |
+
+**Usuarios (personal y médicos)**
+
+| Endpoint | Acción | Rol | Estado |
+|----------|--------|-----|:------:|
+| `GET /usuarios` · `GET /usuarios/{id}` | Listar / ficha de personal | ADMIN | ✅ |
+| `POST /usuarios` | Alta de personal o médico (+ especialidades) | ADMIN | ✅ |
+| `PUT /usuarios/{id}` | Editar (parcial); no cambia el rol | ADMIN | ✅ |
+| `DELETE /usuarios/{id}` | Baja lógica (`activo=False`) | ADMIN | ✅ |
+
+**Pacientes**
+
+| Endpoint | Acción | Rol | Estado |
+|----------|--------|-----|:------:|
+| `GET /pacientes` · `GET /pacientes/{id}` | Listar / ficha | ADMIN·RECEP | ✅ |
+| `POST /pacientes` | Alta manual (sin agendar cita) | ADMIN·RECEP | ✅ |
+| `PUT /pacientes/{id}` | Editar ficha (parcial) | ADMIN·RECEP | ✅ |
+| `DELETE /pacientes/{id}` | Baja lógica | ADMIN·RECEP | ✅ |
+| `GET /pacientes/{id}/citas` | Historial de citas del paciente | ADMIN·RECEP | ✅ |
+
+**Citas**
+
+| Endpoint | Acción | Rol | Estado |
+|----------|--------|-----|:------:|
+| `POST /citas` | Agendar (aplica todas las reglas) | ADMIN·RECEP | ✅ |
+| `GET /citas` | Agenda por día o rango | ADMIN·RECEP·MED | ✅ |
+| `GET /citas/{id}` | Ficha de una cita (el médico solo las suyas) | ADMIN·RECEP·MED | ✅ |
+| `PUT /citas/{id}` | Editar o mover (revalida las reglas) | ADMIN·RECEP | ✅ |
+| `POST /citas/{id}/cancelar` | Cancelar (libera el cupo) | ADMIN·RECEP | ✅ |
+| `POST /citas/{id}/asistencia` | Atendida / no-show | ADMIN·RECEP | ✅ |
+
+**Disponibilidad**
+
+| Endpoint | Acción | Rol | Estado |
+|----------|--------|-----|:------:|
+| `GET /disponibilidad` | Ver las franjas de un médico | autenticado | ✅ |
+| `POST /disponibilidad` | Definir una franja | ADMIN | ✅ |
+| `PUT /disponibilidad/{id}` | Editar una franja (parcial) | ADMIN | ✅ |
+| `DELETE /disponibilidad/{id}` | Eliminar una franja (bloqueada si tiene citas) | ADMIN | ✅ |
+
+**Catálogo**
+
+| Endpoint | Acción | Rol | Estado |
+|----------|--------|-----|:------:|
+| `GET /servicios` (opc. `?medico_id=`) · `GET /medicos` · `GET /especialidades` | Alimentar los desplegables al agendar | autenticado | ✅ |
+| `POST /servicios` · `PUT /servicios/{id}` | Crear / editar servicio, incluidas las especialidades que lo ofrecen | ADMIN | ✅ |
+| `DELETE /servicios/{id}` | Baja lógica del servicio | ADMIN | ✅ |
+| `POST /especialidades` · `PUT /especialidades/{id}` | Crear / renombrar especialidad | ADMIN | ✅ |
+| `DELETE /especialidades/{id}` | Eliminar especialidad (bloqueada si está en uso) | ADMIN | ✅ |
+
+**Salud**
+
+| Endpoint | Acción | Rol | Estado |
+|----------|--------|-----|:------:|
+| `GET /health` | Comprueba servidor y base de datos | público | ✅ |
+
+### 3.2 Qué añadiría o cambiaría la fase 2
+
+> Las mejoras que no aparecen aquí (`A1`–`A4`, `A6`, `A9`, `A12`–`A15`) **no tocan el contrato**:
+> son validaciones, configuración o infraestructura.
 
 **Endpoints nuevos**
 

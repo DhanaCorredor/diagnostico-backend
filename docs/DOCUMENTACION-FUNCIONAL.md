@@ -1,6 +1,23 @@
 # Documentación Funcional — ERP Diagnóstico
 
-Qué hace el sistema, para quién y bajo qué reglas (alcance **MVP**, deadline 2 semanas). Basado en los requisitos reales del centro. Complementa `ROADMAP.md` (plan) y `MODELO-DATOS.md` (datos).
+Qué hace el sistema, para quién y bajo qué reglas. Basado en los requisitos reales del centro.
+Complementa [`MODELO-DATOS.md`](MODELO-DATOS.md) (los datos) y [`ARQUITECTURA.md`](ARQUITECTURA.md) (cómo está construido).
+
+## 0. Decisiones acordadas con el centro
+
+Las que condicionan todo lo demás. Están aquí porque explican **por qué** el sistema es como es:
+
+- **Quién entra:** solo **personal interno** hace login (ADMIN, RECEPCION, MEDICO). Las citas las agenda **recepción**. Los pacientes son registros, **no acceden** al sistema.
+- **Tabla `usuarios` unificada:** personal, médicos y pacientes comparten la misma tabla, diferenciados por el campo `rol`. Menos código y menos duplicación; en la interfaz son dos vistas distintas que filtran por rol.
+- **Roles:** ADMIN todo · **RECEPCION sin acceso a usuarios, configuración ni reportes** · MEDICO su agenda en **solo lectura** (la asistencia y las cancelaciones las hacen recepción o admin).
+- **Volumen real:** ~60 citas al día · 18 médicos · 12 especialidades · una sola sede.
+- **Duración de la cita:** la **elige recepción** al agendar, de una lista fija (15, 30, 45, 60 o 90 min). No la impone el servicio.
+- **Disponibilidad:** el calendario **bloquea** los días y horas fuera del horario del médico, con posibilidad de forzar un **sobrecupo**.
+- **Upsert de paciente:** al agendar, si el paciente no existe se crea; si existe, se reutiliza (se busca por `nombre_completo` + `edad`).
+- **Cero solapamientos:** por **médico**. El anti-solapamiento por sala o equipo queda para fase 2.
+- **Historia clínica:** fuera del alcance inicial → fase 2.
+- **Facturación y cobros:** **fuera del sistema** (máquinas fiscales del SENIAT, pago directo, sin seguros).
+- **Idioma de la interfaz:** español, que es el del centro. Por eso los mensajes de error de la API también van en español.
 
 ## 1. Objetivo
 
