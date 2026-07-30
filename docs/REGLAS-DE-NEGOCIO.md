@@ -18,6 +18,10 @@
 | R4 | Cero solapamientos por médico | `has_overlap()` · `app/services/appointments.py` | ✅ |
 | R5 | Cancelar libera el hueco | filtro de estados en R4 | ✅ (regla) |
 | R6 | Marcar asistencia (atendida/no-show) solo sobre citas activas | `mark_attendance()` · `app/services/appointments.py` | ✅ |
+| R7 | Las franjas de un médico no se solapan entre sí | `has_overlapping_slot()` · `app/services/availability.py` | ✅ |
+| R8 | Editar o borrar una franja no puede dejar citas fuera de horario | `update_availability()` / `delete_availability()` · `app/services/availability.py` | ✅ |
+| R9 | No se elimina una especialidad que médicos o servicios sigan usando | `delete_specialty()` · `app/services/catalog.py` | ✅ |
+| R10 | Borrar un paciente elimina sus datos personales de verdad | `erase_patient()` · `app/services/patients.py` | ✅ |
 | — | Orquestación de todas al crear la cita | `create_appointment()` + `POST /citas` | ✅ |
 
 ---
@@ -111,6 +115,63 @@ una cancelada deja de contar automáticamente. *(El cambio de estado lo hace `ca
 **Regla.** Una cita **activa** (`SCHEDULED`/`CONFIRMED`) se cierra como **atendida** (`COMPLETED`) o **no-show** (`NO_SHOW`); no se puede marcar sobre una cita ya cerrada o cancelada. Lo hacen **recepción y admin** (el médico solo consulta su agenda, no marca asistencia).
 
 **Implementación.** `mark_attendance(db, cita_id, estado)` en `app/services/appointments.py` (reutiliza `_get_active_appointment`); si la cita no está activa lanza `AppointmentNotActive` → **409**. Endpoint `POST /citas/{id}/asistencia` con `estado ∈ {COMPLETED, NO_SHOW}`.
+
+---
+
+## R7 · Las franjas de un médico no se solapan entre sí
+
+**Regla.** Un médico no puede tener dos franjas de disponibilidad **cruzadas el mismo día**. "Lunes 08:00–12:00" y "Lunes 10:00–14:00" no pueden coexistir; "Lunes 08:00–12:00" y "Lunes 12:00–16:00" sí, porque son **contiguas, no solapadas**.
+
+**Implementación.** `has_overlapping_slot()` en `app/services/availability.py`, con la misma regla de intersección que R4 (`inicio_nuevo < fin_existente` **y** `fin_nuevo > inicio_existente`, con `<` estrictos). Se aplica al crear y al editar; al editar se excluye la propia franja para que no choque consigo misma. Lanza `OverlappingSlot` → **409**.
+
+**Por qué importa más de lo que parece.** Al garantizar que no hay solapes, **cada cita queda cubierta por una única franja**. Eso es lo que hace que R8 pueda comprobarse de forma exacta y no aproximada.
+
+---
+
+## R8 · Editar o borrar una franja no puede dejar citas fuera de horario
+
+**Regla.** Si se **elimina** una franja, o se **reduce** de forma que alguna cita agendada deje de caber dentro, la operación se **rechaza**. Recepción debe mover o cancelar esas citas primero.
+
+**Por qué.** La disponibilidad solo se comprueba **al crear** la cita (R3). Una cita ya agendada no se entera de que su franja cambió, así que sin esta regla quedarían citas activas fuera del horario del médico sin que nadie avisara.
+
+**Qué cuenta como problema.** Solo las citas **activas** (`SCHEDULED`/`CONFIRMED`) y **futuras**. Una cita cancelada o ya pasada no bloquea nada.
+
+**Implementación.** `update_availability()` y `delete_availability()` en `app/services/availability.py` usan `_covered_appointments()`, que localiza las citas que esa franja está sosteniendo; si alguna quedaría fuera del nuevo rango, lanza `StrandedAppointments` → **409**, con el número de citas afectadas en el mensaje para que la interfaz pueda decirlo.
+
+**Ampliar una franja siempre se permite**: si el horario crece, ninguna cita puede quedarse fuera.
+
+---
+
+## R9 · No se elimina una especialidad en uso
+
+**Regla.** Una especialidad solo se puede eliminar si **ningún médico y ningún servicio** están enlazados a ella. Si los hay, la operación se rechaza indicando **cuántos** de cada uno.
+
+**Por qué no hay baja lógica aquí.** Pacientes, usuarios y servicios se desactivan (`activo=False`) porque hay citas pasadas que siguen apuntándolos y la ficha tiene que poder explicarlas. Una especialidad, en cambio, **no la referencia ninguna cita**: solo cuelga de médicos y servicios mediante tablas N:M. Si nadie la usa, borrarla no deja nada roto; y si alguien la usa, lo correcto es desvincularlo primero, no esconder la especialidad.
+
+**Implementación.** `delete_specialty()` en `app/services/catalog.py` cuenta médicos y servicios enlazados; si hay alguno lanza `SpecialtyInUse(doctors, services)` → **409** con ambos números en el mensaje.
+
+**Cómo desvincular.** Los servicios, con `PUT /servicios/{id}` enviando la lista `especialidades` sin ella. Los médicos, con `PUT /usuarios/{id}` de la misma forma.
+
+---
+
+## R10 · Borrar un paciente elimina sus datos de verdad
+
+**Regla.** Cuando se borra un paciente, sus **datos personales desaparecen**. No es una baja reversible: **no hay reactivación**.
+
+**Por qué es distinto del resto.** Personal y servicios usan baja lógica (`activo = False`) porque el motivo es "dejó de operar", y su histórico tiene que seguir explicándose. Un paciente que pide que le borren pide otra cosa: **que sus datos dejen de estar**. Esconderlo con un `activo = False` no cumple lo que pide.
+
+**Cómo se hace, y por qué en dos formas.** Las citas guardan `paciente_id`, no el nombre. Así que borrar la fila de un paciente con citas dejaría esas citas apuntando al vacío, y la base lo impide. De ahí las dos salidas, que desde fuera son la misma promesa:
+
+| Situación | Qué ocurre | Respuesta |
+|-----------|------------|-----------|
+| El paciente **no tiene citas** | Se **elimina la fila**. No queda nada | `resultado: "eliminado"` |
+| El paciente **tiene citas** | Se vacían nombre, cédula, teléfono, fecha de nacimiento y edad; la ficha pasa a llamarse *"Paciente eliminado"* y sale del listado. Sus citas se conservan, ya sin identificar | `resultado: "anonimizado"` con el número de citas |
+
+**Implementación.** `erase_patient()` en `app/services/patients.py`. Devuelve qué pasó y cuántas citas se conservaron, para que la interfaz pueda avisar.
+
+**Marco legal.** Venezuela no tiene ley integral de protección de datos; el marco es el **habeas data** (art. 28 de la Constitución), que ampara pedir la destrucción de los datos propios y desaconseja conservarlos indefinidamente sin motivo. Al mismo tiempo, un centro de salud necesita su registro de actividad. Anonimizar satisface ambas cosas: el dato personal desaparece y el hecho de que hubo una consulta permanece. *(Cuando se implemente la historia clínica —`C1`— habrá que revisar esto: ahí sí hay contenido clínico, con obligaciones de conservación propias.)*
+
+**La confirmación es cosa de la interfaz.** El backend expone la operación sin pedir nada extra; el aviso y la confirmación escrita ("escribe ELIMINAR") se montan en la pantalla, que es donde el usuario decide.
 
 ---
 

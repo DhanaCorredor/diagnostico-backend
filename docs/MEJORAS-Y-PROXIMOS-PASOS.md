@@ -1,10 +1,9 @@
 # ERP Diagnóstico — Mejoras y Próximos Pasos
 
-> El MVP cubre el **núcleo** (agendar citas con cero solapamientos, validación de disponibilidad,
-> gestión de pacientes/médicos/servicios), está **probado** y **desplegado** en producción
-> (release `v0.6.1`). Este documento es el **catálogo único** de lo que queda por hacer:
-> deuda técnica, mejoras que afectan al contrato de la API y funcionalidades de fase 2.
-> Revisado y contrastado contra el código el **28 jul 2026**.
+> El sistema está **entregado y en producción**: agendar citas con cero solapamientos, validación
+> de disponibilidad y CRUD completo de pacientes, médicos, servicios y especialidades.
+> Este documento es el **catálogo único de trabajo**: qué está hecho, qué queda y por qué.
+> Contrastado contra el código el **30 jul 2026**.
 
 ## 1. Cómo leer este catálogo
 
@@ -47,12 +46,79 @@ de backend puro que no rompen la UI. Estado a **28 jul 2026**.
 El resto del catálogo (`B2`, `C2`–`C5`) queda **sin fecha**: son mejoras válidas pero de
 coste alto o de valor menor frente al riesgo que introducen.
 
-## 3. Contrato de la API — qué añade y qué cambia la fase 2
+## 3. Contrato de la API
 
-> Mismo formato y misma función que la checklist del MVP ([`ROADMAP.md`](ROADMAP.md) §3.1):
-> **antes de dar por hecha cualquiera de estas mejoras, se coteja contra esta tabla.**
-> `✅` implementado · `⬜` pendiente. Las mejoras `A1`–`A4` y `A6` **no** aparecen aquí porque no
-> tocan el contrato: son validaciones, configuración o infraestructura.
+> **Fuente de verdad de qué existe.** Antes de dar algo por hecho, se coteja contra estas tablas.
+> `✅` implementado · `⬜` pendiente.
+
+### 3.1 Lo que hay hoy
+
+**Auth**
+
+| Endpoint | Acción | Rol | Estado |
+|----------|--------|-----|:------:|
+| `POST /auth/login` | Iniciar sesión (JWT) | público | ✅ |
+| `GET /auth/me` | Usuario y rol de la sesión | autenticado | ✅ |
+
+**Usuarios (personal y médicos)**
+
+| Endpoint | Acción | Rol | Estado |
+|----------|--------|-----|:------:|
+| `GET /usuarios` · `GET /usuarios/{id}` | Listar / ficha de personal | ADMIN | ✅ |
+| `POST /usuarios` | Alta de personal o médico (+ especialidades) | ADMIN | ✅ |
+| `PUT /usuarios/{id}` | Editar (parcial); no cambia el rol | ADMIN | ✅ |
+| `DELETE /usuarios/{id}` | Baja lógica (`activo=False`) | ADMIN | ✅ |
+
+**Pacientes**
+
+| Endpoint | Acción | Rol | Estado |
+|----------|--------|-----|:------:|
+| `GET /pacientes` · `GET /pacientes/{id}` | Listar / ficha | ADMIN·RECEP | ✅ |
+| `POST /pacientes` | Alta manual (sin agendar cita) | ADMIN·RECEP | ✅ |
+| `PUT /pacientes/{id}` | Editar ficha (parcial) | ADMIN·RECEP | ✅ |
+| `DELETE /pacientes/{id}` | **Borrar sus datos personales** (irreversible) | ADMIN·RECEP | ✅ |
+| `GET /pacientes/{id}/citas` | Historial de citas del paciente | ADMIN·RECEP | ✅ |
+
+**Citas**
+
+| Endpoint | Acción | Rol | Estado |
+|----------|--------|-----|:------:|
+| `POST /citas` | Agendar (aplica todas las reglas) | ADMIN·RECEP | ✅ |
+| `GET /citas` | Agenda por día o rango | ADMIN·RECEP·MED | ✅ |
+| `GET /citas/{id}` | Ficha de una cita (el médico solo las suyas) | ADMIN·RECEP·MED | ✅ |
+| `PUT /citas/{id}` | Editar o mover (revalida las reglas) | ADMIN·RECEP | ✅ |
+| `POST /citas/{id}/cancelar` | Cancelar (libera el cupo) | ADMIN·RECEP | ✅ |
+| `POST /citas/{id}/asistencia` | Atendida / no-show | ADMIN·RECEP | ✅ |
+
+**Disponibilidad**
+
+| Endpoint | Acción | Rol | Estado |
+|----------|--------|-----|:------:|
+| `GET /disponibilidad` | Ver las franjas de un médico | autenticado | ✅ |
+| `POST /disponibilidad` | Definir una franja | ADMIN | ✅ |
+| `PUT /disponibilidad/{id}` | Editar una franja (parcial) | ADMIN | ✅ |
+| `DELETE /disponibilidad/{id}` | Eliminar una franja (bloqueada si tiene citas) | ADMIN | ✅ |
+
+**Catálogo**
+
+| Endpoint | Acción | Rol | Estado |
+|----------|--------|-----|:------:|
+| `GET /servicios` (opc. `?medico_id=`) · `GET /medicos` · `GET /especialidades` | Alimentar los desplegables al agendar | autenticado | ✅ |
+| `POST /servicios` · `PUT /servicios/{id}` | Crear / editar servicio, incluidas las especialidades que lo ofrecen | ADMIN | ✅ |
+| `DELETE /servicios/{id}` | Baja lógica del servicio | ADMIN | ✅ |
+| `POST /especialidades` · `PUT /especialidades/{id}` | Crear / renombrar especialidad | ADMIN | ✅ |
+| `DELETE /especialidades/{id}` | Eliminar especialidad (bloqueada si está en uso) | ADMIN | ✅ |
+
+**Salud**
+
+| Endpoint | Acción | Rol | Estado |
+|----------|--------|-----|:------:|
+| `GET /health` | Comprueba servidor y base de datos | público | ✅ |
+
+### 3.2 Qué añadiría o cambiaría la fase 2
+
+> Las mejoras que no aparecen aquí (`A1`–`A4`, `A6`, `A9`, `A12`–`A15`) **no tocan el contrato**:
+> son validaciones, configuración o infraestructura.
 
 **Endpoints nuevos**
 
@@ -97,13 +163,28 @@ coste alto o de valor menor frente al riesgo que introducen.
 
 ### 4.1 Pendiente hoy, sin esperar a ninguna mejora
 
-- **Pantalla para definir la disponibilidad de un médico.** `POST /disponibilidad` está
-  implementado y forma parte del contrato del MVP, pero la UI solo **lee** las franjas
-  (`DoctorsPage.jsx` hace `GET /disponibilidad?medico_id=`). Hoy las franjas solo se pueden crear
-  llamando a la API a mano o por el *seed*, así que el administrador no puede cambiar el horario
-  de un médico desde la aplicación. Es el hueco más visible que queda en la UI.
-  Al hacerla, hay que mostrar el `409` que ahora devuelve la mejora `A1` (franja cruzada) además
-  del `400` de "inicio posterior al fin".
+> **El backend ya no limita al frontend.** Todas las entidades tienen su CRUD completo
+> (pacientes, usuarios, disponibilidad, servicios, especialidades) y las citas se crean, editan,
+> consultan una a una, se cancelan y se marcan. Lo que falte a partir de aquí es trabajo de
+> interfaz, no de API.
+
+- **Pantalla de disponibilidad de un médico.** El backend ya ofrece el **CRUD completo**
+  (`GET`, `POST`, `PUT /disponibilidad/{id}` y `DELETE /disponibilidad/{id}`, todo ADMIN salvo la
+  lectura), pero la UI solo **lee** las franjas (`DoctorsPage.jsx` hace
+  `GET /disponibilidad?medico_id=`). Hoy el administrador **no puede tocar el horario de un médico
+  desde la aplicación**: hay que llamar a la API a mano. Es el único agujero funcional que queda.
+
+  Los errores que la pantalla tiene que saber mostrar:
+
+  | Código | Cuándo | Qué decirle al usuario |
+  |:------:|--------|------------------------|
+  | `400` | La hora de inicio no es anterior a la de fin | Corregir las horas |
+  | `404` | La franja o el médico no existen | Recargar; alguien la borró |
+  | `409` | La franja se cruza con otra del mismo médico ese día (R7) | Mostrar con cuál choca |
+  | `409` | Borrar o reducir dejaría citas fuera de horario (R8) | El mensaje trae el **número de citas**; hay que moverlas o cancelarlas primero |
+
+  El último es el importante: la interfaz debería ofrecer ir a esas citas, no limitarse a
+  enseñar el error.
 
 ### 4.2 Trabajo derivado de cada mejora
 
@@ -332,7 +413,7 @@ Funcionalidad de valor que se dejó **conscientemente fuera** del MVP para cumpl
   paciente, médico y cita; y `usuarios` ya tiene las columnas `alergias` y `antecedentes`.
 - **Qué falta:** los *schemas* Pydantic, el servicio, los endpoints
   (`POST`/`GET /pacientes/{id}/notas`) y **devolver al médico capacidad de escritura**, que hoy
-  es de solo lectura por decisión de alcance del MVP (ver [`ROADMAP.md`](ROADMAP.md) §0).
+  es de solo lectura por decisión de alcance (ver [`DOCUMENTACION-FUNCIONAL.md`](DOCUMENTACION-FUNCIONAL.md) §0).
 - **Por qué va la primera de la fase 2:** es la que más base tiene construida y la que más se
   nota en una demostración.
 - **Aviso:** al abrir la escritura al rol `MEDICO` hay que revisar las guardas de rol y la
@@ -342,7 +423,7 @@ Funcionalidad de valor que se dejó **conscientemente fuera** del MVP para cumpl
 
 Citas por médico, por servicio y por periodo; tasa de ausencias (`NO_SHOW`); ocupación de la
 agenda frente a la disponibilidad declarada. No requiere datos nuevos: todo se calcula con lo
-que ya se guarda. Recepción **no** tiene acceso a reportes (ver `ROADMAP.md` §0).
+que ya se guarda. Recepción **no** tiene acceso a reportes (ver [`DOCUMENTACION-FUNCIONAL.md`](DOCUMENTACION-FUNCIONAL.md) §0).
 
 ### C3 · Auditoría / log de cambios · coste medio
 
@@ -391,5 +472,5 @@ proponerse:
 
 ---
 
-> Ver también: [`ROADMAP.md`](ROADMAP.md) (fases y planificación) · [`MODELO-DATOS.md`](MODELO-DATOS.md)
+> Ver también: [`DOCUMENTACION-FUNCIONAL.md`](DOCUMENTACION-FUNCIONAL.md) (qué hace y por qué) · [`MODELO-DATOS.md`](MODELO-DATOS.md)
 > (andamiaje de fase 2) · [`ARQUITECTURA.md`](ARQUITECTURA.md) (estructura y patrones).

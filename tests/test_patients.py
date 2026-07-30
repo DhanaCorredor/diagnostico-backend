@@ -1,17 +1,18 @@
-"""Tests of the patient upsert (R1)."""
+"""Tests of the patient upsert (R1) and of erasing a patient for good."""
 
 import uuid
+from datetime import datetime
 
 import pytest
 
-from app.enums import Role
-from app.models import User
+from app.enums import AppointmentStatus, Role, ServiceCategory
+from app.models import Appointment, Service, User
 from app.services.patients import (
     AmbiguousPatients,
     DuplicateNationalId,
     PatientNotFound,
     create_patient,
-    deactivate_patient,
+    erase_patient,
     find_or_create_patient,
     get_patient,
     list_patients,
@@ -132,8 +133,68 @@ def test_update_patient_duplicate_national_id(db):
         update_patient(db, pac.id, {"cedula": ced})
 
 
-def test_deactivate_patient_soft_delete(db):
+def test_erase_patient_without_appointments_deletes_the_row(db):
     pac = find_or_create_patient(db, f"Pac {uuid.uuid4()}", 40)
-    desactivado = deactivate_patient(db, pac.id)
-    assert desactivado.activo is False
+    resultado, citas = erase_patient(db, pac.id)
+    assert (resultado, citas) == ("eliminado", 0)
+    assert db.get(User, pac.id) is None
+
+
+def _with_appointment(db, patient):
+    """Give the patient one appointment, so erasing has to keep the record."""
+    doctor = User(
+        nombre_completo="Dr. Borrado",
+        rol=Role.MEDICO,
+        email=f"med-{uuid.uuid4()}@test.local",
+    )
+    admin = User(
+        nombre_completo="Admin Borrado",
+        rol=Role.ADMIN,
+        email=f"adm-{uuid.uuid4()}@test.local",
+    )
+    service = Service(nombre=f"Serv {uuid.uuid4()}", categoria=ServiceCategory.CONSULTA)
+    db.add_all([doctor, admin, service])
+    db.flush()
+    db.add(
+        Appointment(
+            paciente_id=patient.id,
+            medico_id=doctor.id,
+            servicio_id=service.id,
+            starts_at=datetime(2027, 3, 1, 10, 0),
+            ends_at=datetime(2027, 3, 1, 10, 45),
+            estado=AppointmentStatus.SCHEDULED,
+            creado_por_id=admin.id,
+        )
+    )
+    db.flush()
+
+
+def test_erase_patient_with_appointments_wipes_the_personal_data(db):
+    pac = find_or_create_patient(db, f"Pac {uuid.uuid4()}", 40)
+    pac.cedula = f"V-{uuid.uuid4().hex[:8]}"
+    pac.telefono = "0412-0000000"
+    db.flush()
+    _with_appointment(db, pac)
+
+    resultado, citas = erase_patient(db, pac.id)
+
+    assert (resultado, citas) == ("anonimizado", 1)
+    assert pac.nombre_completo == "Paciente eliminado"
+    assert pac.cedula is None
+    assert pac.telefono is None
+    assert pac.edad is None
+    assert pac.activo is False
+
+
+def test_erased_patient_leaves_the_list_and_keeps_its_appointments(db):
+    pac = find_or_create_patient(db, f"Pac {uuid.uuid4()}", 40)
+    _with_appointment(db, pac)
+    erase_patient(db, pac.id)
+
     assert pac.id not in [p.id for p in list_patients(db)]
+    assert db.query(Appointment).filter(Appointment.paciente_id == pac.id).count() == 1
+
+
+def test_erase_patient_not_found(db):
+    with pytest.raises(PatientNotFound):
+        erase_patient(db, uuid.uuid4())

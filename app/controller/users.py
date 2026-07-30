@@ -9,6 +9,7 @@ from app.auth import require_role
 from app.db import get_db
 from app.enums import Role
 from app.schemas import UserCreate, UserDetail, UserUpdate
+from app.services import catalog as catalog_service
 from app.services import users as user_service
 
 router = APIRouter(
@@ -52,7 +53,7 @@ async def create_user(data: UserCreate, db: Session = Depends(get_db)):
         ) from None
     except user_service.DuplicateEmail:
         raise HTTPException(status.HTTP_409_CONFLICT, "El email ya está en uso") from None
-    except user_service.SpecialtyNotFound:
+    except catalog_service.SpecialtyNotFound:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Alguna especialidad no existe") from None
     except user_service.DoctorOnlyData:
         raise HTTPException(
@@ -89,7 +90,7 @@ async def update_user(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado") from None
     except user_service.DuplicateEmail:
         raise HTTPException(status.HTTP_409_CONFLICT, "El email ya está en uso") from None
-    except user_service.SpecialtyNotFound:
+    except catalog_service.SpecialtyNotFound:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Alguna especialidad no existe") from None
     except user_service.DoctorOnlyData:
         raise HTTPException(

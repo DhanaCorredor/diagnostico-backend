@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.auth import require_role
 from app.db import get_db
 from app.enums import Role
-from app.schemas import AppointmentOut, PatientCreate, PatientOut, PatientUpdate
+from app.schemas import AppointmentOut, PatientCreate, PatientErased, PatientOut, PatientUpdate
 from app.services import appointments as appointment_service
 from app.services import patients as patient_service
 
@@ -78,12 +78,16 @@ async def update_patient(
     return patient
 
 
-@router.delete("/{paciente_id}", response_model=PatientOut)
-async def deactivate_patient(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
-    """Soft-delete a patient: `activo=False`. It leaves the list (which only shows active ones)."""
+@router.delete("/{paciente_id}", response_model=PatientErased)
+async def erase_patient(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
+    """Erase a patient's personal data for good. **Irreversible**, there is no reactivation.
+
+    If the patient has no appointments the record is deleted outright; if it has, the personal
+    data is wiped and the appointments are kept as an unidentified record of the visit.
+    """
     try:
-        patient = patient_service.deactivate_patient(db, paciente_id)
+        resultado, citas = patient_service.erase_patient(db, paciente_id)
     except patient_service.PatientNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado") from None
     db.commit()
-    return patient
+    return PatientErased(resultado=resultado, citas_conservadas=citas)

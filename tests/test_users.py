@@ -6,6 +6,7 @@ import pytest
 
 from app.enums import Role
 from app.models import Specialty, User
+from app.services import catalog as C
 from app.services import users as U
 
 
@@ -57,7 +58,7 @@ def test_create_user_duplicate_email_ignoring_case(db):
 
 
 def test_create_user_specialty_not_found(db):
-    with pytest.raises(U.SpecialtyNotFound):
+    with pytest.raises(C.SpecialtyNotFound):
         _create(db, especialidades=[uuid.uuid4()])
 
 

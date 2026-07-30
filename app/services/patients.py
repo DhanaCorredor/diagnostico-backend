@@ -1,12 +1,14 @@
-"""Patient business logic: upsert when scheduling + list/view/edit/deactivate."""
+"""Patient business logic: upsert when scheduling + list/view/edit/erase."""
 
 import uuid
 
 from sqlalchemy.orm import Session
 
 from app.enums import Role
-from app.models import User
+from app.models import Appointment, User
 from app.services.common import value_in_use
+
+ERASED_NAME = "Paciente eliminado"
 
 
 class AmbiguousPatients(Exception):
@@ -99,9 +101,35 @@ def update_patient(db: Session, paciente_id: uuid.UUID, changes: dict) -> User:
     return patient
 
 
-def deactivate_patient(db: Session, paciente_id: uuid.UUID) -> User:
-    """Soft-delete a patient: `activo=False`. Flushes (no commit)."""
+def erase_patient(db: Session, paciente_id: uuid.UUID) -> tuple[str, int]:
+    """Erase a patient's personal data for good. Flush, no commit.
+
+    Appointments only store `paciente_id`, so the row has to survive for past appointments to
+    keep making sense. Hence two outcomes, both leaving no personal data behind:
+
+    - no appointments  -> the row is deleted, nothing is left;
+    - with appointments -> name, national id, phone, birth date and age are wiped and the patient
+      leaves the list, while its appointments stay as an unidentified record of the visit.
+
+    Returns what happened and how many appointments were kept.
+    """
     patient = get_patient(db, paciente_id)
+    appointments = (
+        db.query(Appointment).filter(Appointment.paciente_id == paciente_id).count()
+    )
+
+    if appointments == 0:
+        db.delete(patient)
+        db.flush()
+        return "eliminado", 0
+
+    patient.nombre_completo = ERASED_NAME
+    patient.cedula = None
+    patient.telefono = None
+    patient.fecha_nacimiento = None
+    patient.edad = None
+    patient.alergias = None
+    patient.antecedentes = None
     patient.activo = False
     db.flush()
-    return patient
+    return "anonimizado", appointments

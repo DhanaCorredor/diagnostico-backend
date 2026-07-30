@@ -1,6 +1,23 @@
 # Documentación Funcional — ERP Diagnóstico
 
-Qué hace el sistema, para quién y bajo qué reglas (alcance **MVP**, deadline 2 semanas). Basado en los requisitos reales del centro. Complementa `ROADMAP.md` (plan) y `MODELO-DATOS.md` (datos).
+Qué hace el sistema, para quién y bajo qué reglas. Basado en los requisitos reales del centro.
+Complementa [`MODELO-DATOS.md`](MODELO-DATOS.md) (los datos) y [`ARQUITECTURA.md`](ARQUITECTURA.md) (cómo está construido).
+
+## 0. Decisiones acordadas con el centro
+
+Las que condicionan todo lo demás. Están aquí porque explican **por qué** el sistema es como es:
+
+- **Quién entra:** solo **personal interno** hace login (ADMIN, RECEPCION, MEDICO). Las citas las agenda **recepción**. Los pacientes son registros, **no acceden** al sistema.
+- **Tabla `usuarios` unificada:** personal, médicos y pacientes comparten la misma tabla, diferenciados por el campo `rol`. Menos código y menos duplicación; en la interfaz son dos vistas distintas que filtran por rol.
+- **Roles:** ADMIN todo · **RECEPCION sin acceso a usuarios, configuración ni reportes** · MEDICO su agenda en **solo lectura** (la asistencia y las cancelaciones las hacen recepción o admin).
+- **Volumen real:** ~60 citas al día · 18 médicos · 12 especialidades · una sola sede.
+- **Duración de la cita:** la **elige recepción** al agendar, de una lista fija (15, 30, 45, 60 o 90 min). No la impone el servicio.
+- **Disponibilidad:** el calendario **bloquea** los días y horas fuera del horario del médico, con posibilidad de forzar un **sobrecupo**.
+- **Upsert de paciente:** al agendar, si el paciente no existe se crea; si existe, se reutiliza (se busca por `nombre_completo` + `edad`).
+- **Cero solapamientos:** por **médico**. El anti-solapamiento por sala o equipo queda para fase 2.
+- **Historia clínica:** fuera del alcance inicial → fase 2.
+- **Facturación y cobros:** **fuera del sistema** (máquinas fiscales del SENIAT, pago directo, sin seguros).
+- **Idioma de la interfaz:** español, que es el del centro. Por eso los mensajes de error de la API también van en español.
 
 ## 1. Objetivo
 
@@ -55,7 +72,7 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 | ID | Requisito |
 |----|-----------|
 | RNF-01 | Seguridad: contraseñas con **hash (bcrypt)**, **JWT**, control de acceso por rol. |
-| RNF-02 | Privacidad HIPAA/GDPR: sin credenciales hardcodeadas; bajas lógicas (sin borrado físico). |
+| RNF-02 | Privacidad: sin credenciales en el código; el paciente puede pedir que se borren sus datos y se borran (R10); el personal y el catálogo usan baja lógica. |
 | RNF-03 | Integridad: cero solapamientos garantizado en la capa de servicio del backend. |
 | RNF-04 | Rendimiento: soportar el volumen diario (~60 citas/día) con fluidez. |
 | RNF-05 | Usabilidad: interfaz en **español**, clara y **responsive** (uso frecuente desde el móvil). |
@@ -86,13 +103,13 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 | RN-04 | Un médico puede tener **varias especialidades** (N:M). |
 | RN-05 | Al **agendar** se hace **upsert** del paciente por **nombre completo + edad** (detectar o crear; si hay varios, recepción elige). |
 | RN-06 | Se agenda dentro de la **disponibilidad** del médico; recepción puede **forzar un cupo extra** (sobrecupo) de mutuo acuerdo. |
-| RN-07 | Bajas **lógicas** (`activo`), nunca borrado físico. |
+| RN-07 | Baja **lógica** (`activo`) para personal y catálogo. Para **pacientes**, borrado real de los datos personales (R10). |
 | RN-08 | Estados de cita: `SCHEDULED` · `CONFIRMED` · `CANCELLED` · `COMPLETED` · `NO_SHOW`. |
 | RN-09 | Al **cancelar** una cita, su hueco queda libre (sale de los estados activos) y puede reutilizarse. |
 
 ## 8. Flujo principal: crear una cita
 
-El recorrido completo está en el **flowchart** de [`FLUJO-USUARIO.md`](FLUJO-USUARIO.md). En resumen: **login** → elegir médico y servicio → el calendario muestra los días/horas **disponibles** (recepción puede forzar un **sobrecupo**) → introducir al paciente por **nombre completo + edad** (**upsert**) → el sistema calcula el fin con la **duración elegida** y **valida el solapamiento por médico** → guardar la cita.
+El recorrido completo, con sus diagramas, está en [`MANUAL-USUARIO.md`](MANUAL-USUARIO.md). En resumen: **login** → elegir médico y servicio → el calendario muestra los días/horas **disponibles** (recepción puede forzar un **sobrecupo**) → introducir al paciente por **nombre completo + edad** (**upsert**) → el sistema calcula el fin con la **duración elegida** y **valida el solapamiento por médico** → guardar la cita.
 
 ## 9. Casos de uso
 
@@ -148,4 +165,4 @@ flowchart LR
 | CU-10 Marcar asistencia | Recepción | Marcar una cita como atendida o no-show. |
 | CU-11 Historia clínica *(fase 2, fuera del MVP)* | Médico | Consultar y añadir notas de evolución del paciente. En el MVP no está disponible. |
 
-> El flujo detallado de **CU-07 (agendar cita)** está en el §8 anterior y en el flowchart de [`FLUJO-USUARIO.md`](FLUJO-USUARIO.md).
+> El flujo detallado de **CU-07 (agendar cita)** está en el §8 anterior y en los diagramas de [`MANUAL-USUARIO.md`](MANUAL-USUARIO.md).

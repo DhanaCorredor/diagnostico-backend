@@ -6,7 +6,7 @@ from app.schemas.appointment import (
     AttendanceUpdate,
 )
 from app.schemas.auth import LoginRequest, TokenResponse
-from app.schemas.availability import AvailabilityCreate, AvailabilityOut
+from app.schemas.availability import AvailabilityCreate, AvailabilityOut, AvailabilityUpdate
 from app.schemas.catalog import (
     DoctorOut,
     ServiceCreate,
@@ -15,8 +15,9 @@ from app.schemas.catalog import (
     ServiceUpdate,
     SpecialtyCreate,
     SpecialtyOut,
+    SpecialtyUpdate,
 )
-from app.schemas.patient import PatientCreate, PatientOut, PatientUpdate
+from app.schemas.patient import PatientCreate, PatientErased, PatientOut, PatientUpdate
 from app.schemas.user import UserCreate, UserDetail, UserOut, UserUpdate
 
 __all__ = [
@@ -26,9 +27,11 @@ __all__ = [
     "AttendanceUpdate",
     "AvailabilityCreate",
     "AvailabilityOut",
+    "AvailabilityUpdate",
     "DoctorOut",
     "LoginRequest",
     "PatientCreate",
+    "PatientErased",
     "PatientOut",
     "PatientUpdate",
     "ServiceCreate",
@@ -37,6 +40,7 @@ __all__ = [
     "ServiceUpdate",
     "SpecialtyCreate",
     "SpecialtyOut",
+    "SpecialtyUpdate",
     "TokenResponse",
     "UserCreate",
     "UserDetail",

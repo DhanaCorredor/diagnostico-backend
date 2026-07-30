@@ -133,6 +133,25 @@ async def list_appointments(
     )
 
 
+@router.get("/{cita_id}", response_model=AppointmentOut)
+async def get_appointment(
+    cita_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_role(Role.ADMIN, Role.RECEPCION, Role.MEDICO)),
+):
+    """Return one appointment. A MEDICO can only open their own."""
+    try:
+        appointment = appointment_service.get_appointment(db, cita_id)
+    except appointment_service.AppointmentNotFound:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cita no encontrada") from None
+
+    if user.rol == Role.MEDICO and appointment.medico_id != user.id:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Solo puedes consultar tus propias citas"
+        )
+    return appointment
+
+
 @router.put("/{cita_id}", response_model=AppointmentOut)
 async def edit_appointment(
     cita_id: uuid.UUID,
