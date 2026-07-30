@@ -92,7 +92,7 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 
 ## 8. Flujo principal: crear una cita
 
-El recorrido completo está en el **flowchart** de [`FLUJO-USUARIO.md`](FLUJO-USUARIO.md). En resumen: **login** → elegir médico y servicio → el calendario muestra los días/horas **disponibles** (recepción puede forzar un **sobrecupo**) → introducir al paciente por **nombre completo + edad** (**upsert**) → el sistema calcula el fin con la **duración elegida** y **valida el solapamiento por médico** → guardar la cita.
+El recorrido completo, con sus diagramas, está en [`MANUAL-USUARIO.md`](MANUAL-USUARIO.md). En resumen: **login** → elegir médico y servicio → el calendario muestra los días/horas **disponibles** (recepción puede forzar un **sobrecupo**) → introducir al paciente por **nombre completo + edad** (**upsert**) → el sistema calcula el fin con la **duración elegida** y **valida el solapamiento por médico** → guardar la cita.
 
 ## 9. Casos de uso
 
@@ -148,4 +148,4 @@ flowchart LR
 | CU-10 Marcar asistencia | Recepción | Marcar una cita como atendida o no-show. |
 | CU-11 Historia clínica *(fase 2, fuera del MVP)* | Médico | Consultar y añadir notas de evolución del paciente. En el MVP no está disponible. |
 
-> El flujo detallado de **CU-07 (agendar cita)** está en el §8 anterior y en el flowchart de [`FLUJO-USUARIO.md`](FLUJO-USUARIO.md).
+> El flujo detallado de **CU-07 (agendar cita)** está en el §8 anterior y en los diagramas de [`MANUAL-USUARIO.md`](MANUAL-USUARIO.md).
