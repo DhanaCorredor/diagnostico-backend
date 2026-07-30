@@ -218,3 +218,36 @@ def test_appointment_ambiguous_patient_returns_candidates(
     candidates = r.json()["detail"]["candidatos"]
     assert len(candidates) == 2
     assert {"id", "nombre_completo", "edad"} <= set(candidates[0].keys())
+
+
+def test_doctor_cannot_open_another_doctors_appointment(
+    client, db, doctor, service, admin, token_for
+):
+    slot = _aligned_future_slot()
+    _with_availability(db, doctor, slot)
+    other_doctor = User(
+        nombre_completo="Dr. Otro",
+        rol=Role.MEDICO,
+        email=f"otro-{uuid.uuid4()}@test.local",
+    )
+    db.add(other_doctor)
+    db.flush()
+
+    created = client.post(
+        "/citas",
+        headers=token_for(admin),
+        json={
+            "nombre_completo": f"Ficha {uuid.uuid4()}",
+            "edad": 40,
+            "medico_id": str(doctor.id),
+            "servicio_id": str(service.id),
+            "starts_at": slot.strftime("%Y-%m-%dT%H:%M:%S"),
+            "duracion_min": 45,
+        },
+    )
+    assert created.status_code == 201
+    cita_id = created.json()["id"]
+
+    assert client.get(f"/citas/{cita_id}", headers=token_for(doctor)).status_code == 200
+    assert client.get(f"/citas/{cita_id}", headers=token_for(other_doctor)).status_code == 403
+    assert client.get(f"/citas/{cita_id}", headers=token_for(admin)).status_code == 200

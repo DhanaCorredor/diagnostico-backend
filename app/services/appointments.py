@@ -242,6 +242,14 @@ def list_patient_appointments(db: Session, paciente_id: uuid.UUID) -> list[Appoi
     )
 
 
+def get_appointment(db: Session, cita_id: uuid.UUID) -> Appointment:
+    """Return one appointment by id, whatever its status, or raise AppointmentNotFound."""
+    appointment = db.get(Appointment, cita_id)
+    if appointment is None:
+        raise AppointmentNotFound()
+    return appointment
+
+
 def _get_active_appointment(
     db: Session, cita_id: uuid.UUID, exc_not_active: type[Exception]
 ) -> Appointment:

@@ -588,3 +588,13 @@ def test_list_patient_appointments_history(db, doctor, service, admin):
     appointment = _appointment(db, doctor, service, admin, LUNES_10)
     historial = C.list_patient_appointments(db, appointment.paciente_id)
     assert [c.id for c in historial] == [appointment.id]
+
+
+def test_get_appointment(db, doctor, service, admin):
+    appointment = _appointment(db, doctor, service, admin, LUNES_10)
+    assert C.get_appointment(db, appointment.id).id == appointment.id
+
+
+def test_get_appointment_not_found(db):
+    with pytest.raises(C.AppointmentNotFound):
+        C.get_appointment(db, uuid.uuid4())
