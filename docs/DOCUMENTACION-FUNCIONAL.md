@@ -103,7 +103,7 @@ Personal, médicos y pacientes se guardan en **la misma tabla `usuarios`** (camp
 | RN-04 | Un médico puede tener **varias especialidades** (N:M). |
 | RN-05 | Al **agendar** se hace **upsert** del paciente por **nombre completo + edad** (detectar o crear; si hay varios, recepción elige). |
 | RN-06 | Se agenda dentro de la **disponibilidad** del médico; recepción puede **forzar un cupo extra** (sobrecupo) de mutuo acuerdo. |
-| RN-07 | Baja **lógica** (`activo`) para personal y catálogo. Para **pacientes**, borrado real de los datos personales (R10). |
+| RN-07 | Para **personas** (pacientes y personal), borrar elimina de verdad sus datos (R10, R11); la baja lógica queda para ausencias temporales del personal y para el catálogo. |
 | RN-08 | Estados de cita: `SCHEDULED` · `CONFIRMED` · `CANCELLED` · `COMPLETED` · `NO_SHOW`. |
 | RN-09 | Al **cancelar** una cita, su hueco queda libre (sale de los estados activos) y puede reutilizarse. |
 
