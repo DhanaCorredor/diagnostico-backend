@@ -6,7 +6,7 @@ Internal **medical appointment** management system for the **Diagnóstico** heal
 
 > Bootcamp final project, delivered. Documentation in `docs/` (in Spanish).
 >
-> **Status:** the backend is **complete and deployed** — [live API](https://diagnostico-api-jtbw.onrender.com/docs) (release **v0.9.0**, auto-deploy on push to `main`). Every entity has a full CRUD and **159 passing tests** (unit + integration) run on every push by CI. The API runs on Render, its PostgreSQL database on Neon and the React frontend (`diagnostico-frontend`) on Vercel.
+> **Status:** the backend is **complete and deployed** — [live API](https://diagnostico-api-jtbw.onrender.com/docs) (release **v0.10.0**, auto-deploy on push to `main`). Every entity has a full CRUD and **164 passing tests** (unit + integration) run on every push by CI. The API runs on Render, its PostgreSQL database on Neon and the React frontend (`diagnostico-frontend`) on Vercel.
 
 ---
 
