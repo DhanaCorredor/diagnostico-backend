@@ -20,6 +20,7 @@
 | R6 | Marcar asistencia (atendida/no-show) solo sobre citas activas | `mark_attendance()` · `app/services/appointments.py` | ✅ |
 | R7 | Las franjas de un médico no se solapan entre sí | `has_overlapping_slot()` · `app/services/availability.py` | ✅ |
 | R8 | Editar o borrar una franja no puede dejar citas fuera de horario | `update_availability()` / `delete_availability()` · `app/services/availability.py` | ✅ |
+| R9 | No se elimina una especialidad que médicos o servicios sigan usando | `delete_specialty()` · `app/services/catalog.py` | ✅ |
 | — | Orquestación de todas al crear la cita | `create_appointment()` + `POST /citas` | ✅ |
 
 ---
@@ -137,6 +138,18 @@ una cancelada deja de contar automáticamente. *(El cambio de estado lo hace `ca
 **Implementación.** `update_availability()` y `delete_availability()` en `app/services/availability.py` usan `_covered_appointments()`, que localiza las citas que esa franja está sosteniendo; si alguna quedaría fuera del nuevo rango, lanza `StrandedAppointments` → **409**, con el número de citas afectadas en el mensaje para que la interfaz pueda decirlo.
 
 **Ampliar una franja siempre se permite**: si el horario crece, ninguna cita puede quedarse fuera.
+
+---
+
+## R9 · No se elimina una especialidad en uso
+
+**Regla.** Una especialidad solo se puede eliminar si **ningún médico y ningún servicio** están enlazados a ella. Si los hay, la operación se rechaza indicando **cuántos** de cada uno.
+
+**Por qué no hay baja lógica aquí.** Pacientes, usuarios y servicios se desactivan (`activo=False`) porque hay citas pasadas que siguen apuntándolos y la ficha tiene que poder explicarlas. Una especialidad, en cambio, **no la referencia ninguna cita**: solo cuelga de médicos y servicios mediante tablas N:M. Si nadie la usa, borrarla no deja nada roto; y si alguien la usa, lo correcto es desvincularlo primero, no esconder la especialidad.
+
+**Implementación.** `delete_specialty()` en `app/services/catalog.py` cuenta médicos y servicios enlazados; si hay alguno lanza `SpecialtyInUse(doctors, services)` → **409** con ambos números en el mensaje.
+
+**Cómo desvincular.** Los servicios, con `PUT /servicios/{id}` enviando la lista `especialidades` sin ella. Los médicos, con `PUT /usuarios/{id}` de la misma forma.
 
 ---
 

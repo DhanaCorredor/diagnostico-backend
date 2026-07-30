@@ -97,6 +97,7 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 |----------|--------|-----|--------|:------:|
 | `POST /citas` | Agendar (aplica todas las reglas) | ADMIN·RECEP | RF-07 · MANUAL §3 | ✅ |
 | `GET /citas` | Agenda por día / rango | ADMIN·RECEP·MED | MANUAL §4,§8 | ✅ |
+| `GET /citas/{id}` | **Ficha de una cita** (el médico solo las suyas) | ADMIN·RECEP·MED | MANUAL §4 | ✅ |
 | `POST /citas/{id}/cancelar` | Cancelar (libera cupo) | ADMIN·RECEP | RF-11 · MANUAL §4 | ✅ |
 | `POST /citas/{id}/asistencia` | Atendida / no-show | ADMIN·RECEP | MANUAL §4 | ✅ |
 | `PUT /citas/{id}` | **Editar / mover (revalida reglas)** | ADMIN·RECEP | RF-07 · MANUAL §4 | ✅ |
@@ -105,8 +106,11 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 
 | Endpoint | Acción | Role | Origen | Estado |
 |----------|--------|-----|--------|:------:|
-| `POST /servicios` · `PUT /servicios/{id}` | Crear / editar servicio | ADMIN | RF-02 · MANUAL §6.4 | ✅ |
+| `POST /servicios` · `PUT /servicios/{id}` | Crear / editar servicio (incluidas **las especialidades que lo ofrecen**) | ADMIN | RF-02 · MANUAL §6.4 | ✅ |
+| `DELETE /servicios/{id}` | **Baja lógica** del servicio (`activo=False`) | ADMIN | MANUAL §6.4 | ✅ |
 | `POST /especialidades` | Crear especialidad | ADMIN | MANUAL §6 | ✅ |
+| `PUT /especialidades/{id}` | **Renombrar** una especialidad | ADMIN | MANUAL §6 | ✅ |
+| `DELETE /especialidades/{id}` | **Eliminar** una especialidad (bloqueada si está en uso) | ADMIN | MANUAL §6 | ✅ |
 
 ### Pendientes → plan de cierre del backend
 

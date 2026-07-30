@@ -97,6 +97,11 @@ coste alto o de valor menor frente al riesgo que introducen.
 
 ### 4.1 Pendiente hoy, sin esperar a ninguna mejora
 
+> **El backend ya no limita al frontend.** Todas las entidades tienen su CRUD completo
+> (pacientes, usuarios, disponibilidad, servicios, especialidades) y las citas se crean, editan,
+> consultan una a una, se cancelan y se marcan. Lo que falte a partir de aquí es trabajo de
+> interfaz, no de API.
+
 - **Pantalla de disponibilidad de un médico.** El backend ya ofrece el **CRUD completo**
   (`GET`, `POST`, `PUT /disponibilidad/{id}` y `DELETE /disponibilidad/{id}`, todo ADMIN salvo la
   lectura), pero la UI solo **lee** las franjas (`DoctorsPage.jsx` hace

@@ -54,10 +54,13 @@ Alimenta los desplegables del frontend y la gestión de catálogos del ADMIN.
 |---------|----------|
 | `list_services(medico_id=None)` | Servicios activos; con `medico_id` **solo los de las especialidades de ese médico** (evita agendar servicios que no corresponden). |
 | `list_doctors` / `list_specialties` | Médicos activos con sus especialidades; catálogo de especialidades. |
-| `create_service` / `update_service` | Alta/edición de servicio (ADMIN); permite desactivar sin borrar. |
-| `create_specialty` | Alta de especialidad (ADMIN). |
+| `create_service` / `update_service` | Alta/edición de servicio (ADMIN). La edición incluye **la lista de especialidades que lo ofrecen**, que es la que alimenta el filtro por médico. |
+| `deactivate_service` | Baja lógica (`activo=False`); nunca se borra, porque hay citas que lo referencian. |
+| `create_specialty` / `update_specialty` | Alta y renombrado de especialidad (ADMIN). |
+| `delete_specialty` | Borrado real, **bloqueado si algún médico o servicio la usa** (R9). |
+| `resolve_specialties(ids)` | Convierte ids en especialidades; lo comparten el catálogo y la gestión de usuarios. |
 
-**Excepciones:** `ServiceNotFound` → 404 · `DuplicateName` → 409.
+**Excepciones:** `ServiceNotFound` → 404 · `SpecialtyNotFound` → 404 · `DuplicateName` → 409 · `SpecialtyInUse` → 409 (lleva cuántos médicos y servicios la usan).
 
 ---
 
