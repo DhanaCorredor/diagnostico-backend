@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.auth import current_user, require_role
+from app.controller.errors import as_http
 from app.db import get_db
 from app.enums import Role
 from app.schemas import (
@@ -21,6 +22,34 @@ from app.schemas import (
 from app.services import catalog as catalog_service
 
 router = APIRouter(tags=["catalog"])
+
+# The same exception means different things depending on what is being managed, so there are two
+# maps: for a service, `SpecialtyNotFound` is "one of the ones you sent"; for a specialty, itself.
+SERVICE_ERRORS = {
+    catalog_service.ServiceNotFound: (
+        status.HTTP_404_NOT_FOUND,
+        "Servicio no encontrado",
+    ),
+    catalog_service.SpecialtyNotFound: (
+        status.HTTP_404_NOT_FOUND,
+        "Alguna especialidad no existe",
+    ),
+    catalog_service.DuplicateName: (
+        status.HTTP_409_CONFLICT,
+        "Ya existe un servicio con ese nombre",
+    ),
+}
+
+SPECIALTY_ERRORS = {
+    catalog_service.SpecialtyNotFound: (
+        status.HTTP_404_NOT_FOUND,
+        "Especialidad no encontrada",
+    ),
+    catalog_service.DuplicateName: (
+        status.HTTP_409_CONFLICT,
+        "Ya existe una especialidad con ese nombre",
+    ),
+}
 
 
 @router.get("/servicios", response_model=list[ServiceOut])
@@ -62,12 +91,10 @@ async def create_service(
     _: object = Depends(require_role(Role.ADMIN)),
 ):
     """Register a service in the catalog (ADMIN)."""
-    try:
+    with as_http(SERVICE_ERRORS):
         service = catalog_service.create_service(
             db, nombre=data.nombre, categoria=data.categoria
         )
-    except catalog_service.DuplicateName:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe un servicio con ese nombre") from None
 
     db.commit()
     return service
@@ -82,14 +109,8 @@ async def update_service(
 ):
     """Edit a service in the catalog (ADMIN), including the specialties that offer it."""
     changes = data.model_dump(exclude_unset=True)
-    try:
+    with as_http(SERVICE_ERRORS):
         service = catalog_service.update_service(db, servicio_id, changes)
-    except catalog_service.ServiceNotFound:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado") from None
-    except catalog_service.SpecialtyNotFound:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Alguna especialidad no existe") from None
-    except catalog_service.DuplicateName:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe un servicio con ese nombre") from None
 
     db.commit()
     return service
@@ -106,12 +127,8 @@ async def create_specialty(
     _: object = Depends(require_role(Role.ADMIN)),
 ):
     """Register a medical specialty (ADMIN)."""
-    try:
+    with as_http(SPECIALTY_ERRORS):
         specialty = catalog_service.create_specialty(db, nombre=data.nombre)
-    except catalog_service.DuplicateName:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, "Ya existe una especialidad con ese nombre"
-        ) from None
 
     db.commit()
     return specialty
@@ -125,18 +142,10 @@ async def update_specialty(
     _: object = Depends(require_role(Role.ADMIN)),
 ):
     """Rename a medical specialty (ADMIN)."""
-    try:
+    with as_http(SPECIALTY_ERRORS):
         specialty = catalog_service.update_specialty(
             db, especialidad_id, nombre=data.nombre
         )
-    except catalog_service.SpecialtyNotFound:
-        raise HTTPException(
-            status.HTTP_404_NOT_FOUND, "Especialidad no encontrada"
-        ) from None
-    except catalog_service.DuplicateName:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, "Ya existe una especialidad con ese nombre"
-        ) from None
 
     db.commit()
     return specialty
@@ -150,11 +159,8 @@ async def delete_specialty(
 ):
     """Remove a medical specialty, unless doctors or services still use it (ADMIN)."""
     try:
-        catalog_service.delete_specialty(db, especialidad_id)
-    except catalog_service.SpecialtyNotFound:
-        raise HTTPException(
-            status.HTTP_404_NOT_FOUND, "Especialidad no encontrada"
-        ) from None
+        with as_http(SPECIALTY_ERRORS):
+            catalog_service.delete_specialty(db, especialidad_id)
     except catalog_service.SpecialtyInUse as e:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
@@ -172,10 +178,8 @@ async def deactivate_service(
     _: object = Depends(require_role(Role.ADMIN)),
 ):
     """Soft-delete a service (ADMIN): it leaves the catalog but keeps explaining old appointments."""
-    try:
+    with as_http(SERVICE_ERRORS):
         service = catalog_service.deactivate_service(db, servicio_id)
-    except catalog_service.ServiceNotFound:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servicio no encontrado") from None
 
     db.commit()
     return service

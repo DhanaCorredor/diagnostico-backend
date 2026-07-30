@@ -120,7 +120,16 @@ Si el mismo nombre y edad coinciden con **varios** pacientes, el sistema no adiv
 1. Entra en **Usuarios**.
 2. Pulsa **Nuevo acceso**: nombre, correo y **rol** (Administrador / Recepción / Médico).
 3. Comparte la contraseña con la persona.
-4. Para dar de baja a alguien, márcalo como **inactivo** (no se borra, se conserva el historial).
+4. **Ausencia temporal:** márcalo como **inactivo**. Deja de poder entrar y sale de los
+   desplegables, pero conserva sus datos y vuelve marcándolo activo otra vez.
+5. **Cuando alguien se va del centro:** usa **Eliminar**. Es **irreversible** y le borra nombre,
+   correo, contraseña y matrícula; también le quita su horario y sus especialidades. Si tuvo
+   citas, estas se conservan en el historial como *"Usuario eliminado"*.
+
+   Dos cosas que el sistema **no te dejará hacer**, y con razón:
+   - **Eliminar a un médico que tenga citas agendadas por delante.** Te dirá cuántas son:
+     hay que reasignarlas o cancelarlas antes, o quedarían pacientes citados con nadie.
+   - **Eliminarte a ti mismo**, para que no te quedes fuera de la aplicación.
 
 ## 8. Ver mi agenda (Médico)
 

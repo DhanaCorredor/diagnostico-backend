@@ -1,6 +1,6 @@
 # ERP Diagnóstico — Documentación de Testing
 
-> **159 tests** con `pytest`, verdes en cada commit. Cubren la **lógica de negocio**
+> **164 tests** con `pytest`, verdes en cada commit. Cubren la **lógica de negocio**
 > (tests unitarios sobre la capa de servicios) y el **contrato HTTP** (tests de integración
 > con `TestClient`, incluyendo auth y permisos por rol).
 
@@ -45,13 +45,13 @@ Dos niveles, para probar cada cosa en su capa:
 |---------|:---:|-------|
 | `test_appointments.py` | 48 | El **núcleo**: rejilla de minutos, no-pasado, médico/servicio activos, upsert de paciente, duración elegida, disponibilidad, **anti-solapamiento** (incl. citas pegadas y edición que no se solapa consigo misma), la **restricción de exclusión de la base de datos**, cancelar, marcar asistencia, editar/mover, rechazo de fechas con zona horaria. |
 | `test_availability.py` | 22 | CRUD de franjas: crear/listar, franja inválida, médico inválido, **franjas solapadas** (y contiguas permitidas), edición parcial, y que **borrar o reducir no deje citas fuera de horario** (ignorando canceladas y pasadas). |
-| `test_users.py` | 17 | CRUD de personal (ADMIN): alta con hash de contraseña, email duplicado (también ignorando mayúsculas), rol PACIENTE no permitido, especialidades solo para médicos, baja/reactivación, y **guardas por rol** (recepción no ve usuarios). |
+| `test_users.py` | 22 | CRUD de personal (ADMIN): alta con hash de contraseña, email duplicado (también ignorando mayúsculas), rol PACIENTE no permitido, especialidades solo para médicos, baja/reactivación, y **guardas por rol** (recepción no ve usuarios). |
 | `test_integration.py` | 18 | **HTTP punta a punta:** login y `/me`, login ignorando mayúsculas, token inválido, flujo completo de una cita, paciente ambiguo devuelve candidatos, borrado de franja por ADMIN, y que el MÉDICO no cree/cancele/marque asistencia. |
 | `test_catalog.py` | 30 | Servicios y especialidades: listar solo activos y ordenados, **filtro por médico** (N:M), crear/editar/desactivar, **renombrar y eliminar especialidades** (con el bloqueo si están en uso), **reasignar las especialidades de un servicio**, y nombres duplicados **ignorando mayúsculas y tildes**. |
 | `test_patients.py` | 15 | Upsert (reutiliza/crea/ambiguo), alta manual, edición parcial que no borra la cédula, cédula duplicada (también ignorando mayúsculas), y el **borrado definitivo** en sus dos formas: fila eliminada o datos anonimizados conservando las citas. |
 | `test_main.py` | 7 | Configuración de la aplicación: troceo de orígenes CORS, cabeceras para un origen autorizado y para uno que no lo está, y `/health` con la base viva y caída. |
 | `test_db.py` | 2 | Que el *engine* comprueba las conexiones antes de usarlas (`pool_pre_ping`) y que alcanza la base. |
-| **Total** | **159** | |
+| **Total** | **164** | |
 
 ## Técnicas destacadas
 
@@ -63,7 +63,7 @@ Dos niveles, para probar cada cosa en su capa:
 ## Ejecutar
 
 ```bash
-pytest            # los 159 tests
+pytest            # los 164 tests
 pytest -q         # salida compacta
 pytest tests/test_appointments.py::test_create_appointment_blocks_overlap   # uno solo
 ```

@@ -52,3 +52,14 @@ class UserUpdate(BaseModel):
     matricula: str | None = None
     especialidades: list[uuid.UUID] | None = None
     activo: bool | None = None
+
+
+class UserErased(BaseModel):
+    """Response of DELETE /usuarios/{id}: what happened to the record.
+
+    `resultado` is `eliminado` when nothing was left, or `anonimizado` when the personal data was
+    wiped but their past appointments were kept.
+    """
+
+    resultado: str
+    citas_conservadas: int

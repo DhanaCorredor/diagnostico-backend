@@ -2,10 +2,11 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.auth import require_role
+from app.controller.errors import as_http
 from app.db import get_db
 from app.enums import Role
 from app.schemas import AppointmentOut, PatientCreate, PatientErased, PatientOut, PatientUpdate
@@ -18,6 +19,18 @@ router = APIRouter(
     dependencies=[Depends(require_role(Role.ADMIN, Role.RECEPCION))],
 )
 
+# Same failure, same answer, whichever endpoint hit it.
+PATIENT_ERRORS = {
+    patient_service.PatientNotFound: (
+        status.HTTP_404_NOT_FOUND,
+        "Paciente no encontrado",
+    ),
+    patient_service.DuplicateNationalId: (
+        status.HTTP_409_CONFLICT,
+        "La cédula ya pertenece a otra persona",
+    ),
+}
+
 
 @router.get("", response_model=list[PatientOut])
 async def list_patients(db: Session = Depends(get_db)):
@@ -28,12 +41,8 @@ async def list_patients(db: Session = Depends(get_db)):
 @router.post("", response_model=PatientOut, status_code=status.HTTP_201_CREATED)
 async def create_patient(data: PatientCreate, db: Session = Depends(get_db)):
     """Register a patient manually (without scheduling an appointment)."""
-    try:
+    with as_http(PATIENT_ERRORS):
         patient = patient_service.create_patient(db, data.model_dump())
-    except patient_service.DuplicateNationalId:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, "La cédula ya pertenece a otra persona"
-        ) from None
     db.commit()
     return patient
 
@@ -41,19 +50,15 @@ async def create_patient(data: PatientCreate, db: Session = Depends(get_db)):
 @router.get("/{paciente_id}", response_model=PatientOut)
 async def get_patient(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
     """Return the details of a patient."""
-    try:
+    with as_http(PATIENT_ERRORS):
         return patient_service.get_patient(db, paciente_id)
-    except patient_service.PatientNotFound:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado") from None
 
 
 @router.get("/{paciente_id}/citas", response_model=list[AppointmentOut])
 async def appointment_history(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
     """Return the appointment history of a patient (from the most recent to the oldest)."""
-    try:
+    with as_http(PATIENT_ERRORS):
         patient_service.get_patient(db, paciente_id)
-    except patient_service.PatientNotFound:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado") from None
     return appointment_service.list_patient_appointments(db, paciente_id)
 
 
@@ -65,14 +70,8 @@ async def update_patient(
 ):
     """Edit a patient: only the fields sent are updated (omitted ones are not cleared)."""
     changes = data.model_dump(exclude_unset=True)
-    try:
+    with as_http(PATIENT_ERRORS):
         patient = patient_service.update_patient(db, paciente_id, changes)
-    except patient_service.PatientNotFound:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado") from None
-    except patient_service.DuplicateNationalId:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, "La cédula ya pertenece a otra persona"
-        ) from None
 
     db.commit()
     return patient
@@ -85,9 +84,7 @@ async def erase_patient(paciente_id: uuid.UUID, db: Session = Depends(get_db)):
     If the patient has no appointments the record is deleted outright; if it has, the personal
     data is wiped and the appointments are kept as an unidentified record of the visit.
     """
-    try:
+    with as_http(PATIENT_ERRORS):
         resultado, citas = patient_service.erase_patient(db, paciente_id)
-    except patient_service.PatientNotFound:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Paciente no encontrado") from None
     db.commit()
     return PatientErased(resultado=resultado, citas_conservadas=citas)

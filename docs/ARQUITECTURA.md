@@ -184,7 +184,7 @@ Gestiona ADMIN/RECEPCION/MEDICO. Los pacientes **no** se gestionan aquí.
 | `list_staff` / `get_user` | Todo el personal (excluye pacientes) y ficha por id. |
 | `create_user` | Alta con contraseña **hasheada** (bcrypt); el rol no puede ser `PACIENTE`; resuelve especialidades. |
 | `update_user` | Edición parcial; **no permite cambiar el rol**; rehashea si cambia la contraseña. |
-| `deactivate_user` | Baja lógica. |
+| `erase_user` | Borra a quien se ha ido: elimina la fila si no tiene citas, o la anonimiza si las tiene (R11). Bloqueado si le quedan citas por delante o si intentas borrarte a ti mismo. |
 
 **Excepciones:** `UserNotFound` → 404 · `DuplicateEmail` → 409 · `RoleNotAllowed`/`DoctorOnlyData` → 422.
 
