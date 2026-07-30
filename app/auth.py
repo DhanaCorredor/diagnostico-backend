@@ -76,7 +76,7 @@ def current_user(
 def require_role(*allowed_roles: Role):
     """Dependency factory requiring the authenticated user to have one of these roles (403 otherwise)."""
 
-    def verificar(user: User = Depends(current_user)) -> User:
+    def check_role(user: User = Depends(current_user)) -> User:
         if user.rol not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -84,4 +84,4 @@ def require_role(*allowed_roles: Role):
             )
         return user
 
-    return verificar
+    return check_role
