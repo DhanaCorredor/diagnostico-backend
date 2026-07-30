@@ -82,9 +82,13 @@ Gestiona ADMIN/RECEPCION/MEDICO. Los pacientes **no** se gestionan aquí (entran
 | Función | Qué hace |
 |---------|----------|
 | `list_availability(medico_id)` | Franjas de un médico, ordenadas. |
-| `create_availability(...)` | Alta de franja (ADMIN); valida médico y que `hora_inicio < hora_fin`. |
+| `create_availability(...)` | Alta de franja (ADMIN); valida médico, `hora_inicio < hora_fin` y que no se cruce con otra franja del mismo médico ese día (R7). |
+| `update_availability(...)` | Edición parcial de una franja (no cambia de médico); revalida R7 excluyendo la propia franja, y comprueba que no deje citas fuera de horario (R8). |
+| `delete_availability(franja_id)` | Elimina una franja, salvo que esté sosteniendo citas activas futuras (R8). |
+| `has_overlapping_slot(...)` | Helper de R7; con `exclude_slot_id` para que una franja no choque consigo misma al editarse. |
+| `_covered_appointments(...)` | Citas activas futuras que caen dentro de una franja. Es exacto **porque** R7 garantiza que cada cita la cubre una sola franja. |
 
-**Excepciones:** `DoctorNotFound` → 404 · `InvalidSlot` → 400.
+**Excepciones:** `DoctorNotFound` → 404 · `SlotNotFound` → 404 · `InvalidSlot` → 400 · `OverlappingSlot` → 409 · `StrandedAppointments` → 409 (lleva el número de citas afectadas).
 
 ---
 

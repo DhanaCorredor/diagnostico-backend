@@ -78,6 +78,8 @@ Software interno para el centro de salud **Diagnóstico**, centrado en la **gest
 |----------|--------|-----|--------|:------:|
 | `GET /disponibilidad` | Ver las franjas de un médico | autenticado | MANUAL §6.3 | ✅ |
 | `POST /disponibilidad` | Definir una franja del médico | ADMIN | MANUAL §6.3 | ✅ |
+| `PUT /disponibilidad/{id}` | **Editar una franja** (parcial; no cambia de médico) | ADMIN | MANUAL §6.3 | ✅ |
+| `DELETE /disponibilidad/{id}` | **Eliminar una franja** (bloqueada si tiene citas) | ADMIN | MANUAL §6.3 | ✅ |
 
 **Pacientes — ADMIN/RECEPCION**
 

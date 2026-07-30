@@ -97,13 +97,23 @@ coste alto o de valor menor frente al riesgo que introducen.
 
 ### 4.1 Pendiente hoy, sin esperar a ninguna mejora
 
-- **Pantalla para definir la disponibilidad de un médico.** `POST /disponibilidad` está
-  implementado y forma parte del contrato del MVP, pero la UI solo **lee** las franjas
-  (`DoctorsPage.jsx` hace `GET /disponibilidad?medico_id=`). Hoy las franjas solo se pueden crear
-  llamando a la API a mano o por el *seed*, así que el administrador no puede cambiar el horario
-  de un médico desde la aplicación. Es el hueco más visible que queda en la UI.
-  Al hacerla, hay que mostrar el `409` que ahora devuelve la mejora `A1` (franja cruzada) además
-  del `400` de "inicio posterior al fin".
+- **Pantalla de disponibilidad de un médico.** El backend ya ofrece el **CRUD completo**
+  (`GET`, `POST`, `PUT /disponibilidad/{id}` y `DELETE /disponibilidad/{id}`, todo ADMIN salvo la
+  lectura), pero la UI solo **lee** las franjas (`DoctorsPage.jsx` hace
+  `GET /disponibilidad?medico_id=`). Hoy el administrador **no puede tocar el horario de un médico
+  desde la aplicación**: hay que llamar a la API a mano. Es el único agujero funcional que queda.
+
+  Los errores que la pantalla tiene que saber mostrar:
+
+  | Código | Cuándo | Qué decirle al usuario |
+  |:------:|--------|------------------------|
+  | `400` | La hora de inicio no es anterior a la de fin | Corregir las horas |
+  | `404` | La franja o el médico no existen | Recargar; alguien la borró |
+  | `409` | La franja se cruza con otra del mismo médico ese día (R7) | Mostrar con cuál choca |
+  | `409` | Borrar o reducir dejaría citas fuera de horario (R8) | El mensaje trae el **número de citas**; hay que moverlas o cancelarlas primero |
+
+  El último es el importante: la interfaz debería ofrecer ir a esas citas, no limitarse a
+  enseñar el error.
 
 ### 4.2 Trabajo derivado de cada mejora
 

@@ -18,6 +18,8 @@
 | R4 | Cero solapamientos por médico | `has_overlap()` · `app/services/appointments.py` | ✅ |
 | R5 | Cancelar libera el hueco | filtro de estados en R4 | ✅ (regla) |
 | R6 | Marcar asistencia (atendida/no-show) solo sobre citas activas | `mark_attendance()` · `app/services/appointments.py` | ✅ |
+| R7 | Las franjas de un médico no se solapan entre sí | `has_overlapping_slot()` · `app/services/availability.py` | ✅ |
+| R8 | Editar o borrar una franja no puede dejar citas fuera de horario | `update_availability()` / `delete_availability()` · `app/services/availability.py` | ✅ |
 | — | Orquestación de todas al crear la cita | `create_appointment()` + `POST /citas` | ✅ |
 
 ---
@@ -111,6 +113,30 @@ una cancelada deja de contar automáticamente. *(El cambio de estado lo hace `ca
 **Regla.** Una cita **activa** (`SCHEDULED`/`CONFIRMED`) se cierra como **atendida** (`COMPLETED`) o **no-show** (`NO_SHOW`); no se puede marcar sobre una cita ya cerrada o cancelada. Lo hacen **recepción y admin** (el médico solo consulta su agenda, no marca asistencia).
 
 **Implementación.** `mark_attendance(db, cita_id, estado)` en `app/services/appointments.py` (reutiliza `_get_active_appointment`); si la cita no está activa lanza `AppointmentNotActive` → **409**. Endpoint `POST /citas/{id}/asistencia` con `estado ∈ {COMPLETED, NO_SHOW}`.
+
+---
+
+## R7 · Las franjas de un médico no se solapan entre sí
+
+**Regla.** Un médico no puede tener dos franjas de disponibilidad **cruzadas el mismo día**. "Lunes 08:00–12:00" y "Lunes 10:00–14:00" no pueden coexistir; "Lunes 08:00–12:00" y "Lunes 12:00–16:00" sí, porque son **contiguas, no solapadas**.
+
+**Implementación.** `has_overlapping_slot()` en `app/services/availability.py`, con la misma regla de intersección que R4 (`inicio_nuevo < fin_existente` **y** `fin_nuevo > inicio_existente`, con `<` estrictos). Se aplica al crear y al editar; al editar se excluye la propia franja para que no choque consigo misma. Lanza `OverlappingSlot` → **409**.
+
+**Por qué importa más de lo que parece.** Al garantizar que no hay solapes, **cada cita queda cubierta por una única franja**. Eso es lo que hace que R8 pueda comprobarse de forma exacta y no aproximada.
+
+---
+
+## R8 · Editar o borrar una franja no puede dejar citas fuera de horario
+
+**Regla.** Si se **elimina** una franja, o se **reduce** de forma que alguna cita agendada deje de caber dentro, la operación se **rechaza**. Recepción debe mover o cancelar esas citas primero.
+
+**Por qué.** La disponibilidad solo se comprueba **al crear** la cita (R3). Una cita ya agendada no se entera de que su franja cambió, así que sin esta regla quedarían citas activas fuera del horario del médico sin que nadie avisara.
+
+**Qué cuenta como problema.** Solo las citas **activas** (`SCHEDULED`/`CONFIRMED`) y **futuras**. Una cita cancelada o ya pasada no bloquea nada.
+
+**Implementación.** `update_availability()` y `delete_availability()` en `app/services/availability.py` usan `_covered_appointments()`, que localiza las citas que esa franja está sosteniendo; si alguna quedaría fuera del nuevo rango, lanza `StrandedAppointments` → **409**, con el número de citas afectadas en el mensaje para que la interfaz pueda decirlo.
+
+**Ampliar una franja siempre se permite**: si el horario crece, ninguna cita puede quedarse fuera.
 
 ---
 

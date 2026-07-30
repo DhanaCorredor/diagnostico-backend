@@ -21,7 +21,9 @@ El valor del sistema está en unas reglas **críticas**: un fallo no es un detal
 | R0 · Rejilla :00/:15/:30/:45 | `test_create_appointment_unaligned_time` |
 | R0.b · No agendar en el pasado | `test_create_appointment_in_the_past` |
 | R1 · Upsert de paciente | `test_creates_if_not_exists`, `test_reuses_if_exists`, `test_multiple_matches_raises_ambiguous` |
-| Permisos por rol | `test_doctor_cannot_create_appointment`, `test_reception_cannot_see_users` |
+| Permisos por rol | `test_doctor_cannot_create_appointment`, `test_reception_cannot_see_users`, `test_reception_cannot_edit_availability` |
+| R7 · Franjas que no se solapan | `test_create_availability_overlapping_slot`, `test_create_availability_contiguous_slots_allowed`, `test_update_availability_does_not_clash_with_itself` |
+| R8 · No dejar citas fuera de horario | `test_delete_availability_blocked_when_it_has_bookings`, `test_update_availability_blocked_when_it_strands_a_booking`, `test_update_availability_allowed_when_the_booking_still_fits` |
 
 ## Estrategia
 
@@ -40,13 +42,15 @@ Dos niveles, para probar cada cosa en su capa:
 
 | Archivo | Tests | Cubre |
 |---------|:---:|-------|
-| `test_appointments.py` | 43 | El **núcleo**: rejilla de minutos, no-pasado, médico/servicio activos, upsert de paciente, duración elegida, disponibilidad, **anti-solapamiento** (incl. citas pegadas y edición que no se solapa consigo misma), cancelar, marcar asistencia, editar/mover, rechazo de fechas con zona horaria. |
-| `test_users.py` | 16 | CRUD de personal (ADMIN): alta con hash de contraseña, email duplicado, rol PACIENTE no permitido, especialidades solo para médicos, baja/reactivación, y **guardas por rol** (recepción no ve usuarios). |
-| `test_integration.py` | 14 | **HTTP punta a punta:** login y `/me`, token inválido, flujo completo de una cita, paciente ambiguo devuelve candidatos, y que el MÉDICO no cree/cancele/marque asistencia. |
-| `test_catalog.py` | 13 | Servicios y especialidades: listar solo activos y ordenados, **filtro por médico** (N:M), crear/editar/desactivar, nombres duplicados. |
-| `test_patients.py` | 11 | Upsert (reutiliza/crea/ambiguo), alta manual, edición parcial que no borra la cédula, cédula duplicada, baja lógica. |
-| `test_availability.py` | 3 | Crear/listar franjas, franja inválida (`hora_inicio ≥ hora_fin`), médico inválido. |
-| **Total** | **100** | |
+| `test_appointments.py` | 46 | El **núcleo**: rejilla de minutos, no-pasado, médico/servicio activos, upsert de paciente, duración elegida, disponibilidad, **anti-solapamiento** (incl. citas pegadas y edición que no se solapa consigo misma), la **restricción de exclusión de la base de datos**, cancelar, marcar asistencia, editar/mover, rechazo de fechas con zona horaria. |
+| `test_availability.py` | 22 | CRUD de franjas: crear/listar, franja inválida, médico inválido, **franjas solapadas** (y contiguas permitidas), edición parcial, y que **borrar o reducir no deje citas fuera de horario** (ignorando canceladas y pasadas). |
+| `test_users.py` | 17 | CRUD de personal (ADMIN): alta con hash de contraseña, email duplicado (también ignorando mayúsculas), rol PACIENTE no permitido, especialidades solo para médicos, baja/reactivación, y **guardas por rol** (recepción no ve usuarios). |
+| `test_integration.py` | 17 | **HTTP punta a punta:** login y `/me`, login ignorando mayúsculas, token inválido, flujo completo de una cita, paciente ambiguo devuelve candidatos, borrado de franja por ADMIN, y que el MÉDICO no cree/cancele/marque asistencia. |
+| `test_catalog.py` | 16 | Servicios y especialidades: listar solo activos y ordenados, **filtro por médico** (N:M), crear/editar/desactivar, nombres duplicados **ignorando mayúsculas y tildes** (y que nombres distintos de verdad sigan permitidos). |
+| `test_patients.py` | 12 | Upsert (reutiliza/crea/ambiguo), alta manual, edición parcial que no borra la cédula, cédula duplicada (también ignorando mayúsculas), baja lógica. |
+| `test_main.py` | 7 | Configuración de la aplicación: troceo de orígenes CORS, cabeceras para un origen autorizado y para uno que no lo está, y `/health` con la base viva y caída. |
+| `test_db.py` | 2 | Que el *engine* comprueba las conexiones antes de usarlas (`pool_pre_ping`) y que alcanza la base. |
+| **Total** | **139** | |
 
 ## Técnicas destacadas
 
