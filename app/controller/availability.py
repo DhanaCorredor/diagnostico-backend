@@ -29,7 +29,7 @@ async def list_availability(
 async def create_availability(
     data: AvailabilityCreate,
     db: Session = Depends(get_db),
-    user: User = Depends(require_role(Role.ADMIN)),
+    _: User = Depends(require_role(Role.ADMIN)),
 ):
     """Define an availability slot for a doctor (ADMIN only)."""
     try:
