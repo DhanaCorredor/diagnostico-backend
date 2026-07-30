@@ -117,6 +117,75 @@ gratis indefinidamente: solo se duerme a los 15 minutos sin tráfico.
 - **Dependencias fijadas:** `requirements.txt` lleva versiones exactas, así que el despliegue no
   puede romperse por una actualización ajena justo el día de la migración.
 
+## Copias de seguridad
+
+> ⚠️ **Estado: montado pero SIN VERIFICAR de punta a punta.** Falta instalar PostgreSQL 18,
+> elegir dónde se guardan los volcados y **probar una restauración**. Hasta que eso se haga, la
+> única protección real es la capa 1.
+
+Dos capas, porque cubren cosas distintas:
+
+| Capa | Qué cubre | Qué **no** cubre |
+|------|-----------|------------------|
+| **1. Instant restore de Neon** | Rebobinar la base a cualquier momento de las **últimas 6 horas** (plan gratuito, hasta 1 GB de historial). Automático, no hay que hacer nada | Nada anterior a 6 horas. Ni perder el acceso al proyecto |
+| **2. Volcado con `pg_dump`** | Todo lo demás: un borrado detectado al día siguiente, o quedarse sin cuenta de Neon | Lo que pase entre dos volcados |
+
+### Capa 1 — Instant restore (ya activa)
+
+En la consola de Neon, en el proyecto → **Restore**, se elige una marca de tiempo dentro de la
+ventana de 6 horas. Es lo más rápido para un "he borrado algo hace un rato": no hace falta
+volcado ni restauración manual.
+
+### Capa 2 — Volcado periódico
+
+**Requisito:** las *client tools* de **PostgreSQL 18**. `pg_dump` se niega a volcar de un servidor
+más nuevo que él, y Neon corre PostgreSQL 18.4. El script lo comprueba y aborta con un mensaje
+claro antes de intentar conectarse.
+
+```powershell
+$env:BACKUP_DATABASE_URL = "postgresql://usuario:clave@host.neon.tech/neondb?sslmode=require"
+.\scripts\backup.ps1 -Destination "RUTA\A\ELEGIR"
+```
+
+Qué hace `scripts/backup.ps1`:
+
+1. Comprueba que hay cadena de conexión y que `pg_dump` es la versión 18 o superior.
+2. Vuelca en formato comprimido (`--format=custom`), con nombre `diagnostico-AAAAMMDD-HHmm.dump`.
+3. **Comprueba que el volcado se puede leer** (`pg_restore --list`). Si no, lo borra y falla: un
+   archivo corrupto que parece una copia es peor que no tener copia.
+4. Conserva los últimos 14 y borra los anteriores.
+
+La cadena de conexión se pasa por **variable de entorno**, no por parámetro ni en un archivo, para
+que no acabe escrita en el historial de la consola ni en la tarea programada.
+
+### Dónde guardarlos — decisión pendiente
+
+**Nunca dentro del repositorio: es público.** Un volcado contiene nombres, cédulas y teléfonos de
+pacientes; subirlo a GitHub sería publicarlos. Por lo mismo quedan descartados los artefactos de
+GitHub Actions, que en un repo público puede descargar cualquiera.
+
+El `.gitignore` bloquea `*.dump`, `*.sql.gz` y `backups/` para que no pueda colarse por accidente,
+pero eso es una red, no la decisión.
+
+La opción razonable es una **carpeta sincronizada con un disco en la nube** (OneDrive, Drive), que
+saca la copia de la máquina sin coste. Está **por decidir**.
+
+### Restaurar
+
+```powershell
+pg_restore --clean --if-exists --no-owner -d "postgresql://usuario:clave@host/base" archivo.dump
+```
+
+**Hay que probarlo al menos una vez**, y no contra producción: se crea una base nueva (o una rama
+en Neon), se restaura ahí y se comprueba que los datos están. Una copia que nunca se ha restaurado
+no se sabe si sirve.
+
+### Cada cuánto
+
+Mientras el volumen sea el actual (~60 citas/día), **una vez al día** es razonable: en el peor caso
+se pierde un día de agenda, y las 6 horas de Neon cubren lo reciente. Se automatiza con el
+**Programador de tareas** de Windows llamando al script.
+
 ## Notas
 
 - Límites concretos del plan **gratuito** de Render: el servicio web **se duerme a los 15 minutos**
