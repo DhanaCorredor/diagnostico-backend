@@ -13,8 +13,31 @@ class ServiceNotFound(Exception):
     """There is no service with that id."""
 
 
+class SpecialtyNotFound(Exception):
+    """One of the given specialties does not exist."""
+
+
 class DuplicateName(Exception):
     """A service or specialty with that name already exists (the name is unique)."""
+
+
+class SpecialtyInUse(Exception):
+    """The specialty is still linked to doctors or services, so it cannot be removed."""
+
+    def __init__(self, doctors: int, services: int):
+        self.doctors = doctors
+        self.services = services
+        super().__init__(f"linked to {doctors} doctors and {services} services")
+
+
+def resolve_specialties(db: Session, ids: list[uuid.UUID]) -> list[Specialty]:
+    """Turn a list of ids into specialty objects; raises SpecialtyNotFound if any is missing."""
+    if not ids:
+        return []
+    found = db.query(Specialty).filter(Specialty.id.in_(ids)).all()
+    if len(found) != len(set(ids)):
+        raise SpecialtyNotFound()
+    return found
 
 
 def list_services(

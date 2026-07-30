@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.auth import hash_password
 from app.enums import Role
-from app.models import Specialty, User
+from app.models import User
+from app.services.catalog import resolve_specialties
 from app.services.common import value_in_use
 
 ROLES_STAFF = (Role.ADMIN, Role.RECEPCION, Role.MEDICO)
@@ -24,10 +25,6 @@ class RoleNotAllowed(Exception):
     """The given role cannot be created here (e.g. PACIENTE)."""
 
 
-class SpecialtyNotFound(Exception):
-    """One of the given specialties does not exist."""
-
-
 class DoctorOnlyData(Exception):
     """Specialties or a license number were given for a user who is not a doctor."""
 
@@ -35,15 +32,6 @@ class DoctorOnlyData(Exception):
 def _email_in_use(db: Session, email: str, exclude_id: uuid.UUID | None = None) -> bool:
     return value_in_use(db, User, User.email, email, exclude_id)
 
-
-def _resolve_specialties(db: Session, ids: list[uuid.UUID]) -> list[Specialty]:
-    """Turn a list of ids into specialty objects; raises SpecialtyNotFound if any is missing."""
-    if not ids:
-        return []
-    found = db.query(Specialty).filter(Specialty.id.in_(ids)).all()
-    if len(found) != len(set(ids)):
-        raise SpecialtyNotFound()
-    return found
 
 
 def list_staff(db: Session) -> list[User]:
@@ -82,7 +70,7 @@ def create_user(
         raise DoctorOnlyData()
     if _email_in_use(db, email):
         raise DuplicateEmail()
-    spec = _resolve_specialties(db, especialidades)
+    spec = resolve_specialties(db, especialidades)
 
     user = User(
         nombre_completo=nombre_completo,
@@ -112,7 +100,7 @@ def update_user(db: Session, usuario_id: uuid.UUID, changes: dict) -> User:
         raise DuplicateEmail()
 
     if "especialidades" in changes:
-        user.especialidades = _resolve_specialties(db, changes["especialidades"] or [])
+        user.especialidades = resolve_specialties(db, changes["especialidades"] or [])
     if changes.get("password") is not None:
         user.password_hash = hash_password(changes["password"])
     for field in ("nombre_completo", "email", "matricula", "activo"):
