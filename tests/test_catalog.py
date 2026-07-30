@@ -190,3 +190,29 @@ def test_update_service_unknown_specialty(db):
     )
     with pytest.raises(C.SpecialtyNotFound):
         C.update_service(db, service.id, {"especialidades": [uuid.uuid4()]})
+
+
+def test_update_specialty_renames_it(db):
+    spec = C.create_specialty(db, nombre=f"Cardiologia {uuid.uuid4()}")
+    nuevo = f"Cardiología {uuid.uuid4()}"
+    updated = C.update_specialty(db, spec.id, nombre=nuevo)
+    assert updated.nombre == nuevo
+
+
+def test_update_specialty_not_found(db):
+    with pytest.raises(C.SpecialtyNotFound):
+        C.update_specialty(db, uuid.uuid4(), nombre="X")
+
+
+def test_update_specialty_duplicate_name(db):
+    marker = uuid.uuid4()
+    C.create_specialty(db, nombre=f"Primera {marker}")
+    otra = C.create_specialty(db, nombre=f"Segunda {marker}")
+    with pytest.raises(C.DuplicateName):
+        C.update_specialty(db, otra.id, nombre=f"PRIMERA {marker}")
+
+
+def test_update_specialty_keeping_its_own_name(db):
+    spec = C.create_specialty(db, nombre=f"Misma {uuid.uuid4()}")
+    updated = C.update_specialty(db, spec.id, nombre=spec.nombre)
+    assert updated.id == spec.id

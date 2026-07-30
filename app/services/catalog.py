@@ -118,3 +118,15 @@ def create_specialty(db: Session, *, nombre: str) -> Specialty:
     db.add(specialty)
     db.flush()
     return specialty
+
+
+def update_specialty(db: Session, especialidad_id: uuid.UUID, *, nombre: str) -> Specialty:
+    """Rename a specialty, keeping the name unique. Flush (no commit)."""
+    specialty = db.get(Specialty, especialidad_id)
+    if specialty is None:
+        raise SpecialtyNotFound()
+    if value_in_use(db, Specialty, Specialty.nombre, nombre, exclude_id=especialidad_id):
+        raise DuplicateName()
+    specialty.nombre = nombre
+    db.flush()
+    return specialty

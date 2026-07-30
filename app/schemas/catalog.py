@@ -66,3 +66,9 @@ class DoctorOut(BaseModel):
     especialidades: list[SpecialtyOut]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class SpecialtyUpdate(BaseModel):
+    """Body of PUT /especialidades/{id}: the only editable field is the name."""
+
+    nombre: str = Field(min_length=1)

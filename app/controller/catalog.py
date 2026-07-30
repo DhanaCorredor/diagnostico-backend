@@ -16,6 +16,7 @@ from app.schemas import (
     ServiceUpdate,
     SpecialtyCreate,
     SpecialtyOut,
+    SpecialtyUpdate,
 )
 from app.services import catalog as catalog_service
 
@@ -107,6 +108,31 @@ async def create_specialty(
     """Register a medical specialty (ADMIN)."""
     try:
         specialty = catalog_service.create_specialty(db, nombre=data.nombre)
+    except catalog_service.DuplicateName:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Ya existe una especialidad con ese nombre"
+        ) from None
+
+    db.commit()
+    return specialty
+
+
+@router.put("/especialidades/{especialidad_id}", response_model=SpecialtyOut)
+async def update_specialty(
+    especialidad_id: uuid.UUID,
+    data: SpecialtyUpdate,
+    db: Session = Depends(get_db),
+    _: object = Depends(require_role(Role.ADMIN)),
+):
+    """Rename a medical specialty (ADMIN)."""
+    try:
+        specialty = catalog_service.update_specialty(
+            db, especialidad_id, nombre=data.nombre
+        )
+    except catalog_service.SpecialtyNotFound:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Especialidad no encontrada"
+        ) from None
     except catalog_service.DuplicateName:
         raise HTTPException(
             status.HTTP_409_CONFLICT, "Ya existe una especialidad con ese nombre"

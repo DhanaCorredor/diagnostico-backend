@@ -15,6 +15,7 @@ from app.schemas.catalog import (
     ServiceUpdate,
     SpecialtyCreate,
     SpecialtyOut,
+    SpecialtyUpdate,
 )
 from app.schemas.patient import PatientCreate, PatientOut, PatientUpdate
 from app.schemas.user import UserCreate, UserDetail, UserOut, UserUpdate
@@ -38,6 +39,7 @@ __all__ = [
     "ServiceUpdate",
     "SpecialtyCreate",
     "SpecialtyOut",
+    "SpecialtyUpdate",
     "TokenResponse",
     "UserCreate",
     "UserDetail",
