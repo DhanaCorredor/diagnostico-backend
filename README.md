@@ -153,17 +153,14 @@ Details in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 | Document | Content |
 |----------|---------|
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Roadmap and planning: phases, schedule (Gantt), kanban and risks |
-| [`docs/DOCUMENTACION-FUNCIONAL.md`](docs/DOCUMENTACION-FUNCIONAL.md) | Requirements, roles, user stories and use cases |
-| [`docs/FLUJO-USUARIO.md`](docs/FLUJO-USUARIO.md) | User-flow flowchart (Mermaid) |
+| [`docs/DOCUMENTACION-FUNCIONAL.md`](docs/DOCUMENTACION-FUNCIONAL.md) | What the system does: requirements, roles, use cases and the decisions behind them |
+| [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | How it is built: layers, data flow, the service layer, patterns and technical decisions |
 | [`docs/MODELO-DATOS.md`](docs/MODELO-DATOS.md) | Entities, fields, relations, ER diagram and rules |
 | [`docs/REGLAS-DE-NEGOCIO.md`](docs/REGLAS-DE-NEGOCIO.md) | Canonical business rules and how they are implemented |
-| [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Architecture, layers, data flow, design principles/patterns and technical decisions |
-| [`docs/SERVICIOS-BACKEND.md`](docs/SERVICIOS-BACKEND.md) | Backend service layer: what each service does and the exceptions it raises |
-| [`docs/TESTING.md`](docs/TESTING.md) | Testing strategy and what the 100 tests cover |
-| [`docs/MEJORAS-Y-PROXIMOS-PASOS.md`](docs/MEJORAS-Y-PROXIMOS-PASOS.md) | Improvements and next steps: immediate, phase-2 features and technical debt |
-| [`docs/MANUAL-USUARIO.md`](docs/MANUAL-USUARIO.md) | Step-by-step usage guide for the staff |
-| [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) | Deployment guide (Render + PostgreSQL) |
+| [`docs/MANUAL-USUARIO.md`](docs/MANUAL-USUARIO.md) | Step-by-step usage guide for the staff, with the user flow |
+| [`docs/TESTING.md`](docs/TESTING.md) | Testing strategy and what the tests cover |
+| [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) | Deployment guide (Render + Neon + Vercel) |
+| [`docs/MEJORAS-Y-PROXIMOS-PASOS.md`](docs/MEJORAS-Y-PROXIMOS-PASOS.md) | The work catalogue: what is done, what is pending and the API contract |
 
 ---
 
