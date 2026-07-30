@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.auth import current_user, require_role
+from app.controller.errors import as_http
 from app.db import get_db
 from app.enums import Role
 from app.models import User
@@ -13,6 +14,26 @@ from app.schemas import AvailabilityCreate, AvailabilityOut, AvailabilityUpdate
 from app.services import availability as availability_service
 
 router = APIRouter(prefix="/disponibilidad", tags=["availability"])
+
+# Same failure, same answer, whichever endpoint hit it.
+SLOT_ERRORS = {
+    availability_service.DoctorNotFound: (
+        status.HTTP_404_NOT_FOUND,
+        "Médico no encontrado",
+    ),
+    availability_service.SlotNotFound: (
+        status.HTTP_404_NOT_FOUND,
+        "Franja no encontrada",
+    ),
+    availability_service.InvalidSlot: (
+        status.HTTP_400_BAD_REQUEST,
+        "La hora de inicio debe ser anterior a la de fin",
+    ),
+    availability_service.OverlappingSlot: (
+        status.HTTP_409_CONFLICT,
+        "El médico ya tiene una franja que se cruza con esa ese día",
+    ),
+}
 
 
 @router.get("", response_model=list[AvailabilityOut])
@@ -32,7 +53,7 @@ async def create_availability(
     _: User = Depends(require_role(Role.ADMIN)),
 ):
     """Define an availability slot for a doctor (ADMIN only)."""
-    try:
+    with as_http(SLOT_ERRORS):
         slot = availability_service.create_availability(
             db,
             medico_id=data.medico_id,
@@ -40,18 +61,6 @@ async def create_availability(
             hora_inicio=data.hora_inicio,
             hora_fin=data.hora_fin,
         )
-    except availability_service.DoctorNotFound:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Médico no encontrado") from None
-    except availability_service.InvalidSlot:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            "La hora de inicio debe ser anterior a la de fin",
-        ) from None
-    except availability_service.OverlappingSlot:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "El médico ya tiene una franja que se cruza con esa ese día",
-        ) from None
 
     db.commit()
     return slot
@@ -66,25 +75,14 @@ async def update_availability(
 ):
     """Edit a slot (partial, only the fields sent). The doctor is not changed. ADMIN only."""
     try:
-        slot = availability_service.update_availability(
-            db,
-            franja_id=franja_id,
-            dia_semana=data.dia_semana,
-            hora_inicio=data.hora_inicio,
-            hora_fin=data.hora_fin,
-        )
-    except availability_service.SlotNotFound:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Franja no encontrada") from None
-    except availability_service.InvalidSlot:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            "La hora de inicio debe ser anterior a la de fin",
-        ) from None
-    except availability_service.OverlappingSlot:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "El médico ya tiene una franja que se cruza con esa ese día",
-        ) from None
+        with as_http(SLOT_ERRORS):
+            slot = availability_service.update_availability(
+                db,
+                franja_id=franja_id,
+                dia_semana=data.dia_semana,
+                hora_inicio=data.hora_inicio,
+                hora_fin=data.hora_fin,
+            )
     except availability_service.StrandedAppointments as e:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
@@ -104,9 +102,8 @@ async def delete_availability(
 ):
     """Remove a slot, unless it still holds booked appointments. ADMIN only."""
     try:
-        availability_service.delete_availability(db, franja_id)
-    except availability_service.SlotNotFound:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Franja no encontrada") from None
+        with as_http(SLOT_ERRORS):
+            availability_service.delete_availability(db, franja_id)
     except availability_service.StrandedAppointments as e:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
